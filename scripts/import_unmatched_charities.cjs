@@ -222,8 +222,6 @@ async function main() {
       county: extractCounty(address),
       address: address || null,
       also_known_as: aka || null,
-      charitable_purposes: purpose || null,
-      charitable_objects: objects || null,
       status: status.toLowerCase() === 'registered' ? 'active' : (status || 'active'),
       source: 'charities_register',
     });
