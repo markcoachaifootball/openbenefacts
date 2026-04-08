@@ -240,7 +240,7 @@ function Navbar({ page, setPage }) {
   }, []);
 
   const nav = (p) => { setPage(p); setMobileOpen(false); };
-  const links = [["home","Dashboard"],["orgs","Organizations"],["funders","Funders"],["pricing","Pricing"],["about","About"]];
+  const links = [["home","Dashboard"],["orgs","Organizations"],["funders","Funders"],["pricing","Pricing"],["api","API"],["about","About"]];
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-40">
@@ -332,16 +332,23 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Hero */}
+      {/* Hero — bold narrative */}
       <div className="text-center mb-10">
-        <div className="inline-block mb-3 text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">Live data from {funderData.length || 14} government sources</div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">Ireland's Nonprofit<br/><span className="text-emerald-600">Transparency</span> Platform</h1>
-        <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-6">Explore {orgCount.toLocaleString()} organizations. Track €billions in government funding. Access real financial data.</p>
+        <div className="inline-flex items-center gap-2 mb-4 text-xs font-semibold tracking-wide uppercase">
+          <span className="bg-red-50 text-red-700 px-3 py-1 rounded-full">The gap in Irish transparency</span>
+          <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full">Now filled</span>
+        </div>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-5 leading-tight">
+          Every year, Ireland pours<br/><span className="text-emerald-600">€14 billion</span> into nonprofits.<br/>
+          <span className="text-gray-400 text-3xl sm:text-4xl lg:text-5xl">Nobody was tracking where it went.</span>
+        </h1>
+        <p className="text-lg sm:text-xl text-gray-500 max-w-3xl mx-auto mb-3">Benefacts tracked every euro. The government defunded it in 2022. For four years, the money trail went dark.</p>
+        <p className="text-lg sm:text-xl text-gray-900 font-semibold max-w-2xl mx-auto mb-8">We rebuilt it. {orgCount.toLocaleString()} organisations. {financialCount.toLocaleString()} financial records. Open to everyone.</p>
         {/* Search */}
         <div className="max-w-xl mx-auto mb-4">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input type="text" placeholder={`Search ${orgCount.toLocaleString()} organizations...`} value={heroSearch} onChange={e => setHeroSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()} className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl text-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none shadow-sm" />
+            <input type="text" placeholder={`Search ${orgCount.toLocaleString()} organisations...`} value={heroSearch} onChange={e => setHeroSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()} className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl text-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none shadow-sm" />
           </div>
           <div className="flex flex-wrap gap-2 mt-3 justify-center">
             {chips.map(c => <button key={c} onClick={() => doSearch(c)} className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm text-gray-600 hover:border-emerald-300 hover:text-emerald-700 transition-colors">{c}</button>)}
@@ -476,13 +483,14 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
         </div>
       )}
 
-      {/* CTA */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-center text-white">
-        <h2 className="text-2xl font-bold mb-2">Ready for full nonprofit intelligence?</h2>
-        <p className="text-emerald-100 mb-6">Unlock exact financials, income breakdowns, AI risk scores, and downloadable reports for all organizations.</p>
+      {/* CTA — narrative-driven */}
+      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 rounded-2xl p-8 sm:p-10 text-center text-white">
+        <p className="text-emerald-400 text-sm font-semibold uppercase tracking-wider mb-3">The money trail is back</p>
+        <h2 className="text-2xl sm:text-3xl font-bold mb-3">€14 billion deserves oversight.</h2>
+        <p className="text-gray-300 max-w-2xl mx-auto mb-6">Benefacts is gone. OpenBenefacts is here — with full financials, AI risk scores, funder mapping, and due diligence reports. Free to search. Pro plans for professionals who need the full picture.</p>
         <div className="flex flex-wrap gap-3 justify-center">
-          <button onClick={() => setPage("pricing")} className="px-6 py-3 bg-white text-emerald-700 rounded-xl font-semibold hover:bg-emerald-50">View pricing plans</button>
-          <button onClick={() => setPage("orgs")} className="px-6 py-3 bg-emerald-700/50 text-white rounded-xl font-semibold hover:bg-emerald-700/70">Browse free data</button>
+          <button onClick={() => setPage("pricing")} className="px-6 py-3 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-400 transition-colors">Start free trial</button>
+          <button onClick={() => setPage("orgs")} className="px-6 py-3 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/20 transition-colors border border-white/20">Browse {orgCount.toLocaleString()} organisations</button>
         </div>
       </div>
     </div>
@@ -725,6 +733,10 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
   const [expandedDirector, setExpandedDirector] = useState(null);
   const [directorBoards, setDirectorBoards] = useState({});
   const [benchmark, setBenchmark] = useState(null);
+  // White-label branding for reports
+  const [showBranding, setShowBranding] = useState(null); // "pdf" or "dd"
+  const [brandName, setBrandName] = useState(() => { try { return localStorage.getItem("ob_brand_name") || ""; } catch { return ""; } });
+  const saveBrand = (v) => { setBrandName(v); try { localStorage.setItem("ob_brand_name", v); } catch {} };
 
   useEffect(() => {
     setLoading(true);
@@ -780,6 +792,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
             <div className="flex items-center gap-2">
               {isPro && (
                 <button onClick={() => {
+                  if ((tier === "professional" || tier === "enterprise") && !brandName) { setShowBranding("pdf"); return; }
                   const risk = computeRiskScore(org);
                   const latest = org.financials?.[0];
                   const w = window.open("", "_blank");
@@ -806,7 +819,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                     ${org.grants?.length > 0 ? `<h2>State Funding</h2><table><tr><th>Funder</th><th>Programme</th><th>Year</th><th style="text-align:right">Amount</th></tr>${org.grants.slice(0,20).map(g => `<tr><td>${g.funders?.name||g.funder_name||"Government"}</td><td>${g.programme||"—"}</td><td>${g.year||"—"}</td><td style="text-align:right">${g.amount>0?fmt(g.amount):"—"}</td></tr>`).join("")}</table>` : ""}
                     ${org.boardMembers?.length > 0 ? `<h2>Board Members</h2><table><tr><th>Name</th><th>Role</th><th>Since</th></tr>${org.boardMembers.map(bm => `<tr><td>${bm.directors?.name||"—"}</td><td>${bm.role||"Trustee"}</td><td>${bm.start_date?.slice(0,4)||"—"}</td></tr>`).join("")}</table>` : ""}
                     <h2>Organization Details</h2><table>${fields.map(f => `<tr><td style="color:#999;width:160px">${f.label}</td><td>${f.value}${f.sub?" — "+f.sub:""}</td></tr>`).join("")}</table>
-                    <div class="footer">Generated by OpenBenefacts · openbenefacts.vercel.app · ${new Date().toLocaleDateString()}</div>
+                    <div class="footer">${brandName ? `<p style="font-size:13px;font-weight:600;color:#333;margin-bottom:4px">Prepared by ${brandName}</p>` : ""}Generated by OpenBenefacts · openbenefacts.vercel.app · ${new Date().toLocaleDateString()}</div>
                   </body></html>`);
                   w.document.close();
                   setTimeout(() => w.print(), 300);
@@ -816,6 +829,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
               )}
               {(tier === "professional" || tier === "enterprise") && (
                 <button onClick={() => {
+                  if (!brandName) { setShowBranding("dd"); return; }
                   const risk = computeRiskScore(org);
                   const latest = org.financials?.[0];
                   const grantTotal = org.grants ? org.grants.reduce((s, g) => s + (g.amount || 0), 0) : 0;
@@ -840,8 +854,9 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                     @media print{body{padding:20px}.cover{padding:40px 0}}
                   </style></head><body>
                     <div class="cover">
+                      ${brandName ? `<div style="font-size:14px;font-weight:700;color:#059669;letter-spacing:1px;text-transform:uppercase;margin-bottom:24px">${brandName}</div>` : ""}
                       <div class="confidential">Confidential — Due Diligence Report</div>
-                      <h1>${org.name}</h1>
+                      <h1>${cleanName(org.name)}</h1>
                       <div class="sub">${[clean(org.county), clean(org.sector)].filter(Boolean).join(" · ")}</div>
                       ${clean(org.charity_number) ? `<div class="sub" style="margin-top:8px">RCN ${org.charity_number}${clean(org.cro_number) ? ` · CRO ${org.cro_number}` : ""}</div>` : ""}
                       <div class="badge">Generated ${new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" })}</div>
@@ -893,6 +908,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                     </div>
 
                     <div class="footer">
+                      ${brandName ? `<p style="font-size:13px;font-weight:600;color:#333;margin-bottom:4px">Prepared by ${brandName}</p>` : ""}
                       <p><strong>OpenBenefacts Due Diligence Report</strong></p>
                       <p>Generated on ${new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" })} · openbenefacts.vercel.app</p>
                       <p style="margin-top:8px">This report is generated from publicly available data and does not constitute financial or legal advice. Users should verify all information independently.</p>
@@ -1235,6 +1251,22 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
           )}
         </div>
       </div>
+
+      {/* White-label branding modal */}
+      {showBranding && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowBranding(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Brand your report</h3>
+            <p className="text-sm text-gray-500 mb-4">Your company name will appear on the cover and footer of the {showBranding === "dd" ? "due diligence report" : "PDF profile"}.</p>
+            <input type="text" placeholder="e.g. McCann FitzGerald LLP" value={brandName} onChange={e => saveBrand(e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none mb-4" autoFocus />
+            <div className="flex gap-3">
+              <button onClick={() => { setShowBranding(null); }} className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700">{brandName.trim() ? "Generate report" : "Skip branding"}</button>
+              <button onClick={() => setShowBranding(null)} className="px-4 py-2.5 text-gray-500 hover:text-gray-700">Cancel</button>
+            </div>
+            <p className="text-xs text-gray-400 mt-3">Saved locally. You can change this anytime.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1343,6 +1375,141 @@ function FundersPage({ setPage, setInitialSearch }) {
         ))}
       </div>
       {filtered.length === 0 && <EmptyState icon={Landmark} title="No funders match" sub="Try a different search" />}
+    </div>
+  );
+}
+
+// ===========================================================
+// API DOCUMENTATION PAGE
+// ===========================================================
+function ApiPage() {
+  const { tier, setShowAuth, setAuthMode } = useAuth();
+  const hasApi = tier === "professional" || tier === "enterprise";
+
+  const endpoints = [
+    { method: "GET", path: "/api/v1/organisations", desc: "List organisations with pagination, search, and filters", params: "page, pageSize, search, sector, county, governingForm, minIncome, maxIncome, sortBy, sortDir", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
+  "https://openbenefacts.vercel.app/api/v1/organisations?search=barnardos&sector=Social+Services"` },
+    { method: "GET", path: "/api/v1/organisations/:id", desc: "Get full organisation profile including financials, grants, and board members", params: "id (UUID)", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
+  "https://openbenefacts.vercel.app/api/v1/organisations/abc123"` },
+    { method: "GET", path: "/api/v1/funders", desc: "List all state funders with total funding and recipient counts", params: "search", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
+  "https://openbenefacts.vercel.app/api/v1/funders"` },
+    { method: "GET", path: "/api/v1/funders/:id/grants", desc: "List individual grants from a specific funder", params: "id, page, pageSize", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
+  "https://openbenefacts.vercel.app/api/v1/funders/xyz789/grants?pageSize=100"` },
+    { method: "GET", path: "/api/v1/search", desc: "Fast autocomplete search across organisation names and registration numbers", params: "q, limit", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
+  "https://openbenefacts.vercel.app/api/v1/search?q=focus+ireland&limit=5"` },
+    { method: "GET", path: "/api/v1/stats", desc: "Platform-wide statistics: total orgs, financials, funding relationships", params: "none", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
+  "https://openbenefacts.vercel.app/api/v1/stats"` },
+  ];
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">API Documentation</h1>
+          <p className="text-gray-500 mt-1">Programmatic access to Ireland's nonprofit data</p>
+        </div>
+        {hasApi ? (
+          <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-full">API Active</span>
+        ) : (
+          <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg font-medium hover:bg-emerald-700">Get API Access</button>
+        )}
+      </div>
+
+      {/* Overview */}
+      <div className="bg-gray-50 rounded-2xl p-6 mb-8">
+        <h2 className="font-bold text-gray-900 mb-3">Overview</h2>
+        <div className="space-y-2 text-sm text-gray-600">
+          <p>The OpenBenefacts REST API provides JSON access to our full database of Irish nonprofit organisations, their financial records, state funding, and governance data.</p>
+          <p>Base URL: <code className="px-2 py-0.5 bg-gray-200 rounded text-gray-800 text-xs">https://openbenefacts.vercel.app/api/v1</code></p>
+          <p>Authentication: Include your API key in the <code className="px-2 py-0.5 bg-gray-200 rounded text-gray-800 text-xs">Authorization: Bearer</code> header.</p>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-4 mt-4">
+          <div className="bg-white rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-gray-900">1,000</div>
+            <div className="text-xs text-gray-500">requests/month (Professional)</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-gray-900">Unlimited</div>
+            <div className="text-xs text-gray-500">requests (Enterprise)</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-gray-900">JSON</div>
+            <div className="text-xs text-gray-500">response format</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Rate limits */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8">
+        <h3 className="text-sm font-semibold text-amber-800 mb-1">Rate Limiting</h3>
+        <p className="text-sm text-amber-700">Professional: 1,000 requests/month, 10 requests/second burst. Enterprise: unlimited monthly, 50 requests/second burst. Rate limit headers are included in every response.</p>
+      </div>
+
+      {/* Endpoints */}
+      <h2 className="text-xl font-bold text-gray-900 mb-4">Endpoints</h2>
+      <div className="space-y-4">
+        {endpoints.map((ep, i) => (
+          <div key={i} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div className="p-4 border-b border-gray-50">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-mono font-bold rounded">{ep.method}</span>
+                <code className="text-sm font-mono text-gray-900">{ep.path}</code>
+              </div>
+              <p className="text-sm text-gray-500">{ep.desc}</p>
+              {ep.params !== "none" && <p className="text-xs text-gray-400 mt-1">Parameters: <span className="text-gray-600">{ep.params}</span></p>}
+            </div>
+            <div className="bg-gray-900 p-4">
+              <pre className="text-xs text-emerald-400 font-mono whitespace-pre-wrap overflow-x-auto">{ep.example}</pre>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Response format */}
+      <h2 className="text-xl font-bold text-gray-900 mt-10 mb-4">Response Format</h2>
+      <div className="bg-gray-900 rounded-xl p-4 mb-8">
+        <pre className="text-xs text-emerald-400 font-mono whitespace-pre-wrap">{`{
+  "orgs": [
+    {
+      "id": "abc-123",
+      "name": "Barnardos",
+      "sector": "Social Services",
+      "county": "Dublin",
+      "charity_number": "6015",
+      "gross_income": 42500000,
+      "gross_expenditure": 41800000,
+      "total_grant_amount": 28000000
+    }
+  ],
+  "total": 36803,
+  "page": 1,
+  "pageSize": 50
+}`}</pre>
+      </div>
+
+      {/* Integration examples */}
+      <h2 className="text-xl font-bold text-gray-900 mb-4">Integration Examples</h2>
+      <div className="grid sm:grid-cols-2 gap-4 mb-8">
+        {[
+          { name: "Salesforce NPSP", desc: "Enrich nonprofit records with real-time financial data and risk scores" },
+          { name: "Fluxx", desc: "Auto-populate grant applications with verified organisation details" },
+          { name: "Power BI / Tableau", desc: "Build dashboards from live OpenBenefacts data feeds" },
+          { name: "Custom CRM", desc: "Integrate nonprofit intelligence directly into your workflow" },
+        ].map((ex, i) => (
+          <div key={i} className="bg-gray-50 rounded-xl p-4">
+            <h3 className="font-semibold text-gray-900 text-sm">{ex.name}</h3>
+            <p className="text-xs text-gray-500 mt-1">{ex.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      {!hasApi && (
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-center text-white">
+          <h2 className="text-2xl font-bold mb-2">Ready to integrate?</h2>
+          <p className="text-emerald-100 mb-4">API access starts at Professional tier (€1,499/year). Enterprise plans include unlimited calls and a dedicated account manager.</p>
+          <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-6 py-3 bg-white text-emerald-700 rounded-xl font-semibold hover:bg-emerald-50">Start Free Trial</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1471,6 +1638,7 @@ function InnerApp() {
       case "orgs": return <OrgsPage setPage={handleSetPage} initialSearch={initialSearch} setInitialSearch={setInitialSearch} initialSector={initialSector} setInitialSector={setInitialSector} watchlist={wl} />;
       case "funders": return <FundersPage setPage={handleSetPage} setInitialSearch={setInitialSearch} />;
       case "pricing": return <PricingPage orgCount={orgCount} />;
+      case "api": return <ApiPage />;
       case "about": return <AboutPage orgCount={orgCount} />;
       default: return <HomePage setPage={handleSetPage} setInitialSearch={setInitialSearch} setInitialSector={setInitialSector} watchlist={wl} />;
     }
