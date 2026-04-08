@@ -806,7 +806,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
     { label: "Charity Number", value: clean(org.charity_number) },
     { label: "CRO Number", value: clean(org.cro_number) },
     { label: "Revenue CHY", value: clean(org.revenue_chy) },
-    { label: "Also Known As", value: clean(org.also_known_as) },
+    { label: "Also Known As", value: clean(org.also_known_as) ? cleanName(org.also_known_as) : null },
     { label: "Address", value: clean(org.address) },
     { label: "Eircode", value: clean(org.eircode) },
     { label: "Date Incorporated", value: org.date_incorporated },
@@ -872,6 +872,19 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                   const latest = org.financials?.[0];
                   const grantTotal = org.grants ? org.grants.reduce((s, g) => s + (g.amount || 0), 0) : 0;
                   const statePct = latest?.gross_income > 0 ? Math.round((grantTotal / latest.gross_income) * 100) : 0;
+                  // Pre-compute YoY table HTML to avoid nested template literals
+                  let yoyHtml = "";
+                  if (org.financials?.length > 1) {
+                    const rows = org.financials.map(function(f, idx) {
+                      const prev = org.financials[idx + 1];
+                      const incChg = prev?.gross_income > 0 && f.gross_income != null ? ((f.gross_income - prev.gross_income) / prev.gross_income * 100).toFixed(1) : null;
+                      const style = idx === 0 ? ' style="font-weight:600;background:#f0fdf4"' : '';
+                      const chgColor = incChg > 0 ? '#059669' : incChg < 0 ? '#dc2626' : '#666';
+                      const chgText = incChg !== null ? (incChg > 0 ? '+' : '') + incChg + '%' : '—';
+                      return '<tr' + style + '><td>' + (f.year||"—") + '</td><td style="text-align:right">' + fmt(f.gross_income) + '</td><td style="text-align:right">' + fmt(f.gross_expenditure) + '</td><td style="text-align:right">' + (f.total_assets > 0 ? fmt(f.total_assets) : "—") + '</td><td style="text-align:right;color:' + chgColor + '">' + chgText + '</td></tr>';
+                    });
+                    yoyHtml = '<h3 style="font-size:13px;font-weight:600;margin:16px 0 8px">Year-over-Year Financial History</h3><table><tr><th>Year</th><th style="text-align:right">Income</th><th style="text-align:right">Expenditure</th><th style="text-align:right">Assets</th><th style="text-align:right">Income \u0394</th></tr>' + rows.join("") + '</table>';
+                  }
                   const w = window.open("", "_blank");
                   w.document.write(`<!DOCTYPE html><html><head><title>Due Diligence Report — ${org.name}</title><style>
                     body{font-family:-apple-system,sans-serif;max-width:800px;margin:0 auto;padding:40px;color:#111;font-size:13px}
@@ -918,7 +931,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                       <div class="grid">
                         ${latest.gross_income!=null ? `<div class="card"><div class="label">Gross Income</div><div class="val">${fmt(latest.gross_income)}</div></div>` : ""}
                         ${latest.gross_expenditure!=null ? `<div class="card"><div class="label">Gross Expenditure</div><div class="val">${fmt(latest.gross_expenditure)}</div></div>` : ""}
-                        ${latest.total_assets!=null ? `<div class="card"><div class="label">Total Assets</div><div class="val">${fmt(latest.total_assets)}</div></div>` : ""}
+                        ${latest.total_assets > 0 ? `<div class="card"><div class="label">Total Assets</div><div class="val">${fmt(latest.total_assets)}</div></div>` : ""}
                         ${latest.employees>0 ? `<div class="card"><div class="label">Employees</div><div class="val">${latest.employees}</div></div>` : ""}
                       </div>
                       <div class="grid3">
@@ -926,7 +939,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                         <div class="card"><div class="label">Spending Ratio</div><div class="val">${latest.gross_income>0?((latest.gross_expenditure/latest.gross_income)*100).toFixed(0):"—"}%</div></div>
                         <div class="card"><div class="label">Filing Years</div><div class="val">${org.financials?.length || 0}</div></div>
                       </div>
-                      ${org.financials?.length > 1 ? `<table><tr><th>Year</th><th style="text-align:right">Income</th><th style="text-align:right">Expenditure</th><th style="text-align:right">Assets</th></tr>${org.financials.map(f=>`<tr><td>${f.year||"—"}</td><td style="text-align:right">${fmt(f.gross_income)}</td><td style="text-align:right">${fmt(f.gross_expenditure)}</td><td style="text-align:right">${fmt(f.total_assets)}</td></tr>`).join("")}</table>` : ""}
+                      ${yoyHtml}
                     </div>` : ""}
 
                     ${org.grants?.length > 0 ? `<h2>4. Government Funding History</h2>
