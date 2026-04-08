@@ -1,0 +1,19 @@
+# Data files (not needed for build)
+openbenefacts_data/
+scripts/
+supabase/
+
+# Documentation
+*.md
+*.docx
+*.txt
+
+# Cache
+.cache/
+
+# Local Vercel
+.vercel/
+
+# Environment
+.env
+.env.local
