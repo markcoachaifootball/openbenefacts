@@ -27,10 +27,15 @@ class ErrorBoundary extends Component {
 // ===========================================================
 // UTILITIES
 // ===========================================================
-const clean = (v) => (!v || v === "nan" || v === "NaN" || v === "null" || v === "None" || v === "undefined") ? null : v;
+const clean = (v) => {
+  if (v == null || v === "" || v === false) return null;
+  const s = typeof v === "string" ? v : String(v);
+  return (!s || s === "nan" || s === "NaN" || s === "null" || s === "None" || s === "undefined") ? null : s;
+};
 // Fix badly concatenated org names (e.g. "CHILD ANDFAMILY AGENCY" → "Child And Family Agency")
 const cleanName = (name) => {
   if (!name) return name;
+  if (typeof name !== "string") name = String(name);
   // Fix missing spaces before capitals in ALL-CAPS names (e.g. "CHILDANDFAMILY" → "CHILD AND FAMILY")
   let fixed = name.replace(/([a-z])([A-Z])/g, "$1 $2")  // camelCase breaks
     .replace(/([A-Z]{2,})([A-Z][a-z])/g, "$1 $2")       // "ANDFAMILY" → "AND FAMILY"
