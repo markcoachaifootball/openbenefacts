@@ -99,6 +99,29 @@ function normaliseName(name) {
 }
 
 // ============================================================
+// Normalize charity number for matching (strip prefixes, spaces, leading zeros)
+// ============================================================
+function normaliseCharityNum(num) {
+  if (!num) return '';
+  return String(num)
+    .replace(/^(RCN|CHY|CRA)\s*/i, '')  // strip common prefixes
+    .replace(/\s+/g, '')
+    .replace(/^0+/, '')  // strip leading zeros
+    .trim();
+}
+
+// Normalize org name for fuzzy matching
+function normaliseOrgName(name) {
+  if (!name) return '';
+  return name
+    .toUpperCase()
+    .replace(/\b(LIMITED|LTD|CLG|DAC|DESIGNATED ACTIVITY COMPANY|COMPANY LIMITED BY GUARANTEE|T\/A|TRADING AS|THE)\b/g, '')
+    .replace(/[^A-Z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// ============================================================
 // Load organisation lookup from Supabase
 // ============================================================
 async function getOrgLookup() {
@@ -119,13 +142,24 @@ async function getOrgLookup() {
   }
   console.log(`Loaded ${allOrgs.length} organisations`);
 
-  const byCharity = {};
-  const byName = {};
+  const byCharity = {};      // normalised charity number → id
+  const byCharityRaw = {};   // raw charity number → id
+  const byName = {};          // exact uppercase name → id
+  const byNameFuzzy = {};     // normalised name → id
+
   allOrgs.forEach(o => {
-    if (o.charity_number) byCharity[o.charity_number] = o.id;
-    byName[o.name.toUpperCase().trim()] = o.id;
+    if (o.charity_number) {
+      byCharityRaw[String(o.charity_number).trim()] = o.id;
+      byCharity[normaliseCharityNum(o.charity_number)] = o.id;
+    }
+    if (o.name) {
+      byName[o.name.toUpperCase().trim()] = o.id;
+      byNameFuzzy[normaliseOrgName(o.name)] = o.id;
+    }
   });
-  return { byCharity, byName, total: allOrgs.length };
+
+  console.log(`Lookup keys: ${Object.keys(byCharity).length} charity nums, ${Object.keys(byName).length} names, ${Object.keys(byNameFuzzy).length} fuzzy names`);
+  return { byCharity, byCharityRaw, byName, byNameFuzzy, total: allOrgs.length };
 }
 
 // ============================================================
@@ -176,9 +210,11 @@ async function main() {
     orgsWithTrustees++;
     totalTrusteeEntries += trustees.length;
 
-    // Match org
-    const orgId = orgLookup.byCharity[charityNum] ||
+    // Match org — try multiple strategies
+    const orgId = orgLookup.byCharityRaw[charityNum.trim()] ||
+                  orgLookup.byCharity[normaliseCharityNum(charityNum)] ||
                   orgLookup.byName[charityName.toUpperCase().trim()] ||
+                  orgLookup.byNameFuzzy[normaliseOrgName(charityName)] ||
                   null;
 
     for (const t of trustees) {
@@ -205,7 +241,19 @@ async function main() {
   console.log(`\nParsed ${orgsWithTrustees} orgs with trustees`);
   console.log(`Total trustee entries: ${totalTrusteeEntries}`);
   console.log(`Unique directors: ${allDirectors.size}`);
-  console.log(`Matched to existing orgs: ${allOrgDirectors.filter(d => d.orgId).length}`);
+
+  const matched = allOrgDirectors.filter(d => d.orgId);
+  const unmatched = allOrgDirectors.filter(d => !d.orgId);
+  const unmatchedOrgs = new Map();
+  unmatched.forEach(d => { if (!unmatchedOrgs.has(d.charityNum)) unmatchedOrgs.set(d.charityNum, d.charityName); });
+  console.log(`Matched to existing orgs: ${matched.length} links (${new Set(matched.map(d => d.orgId)).size} unique orgs)`);
+  console.log(`Unmatched: ${unmatchedOrgs.size} orgs (${unmatched.length} links)`);
+  console.log('\nSample unmatched orgs (first 20):');
+  let sample = 0;
+  for (const [num, name] of unmatchedOrgs) {
+    if (sample++ >= 20) break;
+    console.log(`  RCN=${num} | ${name}`);
+  }
 
   // Show cross-directorship stats
   const multiBoard = [...allDirectors.values()].filter(d => d.count > 1);
