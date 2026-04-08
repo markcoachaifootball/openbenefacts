@@ -5,6 +5,26 @@ import { supabase, fetchStats, fetchFunders, fetchOrganisations, fetchOrganisati
 import { DATA } from "./data.js";
 
 // ===========================================================
+// ERROR BOUNDARY
+// ===========================================================
+import React, { Component } from "react";
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, info) { console.error("React Error Boundary:", error, info); }
+  render() {
+    if (this.state.hasError) {
+      return React.createElement("div", { style: { padding: "40px", textAlign: "center", fontFamily: "-apple-system, sans-serif" } },
+        React.createElement("h2", { style: { color: "#dc2626" } }, "Something went wrong"),
+        React.createElement("p", { style: { color: "#666", margin: "12px 0" } }, String(this.state.error?.message || this.state.error)),
+        React.createElement("button", { onClick: () => { this.setState({ hasError: false }); window.location.hash = ""; window.location.reload(); }, style: { background: "#059669", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer" } }, "Go Home")
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ===========================================================
 // UTILITIES
 // ===========================================================
 const clean = (v) => (!v || v === "nan" || v === "NaN" || v === "null" || v === "None" || v === "undefined") ? null : v;
@@ -1992,8 +2012,10 @@ function InnerApp() {
 // ===========================================================
 export default function App() {
   return (
-    <AuthProvider>
-      <InnerApp />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <InnerApp />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
