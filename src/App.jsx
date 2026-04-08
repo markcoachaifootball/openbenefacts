@@ -33,6 +33,11 @@ const fmt = (n) => {
 const funderData = Array.isArray(DATA?.funders) ? DATA.funders : [];
 const siteStats = DATA?.stats || {};
 const COLORS = ["#059669","#0d9488","#0891b2","#2563eb","#7c3aed","#db2777","#ea580c","#ca8a04","#65a30d","#475569","#dc2626","#4f46e5","#0e7490","#b91c1c"];
+// Slug-based funder routing for shareable URLs (e.g. #follow/hse)
+const toSlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").replace(/-+/g, "-");
+const funderSlugs = funderData.map((f, i) => ({ slug: toSlug(f.name), index: i, name: f.name }));
+const findFunderBySlug = (slug) => funderSlugs.find(f => f.slug === slug || f.slug.startsWith(slug));
+const getFunderSlug = (index) => funderSlugs[index]?.slug || String(index);
 
 // ===========================================================
 // AI RISK SCORE — algorithmic financial health assessment
@@ -371,6 +376,39 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
             <div className="text-xs text-gray-400 mt-0.5">{s.sub}</div>
           </div>
         ))}
+      </div>
+
+      {/* The Story — DOGE for Ireland positioning */}
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 sm:p-8 mb-10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="relative z-10">
+          <div className="flex flex-col sm:flex-row gap-6 sm:gap-10 items-start">
+            <div className="flex-1">
+              <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-3">Why this exists</p>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-white mb-3 leading-tight">Ireland needed its own DOGE.<br/>It already had one. The government killed it.</h2>
+              <p className="text-gray-400 text-sm leading-relaxed mb-4">Benefacts tracked every euro flowing from the state to nonprofits — who got what, from whom, and whether the money was well spent. In 2022, government funding was pulled and Benefacts shut down. For four years, €14 billion per year flowed with no independent oversight.</p>
+              <p className="text-white text-sm font-medium">OpenBenefacts picks up where they left off — open, independent, and free to search.</p>
+            </div>
+            <div className="sm:w-64 flex-shrink-0 space-y-3">
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <div className="text-3xl font-extrabold text-emerald-400">€14B</div>
+                <div className="text-xs text-gray-400 mt-1">flows from government to nonprofits every year</div>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <div className="text-3xl font-extrabold text-red-400">4 years</div>
+                <div className="text-xs text-gray-400 mt-1">with no independent tracking after Benefacts closed</div>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <div className="text-3xl font-extrabold text-white">{orgCount.toLocaleString()}</div>
+                <div className="text-xs text-gray-400 mt-1">organisations now tracked on OpenBenefacts</div>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3 mt-6">
+            <button onClick={() => setPage("funders")} className="px-5 py-2.5 bg-emerald-500 text-white text-sm rounded-xl font-semibold hover:bg-emerald-400 transition-colors">Follow the money</button>
+            <button onClick={() => setPage("about")} className="px-5 py-2.5 bg-white/10 text-white text-sm rounded-xl font-semibold hover:bg-white/20 transition-colors border border-white/20">Read the full story</button>
+          </div>
+        </div>
       </div>
 
       {/* Charts */}
@@ -1347,7 +1385,7 @@ function FundersPage({ setPage, setInitialSearch }) {
                 <button onClick={() => handleFunderClick(f)} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
                   {selectedFunder?.name === f.name ? "Hide" : "View"} Recipients <ChevronDown className={`w-3 h-3 transition-transform ${selectedFunder?.name === f.name ? "rotate-180" : ""}`} />
                 </button>
-                <button onClick={() => setPage(`flow:${sorted.indexOf(f)}`)} className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1.5">
+                <button onClick={() => { const idx = funderData.indexOf(f); setPage(`follow/${getFunderSlug(idx >= 0 ? idx : sorted.indexOf(f))}`); }} className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1.5">
                   <Share2 className="w-3.5 h-3.5" /> Follow the Money
                 </button>
               </div>
@@ -1482,7 +1520,10 @@ function FundingFlowWidget({ funder, grants, compact = false, onOrgClick }) {
 // ===========================================================
 // FLOW PAGE — shareable "Follow the Money" page
 // ===========================================================
-function FlowPage({ funderIndex, setPage, embed = false }) {
+function FlowPage({ funderSlug, setPage, embed = false }) {
+  // Resolve slug to funder — supports both slug ("hse") and legacy index ("3")
+  const resolved = /^\d+$/.test(funderSlug) ? { index: parseInt(funderSlug) } : findFunderBySlug(funderSlug);
+  const funderIndex = resolved?.index ?? -1;
   const funder = funderData[funderIndex] || null;
   const [grants, setGrants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1506,7 +1547,8 @@ function FlowPage({ funderIndex, setPage, embed = false }) {
     load();
   }, [funderIndex]);
 
-  const shareUrl = `${window.location.origin}#flow:${funderIndex}`;
+  const slug = getFunderSlug(funderIndex);
+  const shareUrl = `${window.location.origin}#follow/${slug}`;
   const embedCode = `<iframe src="${shareUrl}&embed=true" width="100%" height="500" frameborder="0" style="border:1px solid #e5e7eb;border-radius:12px"></iframe>`;
 
   const copyToClip = (text, type) => {
@@ -1885,7 +1927,7 @@ function InnerApp() {
   useEffect(() => { fetchStats().then(setGlobalStats).catch(() => {}); }, []);
   const orgCount = globalStats?.total_orgs || siteStats.totalOrgs || 36803;
 
-  const handleSetPage = (p) => { setPage(p); window.scrollTo(0, 0); if (p.startsWith("flow:")) window.location.hash = p; };
+  const handleSetPage = (p) => { setPage(p); window.scrollTo(0, 0); if (p.startsWith("follow/") || p.startsWith("flow:")) window.location.hash = p; };
 
   // Listen for hash changes (browser back/forward)
   useEffect(() => {
@@ -1896,7 +1938,8 @@ function InnerApp() {
 
   const renderPage = () => {
     if (page.startsWith("org:")) return <OrgProfilePage orgId={page.split(":")[1]} setPage={handleSetPage} watchlist={wl} />;
-    if (page.startsWith("flow:")) return <FlowPage funderIndex={parseInt(page.split(":")[1])} setPage={handleSetPage} embed={isEmbed} />;
+    if (page.startsWith("follow/")) return <FlowPage funderSlug={page.split("follow/")[1]} setPage={handleSetPage} embed={isEmbed} />;
+    if (page.startsWith("flow:")) return <FlowPage funderSlug={page.split(":")[1]} setPage={handleSetPage} embed={isEmbed} />;
     switch (page) {
       case "orgs": return <OrgsPage setPage={handleSetPage} initialSearch={initialSearch} setInitialSearch={setInitialSearch} initialSector={initialSector} setInitialSector={setInitialSector} watchlist={wl} />;
       case "funders": return <FundersPage setPage={handleSetPage} setInitialSearch={setInitialSearch} />;
