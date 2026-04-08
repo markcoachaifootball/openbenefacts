@@ -223,7 +223,6 @@ async function main() {
       address: address || null,
       also_known_as: aka || null,
       status: status.toLowerCase() === 'registered' ? 'active' : (status || 'active'),
-      source: 'charities_register',
     });
   }
 
