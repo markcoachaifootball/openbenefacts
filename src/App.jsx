@@ -8,6 +8,21 @@ import { DATA } from "./data.js";
 // UTILITIES
 // ===========================================================
 const clean = (v) => (!v || v === "nan" || v === "NaN" || v === "null" || v === "None" || v === "undefined") ? null : v;
+// Fix badly concatenated org names (e.g. "CHILD ANDFAMILY AGENCY" → "Child And Family Agency")
+const cleanName = (name) => {
+  if (!name) return name;
+  // Fix missing spaces before capitals in ALL-CAPS names (e.g. "CHILDANDFAMILY" → "CHILD AND FAMILY")
+  let fixed = name.replace(/([a-z])([A-Z])/g, "$1 $2")  // camelCase breaks
+    .replace(/([A-Z]{2,})([A-Z][a-z])/g, "$1 $2")       // "ANDFAMILY" → "AND FAMILY"
+    .replace(/\s+/g, " ").trim();
+  // Title-case if the name is ALL CAPS (more readable)
+  if (fixed === fixed.toUpperCase() && fixed.length > 3) {
+    fixed = fixed.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+      .replace(/\b(Of|The|And|For|In|On|To|By|At|An|A)\b/g, m => m.toLowerCase())
+      .replace(/^./, c => c.toUpperCase()); // ensure first char is uppercase
+  }
+  return fixed;
+};
 const fmt = (n) => {
   if (!n && n !== 0) return "—";
   if (n >= 1e9) return `€${(n/1e9).toFixed(1)}B`;
@@ -372,7 +387,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Largest Organizations</h3>
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={siteStats.topRecipients.slice(0, 6).map(r => ({ name: r.name.replace(/\s+/g, " ").trim().substring(0, 22), income: r.totalIncome }))} layout="vertical" margin={{ left: 5, right: 20 }}>
+              <BarChart data={siteStats.topRecipients.slice(0, 6).map(r => ({ name: cleanName(r.name).substring(0, 24), income: r.totalIncome }))} layout="vertical" margin={{ left: 5, right: 20 }}>
                 <XAxis type="number" tickFormatter={v => v >= 1e9 ? `€${(v/1e9).toFixed(0)}B` : v >= 1e6 ? `€${(v/1e6).toFixed(0)}M` : `€${v}`} fontSize={10} />
                 <YAxis type="category" dataKey="name" width={120} fontSize={10} />
                 <Tooltip formatter={v => fmt(v)} />
@@ -388,7 +403,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="text-xs font-medium text-emerald-600 mb-1">Featured Organization</div>
-            <h3 className="text-lg font-bold text-gray-900">{featured.name}</h3>
+            <h3 className="text-lg font-bold text-gray-900">{cleanName(featured.name)}</h3>
             <p className="text-sm text-gray-500">{featured.rcn ? `RCN ${featured.rcn}` : ""}</p>
           </div>
           <div className="flex items-center gap-6">
@@ -410,7 +425,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
             {watchlist.watchlist.slice(0, 6).map(w => (
               <div key={w.id} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow flex items-center justify-between">
                 <button onClick={() => setPage(`org:${w.id}`)} className="text-left flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 text-sm truncate">{w.name}</h3>
+                  <h3 className="font-semibold text-gray-900 text-sm truncate">{cleanName(w.name)}</h3>
                   <div className="text-xs text-gray-400 mt-0.5">Added {new Date(w.added).toLocaleDateString()}</div>
                 </button>
                 <button onClick={() => watchlist.toggle(w.id, w.name)} className="p-1 ml-2 text-gray-300 hover:text-red-500"><X className="w-4 h-4" /></button>
@@ -530,6 +545,7 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
         search: search.trim(),
         sector,
         county,
+        governingForm: govForm,
         minIncome: range?.min,
         maxIncome: range?.max,
         sortBy: sortMap[sortBy] || "gross_income",
@@ -609,7 +625,7 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
             <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
               {suggestions.map(s => (
                 <button key={s.id} onClick={() => { setPage(`org:${s.id}`); setSuggestions([]); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 border-b border-gray-50 last:border-0">
-                  <div className="font-medium text-sm text-gray-900">{s.name}</div>
+                  <div className="font-medium text-sm text-gray-900">{cleanName(s.name)}</div>
                   <div className="text-xs text-gray-400">{[s.sector, s.county].filter(Boolean).join(" · ")}</div>
                 </button>
               ))}
@@ -669,7 +685,7 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
             {orgs.map((org, i) => (
               <div key={org.id || i} className="w-full bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md hover:border-emerald-100 transition-all flex items-center justify-between">
                 <button onClick={() => setPage(`org:${org.id}`)} className="flex-1 min-w-0 text-left">
-                  <h3 className="font-semibold text-gray-900 truncate">{org.name}</h3>
+                  <h3 className="font-semibold text-gray-900 truncate">{cleanName(org.name)}</h3>
                   <p className="text-sm text-gray-500 mt-0.5">{[clean(org.sector), clean(org.county), clean(org.governing_form)].filter(Boolean).join(" · ") || "Registered nonprofit"}</p>
                 </button>
                 <div className="text-right flex-shrink-0 ml-4 flex items-center gap-4">
@@ -754,7 +770,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-6">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white">{org.name}</h1>
+              <h1 className="text-2xl font-bold text-white">{cleanName(org.name)}</h1>
               <p className="text-emerald-100 mt-1">{[clean(org.county), clean(org.sector)].filter(Boolean).join(" · ")}</p>
               <div className="flex flex-wrap gap-3 mt-3">
                 {clean(org.charity_number) && <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded">RCN {org.charity_number}</span>}
@@ -1011,7 +1027,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                                   {otherBoards.map((ob, j) => (
                                     <button key={j} onClick={() => setPage(`org:${ob.org_id}`)} className="w-full text-left flex items-center justify-between p-2 rounded bg-gray-50 hover:bg-emerald-50 transition-colors">
                                       <div>
-                                        <div className="text-sm text-gray-900">{ob.organisations?.name || "Unknown"}</div>
+                                        <div className="text-sm text-gray-900">{cleanName(ob.organisations?.name) || "Unknown"}</div>
                                         <div className="text-xs text-gray-400">{ob.role || "Trustee"}{ob.organisations?.sector ? ` · ${ob.organisations.sector}` : ""}</div>
                                       </div>
                                       <ChevronRight className="w-3 h-3 text-gray-300" />
@@ -1310,7 +1326,7 @@ function FundersPage({ setPage, setInitialSearch }) {
                       {funderGrants.map((g, j) => (
                         <button key={j} onClick={() => g.organisations?.id ? setPage(`org:${g.organisations.id}`) : g.org_id ? setPage(`org:${g.org_id}`) : null} className="w-full text-left flex items-center justify-between p-3 bg-white rounded-lg hover:shadow-sm transition-shadow">
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 truncate">{g.organisations?.name || g.recipient_name_raw || "Unknown"}</div>
+                            <div className="text-sm font-medium text-gray-900 truncate">{cleanName(g.organisations?.name || g.recipient_name_raw) || "Unknown"}</div>
                             <div className="text-xs text-gray-400">{[g.programme, g.year, g.organisations?.county].filter(Boolean).join(" · ")}</div>
                           </div>
                           {g.amount > 0 && <div className="text-sm font-semibold text-emerald-600 ml-3">{fmt(g.amount)}</div>}

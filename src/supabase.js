@@ -44,6 +44,7 @@ export async function fetchOrganisations({
   sector = '',
   county = '',
   funderName = '',
+  governingForm = '',
   minIncome = null,
   maxIncome = null,
   sortBy = 'gross_income',
@@ -64,6 +65,7 @@ export async function fetchOrganisations({
   // Filters
   if (sector) query = query.eq('sector', sector);
   if (county) query = query.eq('county', county);
+  if (governingForm) query = query.eq('governing_form', governingForm);
   if (minIncome != null) query = query.gte('gross_income', minIncome);
   if (maxIncome != null) query = query.lte('gross_income', maxIncome);
 
