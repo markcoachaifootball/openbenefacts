@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Search, Building2, Users, TrendingUp, DollarSign, ChevronRight, ArrowLeft, Eye, Star, Shield, Menu, X, MapPin, Hash, Landmark, GraduationCap, Heart, Briefcase, Globe, Filter, ChevronDown, ExternalLink, Info, BarChart3, FileText, Award, Zap, Database, ArrowRight, Layers, Check, CreditCard, LogIn, UserPlus, Crown, Sparkles, LogOut, AlertTriangle, Lock, ArrowUpDown, Bookmark } from "lucide-react";
+import { Search, Building2, Users, TrendingUp, DollarSign, ChevronRight, ArrowLeft, Eye, Star, Shield, Menu, X, MapPin, Hash, Landmark, GraduationCap, Heart, Briefcase, Globe, Filter, ChevronDown, ExternalLink, Info, BarChart3, FileText, Award, Zap, Database, ArrowRight, Layers, Check, CreditCard, LogIn, UserPlus, Crown, Sparkles, LogOut, AlertTriangle, Lock, ArrowUpDown, Bookmark, Share2, Copy, Code } from "lucide-react";
 import { supabase, fetchStats, fetchFunders, fetchOrganisations, fetchOrganisation, searchOrganisations, fetchSectorCounts, fetchCountyCounts, fetchDirectorBoards, fetchFunderGrants, fetchFunderGrantsByName, fetchSectorBenchmark } from "./supabase.js";
 import { DATA } from "./data.js";
 
@@ -1343,9 +1343,14 @@ function FundersPage({ setPage, setInitialSearch }) {
                   </div>
                 </div>
               </div>
-              <button onClick={() => handleFunderClick(f)} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
-                {selectedFunder?.name === f.name ? "Hide" : "View"} Recipients <ChevronDown className={`w-3 h-3 transition-transform ${selectedFunder?.name === f.name ? "rotate-180" : ""}`} />
-              </button>
+              <div className="flex items-center gap-4">
+                <button onClick={() => handleFunderClick(f)} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
+                  {selectedFunder?.name === f.name ? "Hide" : "View"} Recipients <ChevronDown className={`w-3 h-3 transition-transform ${selectedFunder?.name === f.name ? "rotate-180" : ""}`} />
+                </button>
+                <button onClick={() => setPage(`flow:${sorted.indexOf(f)}`)} className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1.5">
+                  <Share2 className="w-3.5 h-3.5" /> Follow the Money
+                </button>
+              </div>
             </div>
 
             {/* Drill-down: grant recipients */}
@@ -1375,6 +1380,248 @@ function FundersPage({ setPage, setInitialSearch }) {
         ))}
       </div>
       {filtered.length === 0 && <EmptyState icon={Landmark} title="No funders match" sub="Try a different search" />}
+    </div>
+  );
+}
+
+// ===========================================================
+// FOLLOW THE MONEY — Funding Flow Widget (embeddable)
+// ===========================================================
+const FLOW_COLORS = ["#059669","#0d9488","#0891b2","#2563eb","#7c3aed","#db2777","#ea580c","#ca8a04","#65a30d","#dc2626"];
+
+function FundingFlowWidget({ funder, grants, compact = false, onOrgClick }) {
+  if (!funder || !grants || grants.length === 0) return null;
+
+  // Aggregate grants by recipient org, take top 10
+  const byOrg = {};
+  grants.forEach(g => {
+    const name = cleanName(g.organisations?.name || g.recipient_name_raw) || "Unknown";
+    const id = g.organisations?.id || g.org_id || name;
+    if (!byOrg[id]) byOrg[id] = { id, name, total: 0, county: g.organisations?.county || "", sector: g.organisations?.sector || "" };
+    byOrg[id].total += (g.amount || 0);
+  });
+  const top10 = Object.values(byOrg).sort((a, b) => b.total - a.total).slice(0, 10);
+  const maxAmount = top10[0]?.total || 1;
+  const totalFlowing = top10.reduce((s, r) => s + r.total, 0);
+
+  const svgW = compact ? 560 : 720;
+  const svgH = compact ? 320 : 420;
+  const leftX = 20;
+  const rightX = svgW - 200;
+  const funderBoxW = 180;
+  const funderBoxH = Math.min(svgH - 40, top10.length * 36);
+  const funderBoxY = (svgH - funderBoxH) / 2;
+  const recipH = Math.max(24, (svgH - 60) / top10.length - 4);
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full" style={{ maxWidth: svgW, minWidth: compact ? 400 : 560 }}>
+        <defs>
+          {top10.map((_, i) => (
+            <linearGradient key={i} id={`flow-grad-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#059669" stopOpacity="0.6" />
+              <stop offset="100%" stopColor={FLOW_COLORS[i % FLOW_COLORS.length]} stopOpacity="0.4" />
+            </linearGradient>
+          ))}
+        </defs>
+
+        {/* Funder box (left) */}
+        <rect x={leftX} y={funderBoxY} width={funderBoxW} height={funderBoxH} rx="12" fill="#059669" />
+        <text x={leftX + funderBoxW / 2} y={funderBoxY + funderBoxH / 2 - 12} textAnchor="middle" fill="white" fontSize={compact ? 10 : 12} fontWeight="700">
+          {funder.name.length > 22 ? funder.name.substring(0, 20) + "..." : funder.name}
+        </text>
+        <text x={leftX + funderBoxW / 2} y={funderBoxY + funderBoxH / 2 + 6} textAnchor="middle" fill="#a7f3d0" fontSize={compact ? 9 : 11} fontWeight="600">
+          {fmt(totalFlowing)}
+        </text>
+        <text x={leftX + funderBoxW / 2} y={funderBoxY + funderBoxH / 2 + 22} textAnchor="middle" fill="#6ee7b7" fontSize={compact ? 8 : 9}>
+          to top {top10.length} recipients
+        </text>
+
+        {/* Recipient boxes + flow paths */}
+        {top10.map((r, i) => {
+          const y = 20 + i * ((svgH - 40) / top10.length);
+          const barW = Math.max(40, (r.total / maxAmount) * 140);
+          const funderOutY = funderBoxY + (funderBoxH / (top10.length + 1)) * (i + 1);
+          const recipMidY = y + recipH / 2;
+
+          // Curved path from funder to recipient
+          const pathThickness = Math.max(2, (r.total / maxAmount) * 14);
+          const cx1 = leftX + funderBoxW + (rightX - leftX - funderBoxW) * 0.4;
+          const cx2 = leftX + funderBoxW + (rightX - leftX - funderBoxW) * 0.6;
+          const path = `M ${leftX + funderBoxW} ${funderOutY} C ${cx1} ${funderOutY}, ${cx2} ${recipMidY}, ${rightX} ${recipMidY}`;
+
+          return (
+            <g key={r.id}>
+              {/* Flow path */}
+              <path d={path} fill="none" stroke={`url(#flow-grad-${i})`} strokeWidth={pathThickness} opacity="0.7" />
+
+              {/* Recipient bar + label */}
+              <g
+                style={{ cursor: onOrgClick ? "pointer" : "default" }}
+                onClick={() => onOrgClick && r.id !== r.name && onOrgClick(r.id)}
+              >
+                <rect x={rightX} y={y} width={barW} height={recipH} rx="4" fill={FLOW_COLORS[i % FLOW_COLORS.length]} opacity="0.85" />
+                <text x={rightX + barW + 6} y={y + recipH / 2 - 3} fill="#111" fontSize={compact ? 9 : 10} fontWeight="600" dominantBaseline="middle">
+                  {r.name.length > 24 ? r.name.substring(0, 22) + "..." : r.name}
+                </text>
+                <text x={rightX + barW + 6} y={y + recipH / 2 + 10} fill="#888" fontSize={compact ? 7 : 8} dominantBaseline="middle">
+                  {fmt(r.total)}{r.county ? ` · ${r.county}` : ""}
+                </text>
+              </g>
+            </g>
+          );
+        })}
+
+        {/* Watermark */}
+        <text x={svgW - 6} y={svgH - 6} textAnchor="end" fill="#ccc" fontSize="8" fontWeight="500">openbenefacts.vercel.app</text>
+      </svg>
+    </div>
+  );
+}
+
+// ===========================================================
+// FLOW PAGE — shareable "Follow the Money" page
+// ===========================================================
+function FlowPage({ funderIndex, setPage, embed = false }) {
+  const funder = funderData[funderIndex] || null;
+  const [grants, setGrants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(null); // "link" | "embed" | null
+
+  useEffect(() => {
+    if (!funder) { setLoading(false); return; }
+    setLoading(true);
+    const load = async () => {
+      try {
+        let result;
+        if (funder.id) {
+          result = await fetchFunderGrants(funder.id, { pageSize: 200 });
+        } else {
+          result = await fetchFunderGrantsByName(funder.name, { pageSize: 200 });
+        }
+        setGrants(result?.grants || []);
+      } catch (e) { console.error(e); }
+      setLoading(false);
+    };
+    load();
+  }, [funderIndex]);
+
+  const shareUrl = `${window.location.origin}#flow:${funderIndex}`;
+  const embedCode = `<iframe src="${shareUrl}&embed=true" width="100%" height="500" frameborder="0" style="border:1px solid #e5e7eb;border-radius:12px"></iframe>`;
+
+  const copyToClip = (text, type) => {
+    navigator.clipboard.writeText(text).then(() => { setCopied(type); setTimeout(() => setCopied(null), 2000); });
+  };
+
+  if (!funder) return <EmptyState icon={Landmark} title="Funder not found" sub="Select a funder from the directory" />;
+
+  // Embed mode: minimal chrome
+  if (embed) {
+    return (
+      <div className="p-4 bg-white min-h-screen">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center"><Eye className="w-3 h-3 text-white" /></div>
+          <span className="font-bold text-sm text-gray-900">Follow the Money</span>
+          <span className="text-xs text-gray-400">· openbenefacts.vercel.app</span>
+        </div>
+        <h2 className="text-lg font-bold text-gray-900 mb-1">{funder.name}</h2>
+        <p className="text-xs text-gray-500 mb-4">{fmt(funder.total)} distributed to {(funder.recipients || 0).toLocaleString()} organisations</p>
+        {loading ? <Spinner /> : <FundingFlowWidget funder={funder} grants={grants} compact />}
+        <p className="text-[10px] text-gray-400 mt-3 text-center">Data: Charities Regulator, CRO, Government Estimates · <a href={shareUrl} target="_blank" rel="noopener" className="text-emerald-600 hover:underline">View full analysis</a></p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <button onClick={() => setPage("funders")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6"><ArrowLeft className="w-4 h-4" /> Back to funders</button>
+
+      {/* Header */}
+      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 rounded-2xl p-6 sm:p-8 mb-8 text-white">
+        <p className="text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">Follow the Money</p>
+        <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">{funder.name}</h1>
+        <p className="text-gray-300 text-sm">Distributing <span className="text-emerald-400 font-bold">{fmt(funder.total)}</span> to <span className="font-bold">{(funder.recipients || 0).toLocaleString()}</span> organisations across <span className="font-bold">{(funder.programmes?.length || 0)}</span> programmes</p>
+      </div>
+
+      {/* Share / Embed bar */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <button onClick={() => copyToClip(shareUrl, "link")} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+          {copied === "link" ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4" />}
+          {copied === "link" ? "Link copied!" : "Share link"}
+        </button>
+        <button onClick={() => copyToClip(embedCode, "embed")} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+          {copied === "embed" ? <Check className="w-4 h-4 text-emerald-500" /> : <Code className="w-4 h-4" />}
+          {copied === "embed" ? "Embed code copied!" : "Copy embed code"}
+        </button>
+      </div>
+
+      {/* Visualization */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-8">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Funding Flow — Top 10 Recipients</h2>
+        {loading ? <Spinner /> : grants.length > 0 ? (
+          <FundingFlowWidget funder={funder} grants={grants} onOrgClick={(id) => setPage(`org:${id}`)} />
+        ) : (
+          <EmptyState icon={Database} title="Grant data loading" sub="Individual grant records for this funder are being collected" />
+        )}
+      </div>
+
+      {/* Embed preview */}
+      <div className="bg-gray-50 rounded-2xl border border-gray-100 p-6 mb-8">
+        <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><Code className="w-4 h-4" /> Embed this widget</h3>
+        <p className="text-xs text-gray-500 mb-3">Copy the code below to embed this funding flow in any website or article.</p>
+        <div className="bg-gray-900 rounded-xl p-4 relative">
+          <pre className="text-xs text-emerald-400 font-mono whitespace-pre-wrap break-all">{embedCode}</pre>
+          <button onClick={() => copyToClip(embedCode, "embed")} className="absolute top-3 right-3 p-1.5 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
+            {copied === "embed" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Full recipient table */}
+      {grants.length > 0 && (() => {
+        const byOrg = {};
+        grants.forEach(g => {
+          const name = cleanName(g.organisations?.name || g.recipient_name_raw) || "Unknown";
+          const id = g.organisations?.id || g.org_id || name;
+          if (!byOrg[id]) byOrg[id] = { id, name, total: 0, count: 0, county: g.organisations?.county || "", sector: g.organisations?.sector || "" };
+          byOrg[id].total += (g.amount || 0);
+          byOrg[id].count++;
+        });
+        const allRecipients = Object.values(byOrg).sort((a, b) => b.total - a.total);
+
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">All Recipients ({allRecipients.length})</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="text-xs text-gray-400 border-b border-gray-200">
+                  <th className="text-left py-2 pr-3">#</th><th className="text-left py-2 pr-3">Organisation</th><th className="text-left py-2 pr-3">Sector</th><th className="text-left py-2 pr-3">County</th><th className="text-right py-2 pr-3">Grants</th><th className="text-right py-2">Total</th>
+                </tr></thead>
+                <tbody>
+                  {allRecipients.slice(0, 50).map((r, i) => (
+                    <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => r.id !== r.name && setPage(`org:${r.id}`)}>
+                      <td className="py-2 pr-3 text-gray-400 text-xs">{i + 1}</td>
+                      <td className="py-2 pr-3 font-medium text-gray-900">{r.name}</td>
+                      <td className="py-2 pr-3 text-gray-500 text-xs">{r.sector || "—"}</td>
+                      <td className="py-2 pr-3 text-gray-500 text-xs">{r.county || "—"}</td>
+                      <td className="py-2 pr-3 text-right text-gray-600">{r.count}</td>
+                      <td className="py-2 text-right font-semibold text-emerald-600">{fmt(r.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {allRecipients.length > 50 && <p className="text-xs text-gray-400 text-center mt-3">{allRecipients.length - 50} more recipients not shown</p>}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* CTA */}
+      <div className="mt-8 bg-emerald-50 rounded-2xl p-6 text-center">
+        <p className="text-sm text-emerald-800 font-medium mb-2">Want deeper analysis on these organisations?</p>
+        <p className="text-xs text-emerald-600 mb-4">Get AI risk scores, full financial histories, and due diligence reports with a Pro account.</p>
+        <button onClick={() => setPage("pricing")} className="px-5 py-2.5 bg-emerald-600 text-white text-sm rounded-xl font-semibold hover:bg-emerald-700">View plans</button>
+      </div>
     </div>
   );
 }
@@ -1621,7 +1868,15 @@ function AboutPage({ orgCount = 36803 }) {
 // INNER APP (state-based routing)
 // ===========================================================
 function InnerApp() {
-  const [page, setPage] = useState("home");
+  // Hash-based routing for shareable links (e.g. #flow:3)
+  const getInitialPage = () => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash) return hash.split("&")[0]; // strip &embed=true
+    return "home";
+  };
+  const isEmbed = window.location.hash.includes("embed=true") || new URLSearchParams(window.location.search).get("embed") === "true";
+
+  const [page, setPage] = useState(getInitialPage);
   const [initialSearch, setInitialSearch] = useState("");
   const [initialSector, setInitialSector] = useState("");
   const { showPricing, setShowPricing } = useAuth();
@@ -1630,10 +1885,18 @@ function InnerApp() {
   useEffect(() => { fetchStats().then(setGlobalStats).catch(() => {}); }, []);
   const orgCount = globalStats?.total_orgs || siteStats.totalOrgs || 36803;
 
-  const handleSetPage = (p) => { setPage(p); window.scrollTo(0, 0); };
+  const handleSetPage = (p) => { setPage(p); window.scrollTo(0, 0); if (p.startsWith("flow:")) window.location.hash = p; };
+
+  // Listen for hash changes (browser back/forward)
+  useEffect(() => {
+    const onHash = () => { const h = window.location.hash.replace("#", "").split("&")[0]; if (h) setPage(h); };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   const renderPage = () => {
     if (page.startsWith("org:")) return <OrgProfilePage orgId={page.split(":")[1]} setPage={handleSetPage} watchlist={wl} />;
+    if (page.startsWith("flow:")) return <FlowPage funderIndex={parseInt(page.split(":")[1])} setPage={handleSetPage} embed={isEmbed} />;
     switch (page) {
       case "orgs": return <OrgsPage setPage={handleSetPage} initialSearch={initialSearch} setInitialSearch={setInitialSearch} initialSector={initialSector} setInitialSector={setInitialSector} watchlist={wl} />;
       case "funders": return <FundersPage setPage={handleSetPage} setInitialSearch={setInitialSearch} />;
@@ -1643,6 +1906,9 @@ function InnerApp() {
       default: return <HomePage setPage={handleSetPage} setInitialSearch={setInitialSearch} setInitialSector={setInitialSector} watchlist={wl} />;
     }
   };
+
+  // Embed mode: no navbar/footer chrome
+  if (isEmbed) return <div className="min-h-screen bg-white">{renderPage()}</div>;
 
   return (
     <div className="min-h-screen bg-gray-50">
