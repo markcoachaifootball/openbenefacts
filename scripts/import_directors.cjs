@@ -21,28 +21,55 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ============================================================
 // CSV Parser (handles quoted fields with commas)
 // ============================================================
-function parseCSVLine(line) {
-  const fields = [];
+// Full CSV parser that handles multiline quoted fields
+function parseCSV(text) {
+  const rows = [];
   let current = '';
+  let fields = [];
   let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          // Escaped quote
+          current += '"';
+          i++;
+        } else {
+          // End of quoted field
+          inQuotes = false;
+        }
       } else {
-        inQuotes = !inQuotes;
+        current += ch;
       }
-    } else if (ch === ',' && !inQuotes) {
-      fields.push(current.trim());
-      current = '';
     } else {
-      current += ch;
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ',') {
+        fields.push(current.trim());
+        current = '';
+      } else if (ch === '\n' || ch === '\r') {
+        // Skip \r in \r\n
+        if (ch === '\r' && text[i + 1] === '\n') i++;
+        fields.push(current.trim());
+        if (fields.length > 1 || fields[0] !== '') {
+          rows.push(fields);
+        }
+        fields = [];
+        current = '';
+      } else {
+        current += ch;
+      }
     }
   }
+  // Last row
   fields.push(current.trim());
-  return fields;
+  if (fields.length > 1 || fields[0] !== '') {
+    rows.push(fields);
+  }
+  return rows;
 }
 
 // ============================================================
@@ -177,17 +204,20 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('\nParsing charities register CSV...');
+  console.log('\nParsing charities register CSV (multiline-safe)...');
   const csvContent = fs.readFileSync(csvPath, 'utf-8');
-  const lines = csvContent.split('\n');
-  const headers = parseCSVLine(lines[0]);
+  const allRows = parseCSV(csvContent);
+  console.log(`Parsed ${allRows.length} rows (including header)`);
+
+  const headers = allRows[0];
 
   // Find column indices
-  const charityNumIdx = headers.indexOf('Registered Charity Number');
-  const charityNameIdx = headers.indexOf('Registered Charity Name');
-  const trusteesIdx = headers.indexOf('Trustees (Start Date)');
+  const charityNumIdx = headers.findIndex(h => h.toLowerCase().includes('registered charity number'));
+  const charityNameIdx = headers.findIndex(h => h.toLowerCase().includes('registered charity name'));
+  const trusteesIdx = headers.findIndex(h => h.toLowerCase().includes('trustees'));
 
   console.log(`Columns found: charity_number=${charityNumIdx}, name=${charityNameIdx}, trustees=${trusteesIdx}`);
+  console.log(`Header columns (${headers.length}): ${headers.join(' | ')}`);
 
   // Parse all trustees
   const allDirectors = new Map(); // normalised name -> { name, appearances }
@@ -195,14 +225,22 @@ async function main() {
 
   let orgsWithTrustees = 0;
   let totalTrusteeEntries = 0;
+  let materFound = false;
 
-  for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    const fields = parseCSVLine(lines[i]);
+  for (let i = 1; i < allRows.length; i++) {
+    const fields = allRows[i];
+    if (fields.length < 3) continue;
 
     const charityNum = fields[charityNumIdx] || '';
     const charityName = fields[charityNameIdx] || '';
     const trusteesStr = fields[trusteesIdx] || '';
+
+    // Debug: track Mater specifically
+    if (charityNum.trim() === '20000349' || charityName.toLowerCase().includes('mater misericordiae university hospital')) {
+      materFound = true;
+      console.log(`\n*** MATER FOUND at row ${i}: RCN="${charityNum}" Name="${charityName}"`);
+      console.log(`    Trustees field (${trusteesStr.length} chars): "${trusteesStr.substring(0, 200)}"`);
+    }
 
     const trustees = parseTrustees(trusteesStr);
     if (trustees.length === 0) continue;
@@ -238,6 +276,7 @@ async function main() {
     }
   }
 
+  if (!materFound) console.log('\n*** WARNING: Mater Misericordiae University Hospital NOT FOUND in CSV! ***');
   console.log(`\nParsed ${orgsWithTrustees} orgs with trustees`);
   console.log(`Total trustee entries: ${totalTrusteeEntries}`);
   console.log(`Unique directors: ${allDirectors.size}`);
