@@ -1174,17 +1174,8 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                   <p className="text-gray-500">No financial records filed yet for this organization.</p>
                 </div>
               )}
-              {/* PRO: Multi-year trends + income breakdown */}
-              <div className="relative">
-                {!isPro && (
-                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-10">
-                    <Lock className="w-8 h-8 text-gray-400 mb-2" />
-                    <p className="font-semibold text-gray-700">Multi-year trends & income breakdown</p>
-                    <p className="text-sm text-gray-500 mb-3">Available on Pro and above</p>
-                    <button onClick={() => requirePro("Financial Trends")} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700">Upgrade to Pro — €29/mo</button>
-                  </div>
-                )}
-                <div className="space-y-6">
+              {/* FREE: Multi-year trends + year-by-year table */}
+              <div className="space-y-6">
                   {/* Multi-year trend chart */}
                   {org.financials && org.financials.length > 1 && (() => {
                     const trendData = [...org.financials].reverse().map(f => ({
@@ -1212,6 +1203,44 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                       </div>
                     );
                   })()}
+
+                  {/* Year-by-year table — FREE for everyone */}
+                  {org.financials && org.financials.length > 1 && (
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Year-by-Year Comparison</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead><tr className="text-xs text-gray-400 border-b border-gray-200">
+                            <th className="text-left py-2 pr-3">Year</th><th className="text-right py-2 px-3">Income</th><th className="text-right py-2 px-3">Expenditure</th><th className="text-right py-2 px-3">Assets</th><th className="text-right py-2 pl-3">Employees</th>
+                          </tr></thead>
+                          <tbody>
+                            {org.financials.map((f, i) => (
+                              <tr key={i} className={`border-b border-gray-100 ${i === 0 ? "font-semibold" : ""}`}>
+                                <td className="py-2 pr-3 text-gray-700">{f.year || "—"}</td>
+                                <td className="py-2 px-3 text-right text-gray-900">{f.gross_income != null ? fmt(f.gross_income) : "—"}</td>
+                                <td className="py-2 px-3 text-right text-gray-900">{f.gross_expenditure != null ? fmt(f.gross_expenditure) : "—"}</td>
+                                <td className="py-2 px-3 text-right text-gray-900">{f.total_assets != null ? fmt(f.total_assets) : "—"}</td>
+                                <td className="py-2 pl-3 text-right text-gray-900">{f.employees > 0 ? f.employees.toLocaleString() : "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {/* PRO: Income breakdown + sector benchmarking */}
+              <div className="relative mt-6">
+                {!isPro && (
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-10">
+                    <Lock className="w-8 h-8 text-gray-400 mb-2" />
+                    <p className="font-semibold text-gray-700">Income analysis & sector benchmarking</p>
+                    <p className="text-sm text-gray-500 mb-3">Available on Pro and above</p>
+                    <button onClick={() => requirePro("Income Analysis")} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700">Upgrade to Pro — €29/mo</button>
+                  </div>
+                )}
+                <div className="space-y-6">
 
                   {/* Income source breakdown */}
                   {org.financials && org.financials[0] && (() => {
@@ -1293,30 +1322,6 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                     </div>
                   )}
 
-                  {/* Year-by-year table */}
-                  {org.financials && org.financials.length > 1 && (
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Year-by-Year Comparison</h4>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead><tr className="text-xs text-gray-400 border-b border-gray-200">
-                            <th className="text-left py-2 pr-3">Year</th><th className="text-right py-2 px-3">Income</th><th className="text-right py-2 px-3">Expenditure</th><th className="text-right py-2 px-3">Assets</th><th className="text-right py-2 pl-3">Employees</th>
-                          </tr></thead>
-                          <tbody>
-                            {org.financials.map((f, i) => (
-                              <tr key={i} className={`border-b border-gray-100 ${i === 0 ? "font-semibold" : ""}`}>
-                                <td className="py-2 pr-3 text-gray-700">{f.year || "—"}</td>
-                                <td className="py-2 px-3 text-right text-gray-900">{f.gross_income != null ? fmt(f.gross_income) : "—"}</td>
-                                <td className="py-2 px-3 text-right text-gray-900">{f.gross_expenditure != null ? fmt(f.gross_expenditure) : "—"}</td>
-                                <td className="py-2 px-3 text-right text-gray-900">{f.total_assets != null ? fmt(f.total_assets) : "—"}</td>
-                                <td className="py-2 pl-3 text-right text-gray-900">{f.employees > 0 ? f.employees.toLocaleString() : "—"}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -1857,9 +1862,9 @@ function PricingPage({ orgCount = 36803 }) {
   const formattedCount = orgCount.toLocaleString();
 
   const plans = [
-    { name: "Free", price: 0, desc: "Public data access", features: [`Browse ${formattedCount} organizations`,"View sector & county data","Basic search & filters","State funder directory","Public data access"], cta: "Get Started" },
-    { name: "Pro", price: annual ? 299 : 29, period: annual ? "/year" : "/month", desc: "Financial intelligence", features: ["Everything in Free","Full financial records","Multi-year trend charts","Income source breakdown","PDF profile downloads","AI risk scores","Watchlist & alerts"], highlight: true, cta: "Start Free Trial", badge: annual ? "Save 15%" : null },
-    { name: "Professional", price: annual ? 1499 : 149, period: annual ? "/year" : "/month", desc: "Due diligence & research", features: ["Everything in Pro","Automated due diligence reports","Sector benchmarking","Board member data","Bulk CSV/Excel export","API access (1,000 calls/mo)","Priority support"], cta: "Start Free Trial" },
+    { name: "Free", price: 0, desc: "Genuinely useful transparency", features: [`Browse ${formattedCount} organizations`,"5-year financial trend charts","Year-by-year comparison tables","Board member & cross-directorships","State funding received","AI risk score (summary)","Full search & filters"], cta: "Get Started" },
+    { name: "Pro", price: annual ? 299 : 29, period: annual ? "/year" : "/month", desc: "Financial intelligence", features: ["Everything in Free","Income source breakdown","Sector benchmarking","Full AI risk assessment","PDF profile downloads","Watchlist & alerts"], highlight: true, cta: "Start Free Trial", badge: annual ? "Save 15%" : null },
+    { name: "Professional", price: annual ? 1499 : 149, period: annual ? "/year" : "/month", desc: "Due diligence & research", features: ["Everything in Pro","Automated due diligence reports","White-label reports","Bulk CSV/Excel export","API access (1,000 calls/mo)","Priority support"], cta: "Start Free Trial" },
     { name: "Enterprise", price: null, desc: "Custom solutions", features: ["Everything in Professional","Unlimited API access","Custom dashboards","White-label reports","Dedicated account manager","Custom data integration","SLA guarantee"], cta: "Contact Sales" },
   ];
 
