@@ -813,7 +813,13 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
 
   // Reliable report opener: Blob URL avoids document.write() issues and popup-blocker edge cases
   const openReportWindow = (html) => {
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    // Inject a floating "Save as PDF" button + auto-hide on print (hidden in @media print)
+    const printBar = `<div id="print-bar" style="position:fixed;top:0;left:0;right:0;background:#059669;color:white;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;z-index:9999;font-family:-apple-system,sans-serif;font-size:14px">
+      <span style="font-weight:600">OpenBenefacts Report</span>
+      <button onclick="document.getElementById('print-bar').style.display='none';window.print();setTimeout(()=>document.getElementById('print-bar').style.display='flex',500)" style="background:white;color:#059669;border:none;padding:8px 20px;border-radius:6px;font-weight:600;cursor:pointer;font-size:14px">Save as PDF</button>
+    </div><div style="height:50px"></div>`;
+    const styledHtml = html.replace('<body>', '<body>' + printBar).replace('</style>', '@media print{#print-bar{display:none!important}body{padding-top:0!important}}</style>');
+    const blob = new Blob([styledHtml], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const w = window.open(url, "_blank");
     if (!w) {
