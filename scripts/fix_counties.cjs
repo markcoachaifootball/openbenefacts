@@ -82,6 +82,67 @@ const TYPO_MAP = {
   'MAOY': 'Mayo',
   'LAIOS': 'Laois',
   'LAOUIS': 'Laois',
+  // From actual DB output
+  'LOUTHN': 'Louth',
+  'DUBLING': 'Dublin',
+  'DUBLI 15': 'Dublin',
+  'LERRY': 'Kerry',
+  'LOUHT': 'Louth',
+  'DORK': 'Cork',
+};
+
+// Dublin postcode variants (DUBLIN 1 through DUBLIN 24)
+for (let i = 1; i <= 24; i++) {
+  TYPO_MAP['DUBLIN ' + i] = 'Dublin';
+  TYPO_MAP['DUBLIN' + i] = 'Dublin';
+}
+
+// Towns → their county
+const TOWN_TO_COUNTY = {
+  'KILLARNEY': 'Kerry',
+  'ENNISCORTHY': 'Wexford',
+  'LETTERKENNY': 'Donegal',
+  'TRALEE': 'Kerry',
+  'ENNIS': 'Clare',
+  'ATHLONE': 'Westmeath',
+  'NAVAN': 'Meath',
+  'DROGHEDA': 'Louth',
+  'DUNDALK': 'Louth',
+  'NAAS': 'Kildare',
+  'MULLINGAR': 'Westmeath',
+  'TULLAMORE': 'Offaly',
+  'PORTLAOISE': 'Laois',
+  'CARRICK-ON-SHANNON': 'Leitrim',
+  'CASTLEBAR': 'Mayo',
+  'ROSCOMMON TOWN': 'Roscommon',
+  'CLONMEL': 'Tipperary',
+  'THURLES': 'Tipperary',
+  'WEXFORD TOWN': 'Wexford',
+  'ARKLOW': 'Wicklow',
+  'BRAY': 'Wicklow',
+  'GREYSTONES': 'Wicklow',
+  'SWORDS': 'Dublin',
+  'TALLAGHT': 'Dublin',
+  'BLACKROCK': 'Dublin',
+  'DUN LAOGHAIRE': 'Dublin',
+  'MAYNOOTH': 'Kildare',
+  'NEWBRIDGE': 'Kildare',
+  'CELBRIDGE': 'Kildare',
+  'COBH': 'Cork',
+  'MALLOW': 'Cork',
+  'MIDLETON': 'Cork',
+  'BANDON': 'Cork',
+};
+
+// Northern Ireland counties (keep as valid — some NI orgs operate cross-border)
+const NI_COUNTIES = {
+  'ANTRIM': 'Antrim',
+  'ARMAGH': 'Armagh',
+  'DERRY': 'Derry',
+  'LONDONDERRY': 'Derry',
+  'DOWN': 'Down',
+  'FERMANAGH': 'Fermanagh',
+  'TYRONE': 'Tyrone',
 };
 
 /**
@@ -110,7 +171,15 @@ function normaliseCounty(raw) {
   if (canonicalMap[stripped]) return canonicalMap[stripped];
   if (TYPO_MAP[stripped]) return TYPO_MAP[stripped];
 
-  // 4. Fuzzy match using Levenshtein distance (max distance 2)
+  // 4. Town → county lookup
+  if (TOWN_TO_COUNTY[upper]) return TOWN_TO_COUNTY[upper];
+  if (TOWN_TO_COUNTY[stripped]) return TOWN_TO_COUNTY[stripped];
+
+  // 5. Northern Ireland counties (normalise but keep)
+  if (NI_COUNTIES[upper]) return NI_COUNTIES[upper];
+  if (NI_COUNTIES[stripped]) return NI_COUNTIES[stripped];
+
+  // 6. Fuzzy match using Levenshtein distance (max distance 2)
   let bestMatch = null;
   let bestDist = 3; // threshold
   for (const valid of VALID_COUNTIES) {
@@ -122,11 +191,16 @@ function normaliseCounty(raw) {
   }
   if (bestMatch) return bestMatch;
 
-  // 5. Substring containment
+  // 7. Substring containment (catches "DUBLIN 9" → Dublin)
   for (const valid of VALID_COUNTIES) {
-    if (upper.includes(valid.toUpperCase()) || valid.toUpperCase().includes(upper)) {
+    if (upper.startsWith(valid.toUpperCase())) {
       return valid;
     }
+  }
+
+  // 8. Looks like an Eircode (letter-number pattern) — not a county
+  if (/^[A-Z]\d{2}\s?[A-Z0-9]{4}$/.test(upper) || /^[A-Z]\d{2}[A-Z]/.test(upper)) {
+    return null;
   }
 
   return null; // Cannot match
