@@ -2623,20 +2623,39 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
 function ApiPage() {
   const { tier, setShowAuth, setAuthMode } = useAuth();
   const hasApi = tier === "professional" || tier === "enterprise";
+  const [tryItQuery, setTryItQuery] = useState("barnardos");
+  const [tryItResult, setTryItResult] = useState(null);
+  const [tryItLoading, setTryItLoading] = useState(false);
+
+  const runTryIt = async () => {
+    setTryItLoading(true);
+    try {
+      const resp = await fetch(`/api/v1/search?q=${encodeURIComponent(tryItQuery)}&limit=3`);
+      const data = await resp.json();
+      setTryItResult(JSON.stringify(data, null, 2));
+    } catch (e) { setTryItResult(`Error: ${e.message}`); }
+    setTryItLoading(false);
+  };
 
   const endpoints = [
-    { method: "GET", path: "/api/v1/organisations", desc: "List organisations with pagination, search, and filters", params: "page, pageSize, search, sector, county, governingForm, minIncome, maxIncome, sortBy, sortDir", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://openbenefacts.vercel.app/api/v1/organisations?search=barnardos&sector=Social+Services"` },
-    { method: "GET", path: "/api/v1/organisations/:id", desc: "Get full organisation profile including financials, grants, and board members", params: "id (UUID)", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://openbenefacts.vercel.app/api/v1/organisations/abc123"` },
-    { method: "GET", path: "/api/v1/funders", desc: "List all state funders with total funding and recipient counts", params: "search", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://openbenefacts.vercel.app/api/v1/funders"` },
-    { method: "GET", path: "/api/v1/funders/:id/grants", desc: "List individual grants from a specific funder", params: "id, page, pageSize", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://openbenefacts.vercel.app/api/v1/funders/xyz789/grants?pageSize=100"` },
-    { method: "GET", path: "/api/v1/search", desc: "Fast autocomplete search across organisation names and registration numbers", params: "q, limit", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://openbenefacts.vercel.app/api/v1/search?q=focus+ireland&limit=5"` },
-    { method: "GET", path: "/api/v1/stats", desc: "Platform-wide statistics: total orgs, financials, funding relationships", params: "none", example: `curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://openbenefacts.vercel.app/api/v1/stats"` },
+    { method: "GET", path: "/api/v1/organisations", desc: "List organisations with pagination, search, and filters", params: "page, pageSize, search, sector, county, governingForm, minIncome, maxIncome, sortBy, sortDir", example: `# Free tier — no API key needed
+curl "https://openbenefacts.vercel.app/api/v1/organisations?search=barnardos&pageSize=5"
+
+# Authenticated — higher limits
+curl -H "Authorization: Bearer YOUR_API_KEY" \\
+  "https://openbenefacts.vercel.app/api/v1/organisations?sector=Social+Services&pageSize=50"` },
+    { method: "GET", path: "/api/v1/organisations/:id", desc: "Get full organisation profile including financials, grants, and board members", params: "id (UUID)", example: `curl "https://openbenefacts.vercel.app/api/v1/organisations/abc123"` },
+    { method: "GET", path: "/api/v1/funders", desc: "List all state funders with total funding and recipient counts", params: "search", example: `curl "https://openbenefacts.vercel.app/api/v1/funders"` },
+    { method: "GET", path: "/api/v1/funders/:id/grants", desc: "List individual grants from a specific funder", params: "id, page, pageSize", example: `curl "https://openbenefacts.vercel.app/api/v1/funders/xyz789/grants?pageSize=100"` },
+    { method: "GET", path: "/api/v1/search", desc: "Fast autocomplete search across organisation names and registration numbers", params: "q, limit", example: `curl "https://openbenefacts.vercel.app/api/v1/search?q=focus+ireland&limit=5"` },
+    { method: "GET", path: "/api/v1/stats", desc: "Platform-wide statistics: total orgs, financials, funding relationships", params: "none", example: `curl "https://openbenefacts.vercel.app/api/v1/stats"` },
+  ];
+
+  const tiers = [
+    { name: "Free Developer", price: "Free", rateLimit: "5 req/min", pageSize: "25 max", auth: "No key needed", color: "gray" },
+    { name: "Pro", price: "€29/mo", rateLimit: "20 req/min", pageSize: "50 max", auth: "API key", color: "blue" },
+    { name: "Professional", price: "€149/mo", rateLimit: "50 req/min", pageSize: "100 max", auth: "API key", color: "emerald" },
+    { name: "Enterprise", price: "Custom", rateLimit: "200 req/min", pageSize: "100 max", auth: "API key", color: "purple" },
   ];
 
   return (
@@ -2647,40 +2666,70 @@ function ApiPage() {
           <p className="text-gray-500 mt-1">Programmatic access to Ireland's nonprofit data</p>
         </div>
         {hasApi ? (
-          <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-full">API Active</span>
+          <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-full">API Active — {tier}</span>
         ) : (
-          <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg font-medium hover:bg-emerald-700">Get API Access</button>
+          <span className="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">Free Tier Active</span>
         )}
       </div>
 
-      {/* Overview */}
+      {/* Quick start */}
+      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 rounded-2xl p-6 sm:p-8 mb-8 text-white">
+        <p className="text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">Quick Start</p>
+        <h2 className="text-xl font-bold mb-3">Start querying in 30 seconds — no API key required</h2>
+        <div className="bg-black/30 rounded-xl p-4 font-mono text-sm mb-4">
+          <span className="text-gray-400">$</span> <span className="text-emerald-400">curl</span> <span className="text-yellow-300">"https://openbenefacts.vercel.app/api/v1/search?q=barnardos"</span>
+        </div>
+        <p className="text-gray-300 text-sm">The free developer tier gives you 5 requests/minute with no authentication. Add an API key to unlock higher limits.</p>
+      </div>
+
+      {/* Try it live */}
       <div className="bg-gray-50 rounded-2xl p-6 mb-8">
-        <h2 className="font-bold text-gray-900 mb-3">Overview</h2>
-        <div className="space-y-2 text-sm text-gray-600">
-          <p>The OpenBenefacts REST API provides JSON access to our full database of Irish nonprofit organisations, their financial records, state funding, and governance data.</p>
-          <p>Base URL: <code className="px-2 py-0.5 bg-gray-200 rounded text-gray-800 text-xs">https://openbenefacts.vercel.app/api/v1</code></p>
-          <p>Authentication: Include your API key in the <code className="px-2 py-0.5 bg-gray-200 rounded text-gray-800 text-xs">Authorization: Bearer</code> header.</p>
+        <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2"><Zap className="w-5 h-5 text-emerald-600" /> Try It Live</h2>
+        <div className="flex gap-2 mb-3">
+          <input type="text" value={tryItQuery} onChange={e => setTryItQuery(e.target.value)} placeholder="Search organisations..." className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none" onKeyDown={e => e.key === "Enter" && runTryIt()} />
+          <button onClick={runTryIt} disabled={tryItLoading} className="px-5 py-2.5 bg-emerald-600 text-white text-sm rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50">{tryItLoading ? "..." : "Search"}</button>
         </div>
-        <div className="grid sm:grid-cols-3 gap-4 mt-4">
-          <div className="bg-white rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">1,000</div>
-            <div className="text-xs text-gray-500">requests/month (Professional)</div>
+        {tryItResult && (
+          <div className="bg-gray-900 rounded-xl p-4 max-h-64 overflow-auto">
+            <pre className="text-xs text-emerald-400 font-mono whitespace-pre-wrap">{tryItResult}</pre>
           </div>
-          <div className="bg-white rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">Unlimited</div>
-            <div className="text-xs text-gray-500">requests (Enterprise)</div>
+        )}
+      </div>
+
+      {/* API Tiers */}
+      <h2 className="text-xl font-bold text-gray-900 mb-4">API Tiers</h2>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {tiers.map((t, i) => (
+          <div key={i} className={`bg-white rounded-xl border-2 p-4 ${t.color === "emerald" ? "border-emerald-300" : "border-gray-100"}`}>
+            <h3 className="font-bold text-gray-900 text-sm">{t.name}</h3>
+            <div className="text-lg font-bold text-gray-900 mt-1">{t.price}</div>
+            <div className="mt-3 space-y-1.5 text-xs text-gray-500">
+              <div className="flex items-center gap-2"><Zap className="w-3 h-3" /> {t.rateLimit}</div>
+              <div className="flex items-center gap-2"><Database className="w-3 h-3" /> {t.pageSize}</div>
+              <div className="flex items-center gap-2"><Shield className="w-3 h-3" /> {t.auth}</div>
+            </div>
           </div>
-          <div className="bg-white rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">JSON</div>
-            <div className="text-xs text-gray-500">response format</div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Rate limits */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8">
-        <h3 className="text-sm font-semibold text-amber-800 mb-1">Rate Limiting</h3>
-        <p className="text-sm text-amber-700">Professional: 1,000 requests/month, 10 requests/second burst. Enterprise: unlimited monthly, 50 requests/second burst. Rate limit headers are included in every response.</p>
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8">
+        <h3 className="text-sm font-semibold text-blue-800 mb-1">Rate Limiting & Headers</h3>
+        <p className="text-sm text-blue-700 mb-2">Every response includes rate limit headers: <code className="bg-blue-100 px-1 rounded text-xs">X-RateLimit-Limit</code>, <code className="bg-blue-100 px-1 rounded text-xs">X-RateLimit-Remaining</code>, <code className="bg-blue-100 px-1 rounded text-xs">X-RateLimit-Tier</code>.</p>
+        <p className="text-sm text-blue-700">Free tier uses IP-based rate limiting. Authenticated tiers use key-based rate limiting with higher allowances.</p>
+      </div>
+
+      {/* Authentication */}
+      <h2 className="text-xl font-bold text-gray-900 mb-4">Authentication</h2>
+      <div className="bg-gray-50 rounded-2xl p-6 mb-8">
+        <div className="space-y-3 text-sm text-gray-600">
+          <p>The free developer tier requires no authentication — just make requests to the API endpoints directly.</p>
+          <p>For higher rate limits, include your API key in the Authorization header:</p>
+          <div className="bg-gray-900 rounded-xl p-4">
+            <pre className="text-xs text-emerald-400 font-mono">Authorization: Bearer ob_prof_your_api_key_here</pre>
+          </div>
+          <p className="text-xs text-gray-400">Key prefixes: <code>ob_free_</code> (free), <code>ob_pro_</code> (pro), <code>ob_prof_</code> (professional), <code>ob_ent_</code> (enterprise)</p>
+        </div>
       </div>
 
       {/* Endpoints */}
@@ -2725,14 +2774,39 @@ function ApiPage() {
 }`}</pre>
       </div>
 
+      {/* Data sources */}
+      <h2 className="text-xl font-bold text-gray-900 mb-4">Data Sources</h2>
+      <div className="bg-gray-50 rounded-2xl p-6 mb-8">
+        <div className="grid sm:grid-cols-2 gap-3">
+          {[
+            { name: "Charities Regulator", desc: "Register + annual financial returns", freq: "Monthly" },
+            { name: "Revenue Commissioners", desc: "CHY numbers + tax-exempt status", freq: "Monthly" },
+            { name: "Companies Registration Office", desc: "CRO numbers + directors", freq: "Quarterly" },
+            { name: "HSE Section 38/39", desc: "Health service funding allocations", freq: "Annual" },
+            { name: "Arts Council", desc: "Arts & culture funding grants", freq: "Annual" },
+            { name: "Sport Ireland", desc: "Sports funding grants", freq: "Annual" },
+            { name: "Dept. of Education", desc: "School register + enrolments", freq: "Monthly" },
+            { name: "National Lottery", desc: "Good Causes grant allocations", freq: "Monthly" },
+          ].map((src, i) => (
+            <div key={i} className="flex items-center justify-between p-3 bg-white rounded-lg">
+              <div>
+                <div className="text-sm font-medium text-gray-900">{src.name}</div>
+                <div className="text-xs text-gray-400">{src.desc}</div>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-medium">{src.freq}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Integration examples */}
       <h2 className="text-xl font-bold text-gray-900 mb-4">Integration Examples</h2>
       <div className="grid sm:grid-cols-2 gap-4 mb-8">
         {[
           { name: "Salesforce NPSP", desc: "Enrich nonprofit records with real-time financial data and risk scores" },
-          { name: "Fluxx", desc: "Auto-populate grant applications with verified organisation details" },
+          { name: "Fluxx / SmartSimple", desc: "Auto-populate grant applications with verified organisation details" },
           { name: "Power BI / Tableau", desc: "Build dashboards from live OpenBenefacts data feeds" },
-          { name: "Custom CRM", desc: "Integrate nonprofit intelligence directly into your workflow" },
+          { name: "Python / R / Node.js", desc: "Research-grade datasets for academic and policy analysis" },
         ].map((ex, i) => (
           <div key={i} className="bg-gray-50 rounded-xl p-4">
             <h3 className="font-semibold text-gray-900 text-sm">{ex.name}</h3>
@@ -2741,13 +2815,12 @@ function ApiPage() {
         ))}
       </div>
 
-      {!hasApi && (
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-center text-white">
-          <h2 className="text-2xl font-bold mb-2">Ready to integrate?</h2>
-          <p className="text-emerald-100 mb-4">API access starts at Professional tier (€1,499/year). Enterprise plans include unlimited calls and a dedicated account manager.</p>
-          <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-6 py-3 bg-white text-emerald-700 rounded-xl font-semibold hover:bg-emerald-50">Start Free Trial</button>
-        </div>
-      )}
+      {/* CTA */}
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-center text-white">
+        <h2 className="text-2xl font-bold mb-2">{hasApi ? "You have full API access" : "Start building today"}</h2>
+        <p className="text-emerald-100 mb-4">{hasApi ? "Your Professional plan includes 50 requests/minute and 100 results per page." : "The free developer tier is available immediately — no signup required. Upgrade for higher limits."}</p>
+        {!hasApi && <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-6 py-3 bg-white text-emerald-700 rounded-xl font-semibold hover:bg-emerald-50">Start 30-Day Professional Trial</button>}
+      </div>
     </div>
   );
 }

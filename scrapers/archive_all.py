@@ -64,6 +64,8 @@ def main():
     scrapers = [
         ("Charities Regulator (Register + Annual Returns)", SCRAPERS_DIR / "archive_charities_regulator.py"),
         ("Revenue Commissioners (CHY Register)", SCRAPERS_DIR / "archive_revenue_chy.py"),
+        ("Department of Education (School Registers)", SCRAPERS_DIR / "archive_dept_education.py"),
+        ("National Lottery (Good Causes Grants)", SCRAPERS_DIR / "archive_national_lottery.py"),
     ]
 
     results = {}

@@ -7,6 +7,8 @@
 | Charities Regulator — Register | CSV | Monthly | `archive_charities_regulator.py` |
 | Charities Regulator — Annual Returns | CSV (~60MB) | Monthly | `archive_charities_regulator.py` |
 | Revenue Commissioners — CHY Register | CSV | Monthly | `archive_revenue_chy.py` |
+| Department of Education — Schools | CSV/JSON | Monthly | `archive_dept_education.py` |
+| National Lottery — Good Causes Grants | CSV/JSON | Monthly | `archive_national_lottery.py` |
 
 ## Currently Active (From openbenefacts-scrapers repo)
 
@@ -32,8 +34,6 @@
 |--------|-----|--------|----------|-------|
 | Oireachtas — Accounts Laid | https://www.oireachtas.ie/en/publications/docs-laid/ | PDFs | MEDIUM | ~2,000 docs/year. Charter body financials. No API. |
 | SIPO — Corporate Donors | https://www.sipo.ie/reports-and-publications/register-of-corporate-donors/ | PDFs | LOW | Political donation register. Individual PDFs. |
-| National Lottery — Good Causes | https://www.lottery.ie/good-causes | HTML | LOW | Grant data on web pages, no bulk export. |
-| Dept. of Education — Schools | https://www.gov.ie/en/service/43ddb5-post-primary-online-database-p-pod/ | Restricted | LOW | P-POD system, authenticated access only. |
 
 ## The Longitudinal Moat
 
