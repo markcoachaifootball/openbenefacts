@@ -1152,21 +1152,104 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                       <table><tr><th>Name</th><th>Role</th><th>Since</th></tr>${org.boardMembers.map(bm=>`<tr><td>${bm.directors?.name||"—"}</td><td>${bm.role||"Trustee"}</td><td>${bm.start_date?.slice(0,4)||"—"}</td></tr>`).join("")}</table>
                     </div>` : ""}
 
-                    <h2>${org.grants?.length > 0 ? (org.boardMembers?.length > 0 ? "6" : "5") : (org.boardMembers?.length > 0 ? "5" : "4")}. Organisation Details</h2>
-                    <div class="section">
-                      <table>${fields.map(f=>`<tr><td style="color:#999;width:160px">${f.label}</td><td>${f.value}${f.sub?" — "+f.sub:""}</td></tr>`).join("")}</table>
-                    </div>
+                    ${(() => {
+                      // Grant Readiness Assessment — automated checks for foundations
+                      let secNum = 4;
+                      if (org.grants?.length > 0) secNum++;
+                      if (org.boardMembers?.length > 0) secNum++;
+                      const grSecNum = secNum;
+                      secNum++;
+                      const detSecNum = secNum;
+                      secNum++;
+                      const srcSecNum = secNum;
 
-                    ${(clean(org.charity_number) || clean(org.cro_number)) ? `<h2>${org.grants?.length > 0 ? (org.boardMembers?.length > 0 ? "7" : "6") : (org.boardMembers?.length > 0 ? "6" : "5")}. Source Documents</h2>
-                    <div class="section">
-                      <p>The following primary regulatory sources can be used to verify the data in this report:</p>
-                      <table>
-                        ${clean(org.charity_number) ? `<tr><td style="color:#999;width:180px">Charities Regulator</td><td><a href="https://www.charitiesregulator.ie/en/information-for-the-public/search-the-register-of-charities/charity-detail?regid=${org.charity_number}" style="color:#059669">Annual reports, governance code &amp; financial filings — RCN ${org.charity_number}</a></td></tr>` : ""}
-                        ${clean(org.cro_number) ? `<tr><td style="color:#999;width:180px">Companies Registration Office</td><td><a href="https://core.cro.ie/search?q=${org.cro_number}&type=companies" style="color:#059669">Constitution, annual returns &amp; directors — CRO ${org.cro_number}</a></td></tr>` : ""}
-                        ${clean(org.revenue_chy) ? `<tr><td style="color:#999;width:180px">Revenue Commissioners</td><td><a href="https://www.revenue.ie/en/corporate/information-about-revenue/statistics/other-datasets/charities/resident-charities.aspx" style="color:#059669">Tax-exempt charity status register — CHY ${org.revenue_chy}</a></td></tr>` : ""}
-                        <tr><td style="color:#999;width:180px">Open Data Portal</td><td><a href="https://data.gov.ie/dataset/register-of-charities-in-ireland" style="color:#059669">Bulk data download — data.gov.ie</a></td></tr>
-                      </table>
-                    </div>` : ""}
+                      const checks = [];
+                      const pass = (label) => checks.push({ label, status: "pass" });
+                      const warn = (label) => checks.push({ label, status: "warn" });
+                      const fail = (label) => checks.push({ label, status: "fail" });
+
+                      // 1. Filing history
+                      const filingYears = org.financials?.length || 0;
+                      if (filingYears >= 3) pass("Filing history: " + filingYears + " years of annual returns on record");
+                      else if (filingYears >= 1) warn("Filing history: Only " + filingYears + " year(s) of returns — limited track record");
+                      else fail("Filing history: No annual returns on file");
+
+                      // 2. Governance
+                      const boardSize = org.boardMembers?.length || 0;
+                      if (boardSize >= 5) pass("Board governance: " + boardSize + " board members — meets Charities Governance Code minimum");
+                      else if (boardSize >= 3) warn("Board governance: " + boardSize + " board members — below recommended minimum of 5");
+                      else if (boardSize > 0) fail("Board governance: Only " + boardSize + " board member(s) — governance risk");
+                      else warn("Board governance: No board data available");
+
+                      // 3. Financial health — spending ratio
+                      if (latest && latest.gross_income > 0 && latest.gross_expenditure > 0) {
+                        const ratio = latest.gross_expenditure / latest.gross_income;
+                        if (ratio <= 1.0 && ratio >= 0.6) pass("Spending ratio: " + (ratio * 100).toFixed(0) + "% — balanced budget");
+                        else if (ratio > 1.0 && ratio <= 1.15) warn("Spending ratio: " + (ratio * 100).toFixed(0) + "% — slight deficit");
+                        else if (ratio > 1.15) fail("Spending ratio: " + (ratio * 100).toFixed(0) + "% — significant deficit");
+                        else warn("Spending ratio: " + (ratio * 100).toFixed(0) + "% — unusually low");
+                      } else { warn("Spending ratio: Insufficient data"); }
+
+                      // 4. Reserve levels
+                      if (latest && latest.total_assets > 0 && latest.gross_expenditure > 0) {
+                        const coverage = latest.total_assets / latest.gross_expenditure;
+                        if (coverage >= 0.25) pass("Reserves: " + coverage.toFixed(1) + "x annual expenditure — adequate reserve coverage");
+                        else warn("Reserves: " + coverage.toFixed(1) + "x annual expenditure — low reserve coverage");
+                      } else { warn("Reserves: No asset data available"); }
+
+                      // 5. Income diversification (state dependency)
+                      if (statePct <= 50) pass("Income diversification: " + statePct + "% state-funded — diversified income base");
+                      else if (statePct <= 80) warn("Income diversification: " + statePct + "% state-funded — moderate dependency");
+                      else if (statePct > 80) fail("Income diversification: " + statePct + "% state-funded — high dependency risk");
+
+                      // 6. Income stability
+                      if (org.financials?.length >= 3) {
+                        const incomes = org.financials.map(f => f.gross_income).filter(v => v > 0);
+                        if (incomes.length >= 3) {
+                          const changes = incomes.slice(0, -1).map((v, i) => (v - incomes[i + 1]) / incomes[i + 1]);
+                          const declines = changes.filter(c => c < -0.1).length;
+                          if (declines === 0) pass("Income stability: No significant income declines in " + incomes.length + " years");
+                          else if (declines === 1) warn("Income stability: 1 significant decline (&gt;10%) in " + incomes.length + " years");
+                          else fail("Income stability: " + declines + " significant declines in " + incomes.length + " years");
+                        }
+                      }
+
+                      // 7. Regulatory registration
+                      if (clean(org.charity_number)) pass("Registered charity: RCN " + org.charity_number);
+                      else fail("Not on the Register of Charities");
+
+                      const passed = checks.filter(c => c.status === "pass").length;
+                      const warned = checks.filter(c => c.status === "warn").length;
+                      const failed = checks.filter(c => c.status === "fail").length;
+                      const readiness = failed === 0 && warned <= 1 ? "Ready" : failed === 0 ? "Conditional" : "Review Required";
+                      const readinessColor = readiness === "Ready" ? "#059669" : readiness === "Conditional" ? "#d97706" : "#dc2626";
+                      const readinessBg = readiness === "Ready" ? "#ecfdf5" : readiness === "Conditional" ? "#fffbeb" : "#fef2f2";
+
+                      const checksHtml = checks.map(c => {
+                        const icon = c.status === "pass" ? "&#10003;" : c.status === "warn" ? "&#9888;" : "&#10007;";
+                        const color = c.status === "pass" ? "#059669" : c.status === "warn" ? "#d97706" : "#dc2626";
+                        return '<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:6px 0"><span style="color:' + color + ';font-size:14px;width:16px;text-align:center">' + icon + '</span> ' + c.label + '</div>';
+                      }).join("");
+
+                      return '<h2>' + grSecNum + '. Grant Readiness Assessment</h2>' +
+                        '<div class="section">' +
+                        '<div style="background:' + readinessBg + ';padding:14px;border-radius:8px;margin-bottom:12px">' +
+                        '<strong style="color:' + readinessColor + ';font-size:15px">' + readiness + '</strong>' +
+                        '<span style="font-size:12px;color:#666;margin-left:8px">' + passed + ' passed · ' + warned + ' warnings · ' + failed + ' flags</span></div>' +
+                        checksHtml +
+                        '<p style="font-size:11px;color:#999;margin-top:12px;font-style:italic">This assessment is automated and based on publicly available regulatory data. It does not replace professional judgement.</p>' +
+                        '</div>' +
+                        '<h2>' + detSecNum + '. Organisation Details</h2>' +
+                        '<div class="section"><table>' + fields.map(f => '<tr><td style="color:#999;width:160px">' + f.label + '</td><td>' + f.value + (f.sub ? " — " + f.sub : "") + '</td></tr>').join("") + '</table></div>' +
+                        ((clean(org.charity_number) || clean(org.cro_number)) ?
+                          '<h2>' + srcSecNum + '. Source Documents</h2>' +
+                          '<div class="section"><p>The following primary regulatory sources can be used to verify the data in this report:</p><table>' +
+                          (clean(org.charity_number) ? '<tr><td style="color:#999;width:180px">Charities Regulator</td><td><a href="https://www.charitiesregulator.ie/en/information-for-the-public/search-the-register-of-charities/charity-detail?regid=' + org.charity_number + '" style="color:#059669">Annual reports, governance code &amp; financial filings — RCN ' + org.charity_number + '</a></td></tr>' : "") +
+                          (clean(org.cro_number) ? '<tr><td style="color:#999;width:180px">Companies Registration Office</td><td><a href="https://core.cro.ie/search?q=' + org.cro_number + '&type=companies" style="color:#059669">Constitution, annual returns &amp; directors — CRO ' + org.cro_number + '</a></td></tr>' : "") +
+                          (clean(org.revenue_chy) ? '<tr><td style="color:#999;width:180px">Revenue Commissioners</td><td><a href="https://www.revenue.ie/en/corporate/information-about-revenue/statistics/other-datasets/charities/resident-charities.aspx" style="color:#059669">Tax-exempt charity status register — CHY ' + org.revenue_chy + '</a></td></tr>' : "") +
+                          '<tr><td style="color:#999;width:180px">Open Data Portal</td><td><a href="https://data.gov.ie/dataset/register-of-charities-in-ireland" style="color:#059669">Bulk data download — data.gov.ie</a></td></tr></table></div>'
+                        : "");
+                    })()}
 
                     <div class="footer">
                       ${brandName ? `<p style="font-size:13px;font-weight:600;color:#333;margin-bottom:4px">Prepared by ${brandName}</p>` : ""}
@@ -2305,9 +2388,98 @@ function ApiPage() {
 }
 
 // ===========================================================
+// FOUNDATIONS LANDING PAGE — targeted at grant-making foundations
+// ===========================================================
+function FoundationsPage({ orgCount = 36803 }) {
+  const { setShowAuth, setAuthMode } = useAuth();
+  const formattedCount = orgCount.toLocaleString();
+
+  const painPoints = [
+    { before: "2–4 hours", after: "30 seconds", label: "Per applicant due diligence" },
+    { before: "Manual checking", after: "One-click report", label: "CRO, Charities Register, Revenue" },
+    { before: "Spreadsheet tracking", after: "AI risk scoring", label: "Financial health assessment" },
+    { before: "Scattered sources", after: "Single platform", label: "All regulatory data unified" },
+  ];
+
+  const checks = [
+    "Multi-year financial trend analysis with CAGR",
+    "AI risk score with confidence level",
+    "Expenditure ratio and reserve coverage",
+    "State funding dependency analysis",
+    "Board governance and cross-directorships",
+    "Filing history completeness check",
+    "Source document links for verification",
+    "White-label branded PDF reports",
+  ];
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Hero */}
+      <div className="text-center mb-16">
+        <div className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wider rounded-full mb-4">For Grant-Making Foundations</div>
+        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 leading-tight">Grant due diligence<br />in one click</h1>
+        <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8">Stop spending hours manually checking the Charities Register, CRO filings, and Revenue records. OpenBenefacts generates a comprehensive due diligence report on any Irish nonprofit in seconds — covering {formattedCount} organisations.</p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors">Start Free 14-Day Trial</button>
+          <a href="mailto:mark@openbenefacts.com?subject=Foundation%20Pilot%20Programme" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Request Pilot Access</a>
+        </div>
+        <p className="text-sm text-gray-400 mt-3">No credit card required · Professional plan €1,499/year</p>
+      </div>
+
+      {/* Before/After comparison */}
+      <div className="mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Replace hours of manual checking</h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {painPoints.map((p, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 text-center">
+              <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">{p.label}</div>
+              <div className="text-red-400 text-sm line-through mb-1">{p.before}</div>
+              <div className="text-emerald-700 text-lg font-bold">{p.after}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* What the DD report covers */}
+      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-8 mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">What every due diligence report includes</h2>
+        <p className="text-gray-500 mb-6">Generated automatically from public regulatory data across nine Irish sources.</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {checks.map((c, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+              <span className="text-sm text-gray-700">{c}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ROI calculation */}
+      <div className="bg-white rounded-2xl border-2 border-emerald-200 p-8 mb-16 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-3">The ROI is immediate</h2>
+        <p className="text-gray-500 max-w-xl mx-auto mb-6">A foundation reviewing 50 grant applications per year spends 100–200 hours on due diligence alone. At €1,499/year, OpenBenefacts pays for itself after the first two applications.</p>
+        <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+          <div><div className="text-3xl font-bold text-gray-900">50+</div><div className="text-xs text-gray-400">Applications reviewed</div></div>
+          <div><div className="text-3xl font-bold text-emerald-600">200hrs</div><div className="text-xs text-gray-400">Saved per year</div></div>
+          <div><div className="text-3xl font-bold text-emerald-600">98%</div><div className="text-xs text-gray-400">Time reduction</div></div>
+        </div>
+      </div>
+
+      {/* Pilot programme CTA */}
+      <div className="bg-gray-900 rounded-2xl p-8 text-center text-white">
+        <h2 className="text-2xl font-bold mb-3">Foundation Pilot Programme</h2>
+        <p className="text-gray-300 max-w-xl mx-auto mb-6">We're offering five grant-making foundations free access to the Professional plan for 90 days — in exchange for feedback and a short case study.</p>
+        <a href="mailto:mark@openbenefacts.com?subject=Foundation%20Pilot%20Programme&body=Hi%20Mark%2C%0A%0AWe%27re%20interested%20in%20the%20Foundation%20Pilot%20Programme%20for%20OpenBenefacts.%0A%0AFoundation%20name%3A%20%0AApprox.%20grant%20applications%20reviewed%20per%20year%3A%20%0A%0AThanks" className="inline-block px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-400 transition-colors">Apply for the Pilot</a>
+        <p className="text-sm text-gray-500 mt-3">5 places available · 90-day free Professional access</p>
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================
 // PRICING PAGE
 // ===========================================================
-function PricingPage({ orgCount = 36803 }) {
+function PricingPage({ orgCount = 36803, setPage }) {
   const { setShowAuth, setAuthMode } = useAuth();
   const [annual, setAnnual] = useState(true);
   const formattedCount = orgCount.toLocaleString();
@@ -2315,7 +2487,7 @@ function PricingPage({ orgCount = 36803 }) {
   const plans = [
     { name: "Free", price: 0, desc: "Genuinely useful transparency", features: [`Browse ${formattedCount} organizations`,"5-year financial trend charts","Year-by-year comparison tables","Board member & cross-directorships","State funding received","AI risk score (summary)","Full search & filters"], cta: "Get Started" },
     { name: "Pro", price: annual ? 299 : 29, period: annual ? "/year" : "/month", desc: "Financial intelligence", features: ["Everything in Free","Income source breakdown","Sector benchmarking","Full AI risk assessment","PDF profile downloads","Watchlist & alerts"], highlight: true, cta: "Start Free Trial", badge: annual ? "Save 15%" : null },
-    { name: "Professional", price: annual ? 1499 : 149, period: annual ? "/year" : "/month", desc: "Due diligence & research", features: ["Everything in Pro","Automated due diligence reports","White-label reports","Bulk CSV/Excel export","API access (1,000 calls/mo)","Priority support"], cta: "Start Free Trial" },
+    { name: "Professional", price: annual ? 1499 : 149, period: annual ? "/year" : "/month", desc: "Grant due diligence in one click", features: ["Everything in Pro","One-click due diligence reports","Grant readiness assessment","White-label branded reports","Bulk CSV/Excel export","API access (1,000 calls/mo)","Priority support"], cta: "Start Free Trial" },
     { name: "Enterprise", price: null, desc: "Custom solutions", features: ["Everything in Professional","Unlimited API access","Custom dashboards","White-label reports","Dedicated account manager","Custom data integration","SLA guarantee"], cta: "Contact Sales" },
   ];
 
@@ -2351,6 +2523,18 @@ function PricingPage({ orgCount = 36803 }) {
           </div>
         ))}
       </div>
+
+      {/* Foundations CTA */}
+      {setPage && (
+        <div className="mt-10 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
+          <div className="flex-1">
+            <div className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">For Grant-Making Foundations</div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Replace 2–4 hours of manual due diligence with one click</h3>
+            <p className="text-sm text-gray-500">See how OpenBenefacts saves foundations thousands of hours on grant applicant screening.</p>
+          </div>
+          <button onClick={() => setPage("foundations")} className="flex-shrink-0 px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors whitespace-nowrap">Learn More</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -2444,7 +2628,8 @@ function InnerApp() {
     switch (page) {
       case "orgs": return <OrgsPage setPage={handleSetPage} initialSearch={initialSearch} setInitialSearch={setInitialSearch} initialSector={initialSector} setInitialSector={setInitialSector} watchlist={wl} />;
       case "funders": return <FundersPage setPage={handleSetPage} setInitialSearch={setInitialSearch} />;
-      case "pricing": return <PricingPage orgCount={orgCount} />;
+      case "pricing": return <PricingPage orgCount={orgCount} setPage={handleSetPage} />;
+      case "foundations": return <FoundationsPage orgCount={orgCount} />;
       case "api": return <ApiPage />;
       case "about": return <AboutPage orgCount={orgCount} />;
       default: return <HomePage setPage={handleSetPage} setInitialSearch={setInitialSearch} setInitialSector={setInitialSector} watchlist={wl} />;
