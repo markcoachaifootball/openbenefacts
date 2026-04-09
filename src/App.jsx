@@ -931,7 +931,7 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
 // ===========================================================
 // ORG PROFILE (shows 1 year financials FREE per audit)
 // ===========================================================
-function OrgProfilePage({ orgId, setPage, watchlist }) {
+function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
   const { isPro, requirePro, tier } = useAuth();
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -939,6 +939,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
   const [expandedDirector, setExpandedDirector] = useState(null);
   const [directorBoards, setDirectorBoards] = useState({});
   const [benchmark, setBenchmark] = useState(null);
+  const [copied, setCopied] = useState(null); // "link" | "cite" | "embed"
   // White-label branding for reports
   const [showBranding, setShowBranding] = useState(null); // "pdf" or "dd"
   const [brandName, setBrandName] = useState(() => { try { return localStorage.getItem("ob_brand_name") || ""; } catch { return ""; } });
@@ -994,6 +995,38 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
 
   if (loading) return <Spinner />;
   if (!org) return <ErrorState message="Organization not found" />;
+
+  // Embed mode: compact org snapshot for embedding in articles
+  if (embed) {
+    const latest = org.financials?.[0];
+    const risk = computeRiskScore(org);
+    const orgUrl = `${window.location.origin}#org:${org.id}`;
+    return (
+      <div className="p-5 bg-white min-h-0">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center"><Eye className="w-3 h-3 text-white" /></div>
+          <span className="font-bold text-sm text-gray-900">OpenBenefacts</span>
+          <span className="text-xs text-gray-400">· Nonprofit Transparency</span>
+        </div>
+        <h2 className="text-lg font-bold text-gray-900">{cleanName(org.name)}</h2>
+        <p className="text-xs text-gray-500 mb-3">{[clean(org.county), clean(org.sector)].filter(Boolean).join(" · ")}{clean(org.charity_number) ? ` · RCN ${org.charity_number}` : ""}</p>
+        {risk && (
+          <div className={`px-3 py-2 rounded-lg mb-3 text-sm font-medium ${risk.color === "emerald" ? "bg-emerald-50 text-emerald-700" : risk.color === "amber" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"}`}>
+            Risk Score: {risk.score}/100 — {risk.level} risk <span className="text-xs font-normal opacity-70">({risk.yearsAnalysed}yr data, {risk.confidence} confidence)</span>
+          </div>
+        )}
+        {latest && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+            {latest.gross_income != null && <div className="bg-gray-50 rounded-lg p-2"><div className="text-[10px] text-gray-400 uppercase">Income</div><div className="text-sm font-bold text-gray-900">{fmt(latest.gross_income)}</div></div>}
+            {latest.gross_expenditure != null && <div className="bg-gray-50 rounded-lg p-2"><div className="text-[10px] text-gray-400 uppercase">Expenditure</div><div className="text-sm font-bold text-gray-900">{fmt(latest.gross_expenditure)}</div></div>}
+            {latest.total_assets > 0 && <div className="bg-gray-50 rounded-lg p-2"><div className="text-[10px] text-gray-400 uppercase">Assets</div><div className="text-sm font-bold text-gray-900">{fmt(latest.total_assets)}</div></div>}
+            {latest.employees > 0 && <div className="bg-gray-50 rounded-lg p-2"><div className="text-[10px] text-gray-400 uppercase">Employees</div><div className="text-sm font-bold text-gray-900">{latest.employees.toLocaleString()}</div></div>}
+          </div>
+        )}
+        <p className="text-[10px] text-gray-400 text-center">Data: Charities Regulator, CRO, Revenue · <a href={orgUrl} target="_blank" rel="noopener" className="text-emerald-600 hover:underline">View full profile on OpenBenefacts</a></p>
+      </div>
+    );
+  }
 
   const fields = [
     { label: "Sector", value: clean(org.sector), sub: clean(org.subsector) },
@@ -1270,6 +1303,29 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
             </div>
           </div>
         </div>
+
+        {/* Share / Cite / Embed bar */}
+        {(() => {
+          const orgUrl = `${window.location.origin}#org:${org.id}`;
+          const orgEmbed = `<iframe src="${orgUrl}&embed=true" width="100%" height="420" frameborder="0" style="border:1px solid #e5e7eb;border-radius:12px"></iframe>`;
+          const citation = `"${cleanName(org.name)}," OpenBenefacts, accessed ${new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" })}, ${orgUrl}`;
+          return (
+            <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex flex-wrap gap-2">
+              <button onClick={() => { navigator.clipboard.writeText(orgUrl); setCopied("link"); setTimeout(() => setCopied(null), 2000); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                {copied === "link" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+                {copied === "link" ? "Copied!" : "Share link"}
+              </button>
+              <button onClick={() => { navigator.clipboard.writeText(citation); setCopied("cite"); setTimeout(() => setCopied(null), 2000); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                {copied === "cite" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <FileText className="w-3.5 h-3.5" />}
+                {copied === "cite" ? "Citation copied!" : "Cite this"}
+              </button>
+              <button onClick={() => { navigator.clipboard.writeText(orgEmbed); setCopied("embed"); setTimeout(() => setCopied(null), 2000); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                {copied === "embed" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Code className="w-3.5 h-3.5" />}
+                {copied === "embed" ? "Embed code copied!" : "Embed"}
+              </button>
+            </div>
+          );
+        })()}
 
         {/* Tabs */}
         <div className="border-b border-gray-100">
@@ -2477,6 +2533,108 @@ function FoundationsPage({ orgCount = 36803 }) {
 }
 
 // ===========================================================
+// MEDIA / JOURNALISTS LANDING PAGE — drive citations and coverage
+// ===========================================================
+function MediaPage({ orgCount = 36803 }) {
+  const [copiedSnippet, setCopiedSnippet] = useState(null);
+  const formattedCount = orgCount.toLocaleString();
+
+  const tools = [
+    { title: "Organisation profiles", desc: "Financial history, risk scores, board members, and state funding for any of " + formattedCount + " Irish nonprofits. Shareable link and embed code on every profile.", route: "orgs" },
+    { title: "Follow the Money flows", desc: "Interactive funding flow visualisations showing how government money reaches nonprofits. Embeddable in any article with one line of HTML.", route: "funders" },
+    { title: "AI risk scores", desc: "Algorithmic financial health assessment using multi-year trend analysis, expenditure ratios, reserve coverage, and governance checks. Fully transparent methodology.", route: "orgs" },
+    { title: "Cross-directorship mapping", desc: "See every board a director sits on across the entire nonprofit sector. Identify overlapping governance networks.", route: "orgs" },
+  ];
+
+  const embedExample = `<iframe src="${window.location.origin}#follow/hse&embed=true"\n  width="100%" height="500" frameborder="0"\n  style="border:1px solid #e5e7eb;border-radius:12px">\n</iframe>`;
+  const citationExample = `"[Organisation Name]," OpenBenefacts, accessed ${new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" })}, ${window.location.origin}#org:[id]`;
+
+  const copySnippet = (text, id) => {
+    navigator.clipboard.writeText(text).then(() => { setCopiedSnippet(id); setTimeout(() => setCopiedSnippet(null), 2000); });
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Hero */}
+      <div className="text-center mb-16">
+        <div className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold uppercase tracking-wider rounded-full mb-4">For Journalists &amp; Researchers</div>
+        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 leading-tight">Ireland's nonprofit data,<br />ready for publication</h1>
+        <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8">OpenBenefacts gives journalists and researchers free access to financial data, governance records, and funding flows for {formattedCount} Irish nonprofits. Every data point sourced from the Charities Regulator, CRO, and Revenue. Every chart embeddable. Every profile citable.</p>
+        <p className="text-emerald-600 font-semibold text-lg mb-2">Everything below is free. No paywall. No sign-up required.</p>
+      </div>
+
+      {/* Tools grid */}
+      <div className="mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">What you can use — all free</h2>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {tools.map((t, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-100 p-5">
+              <h3 className="font-bold text-gray-900 mb-2">{t.title}</h3>
+              <p className="text-sm text-gray-600">{t.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How to embed */}
+      <div className="bg-gray-900 rounded-2xl p-8 mb-16">
+        <h2 className="text-2xl font-bold text-white mb-2">Embed in your article</h2>
+        <p className="text-gray-400 mb-6">Every organisation profile and funding flow has a one-click embed code. Copy the iframe tag and paste it into your CMS — it works with WordPress, Ghost, Substack, and any HTML editor.</p>
+        <div className="bg-gray-800 rounded-xl p-4 relative mb-4">
+          <pre className="text-xs text-emerald-400 font-mono whitespace-pre-wrap">{embedExample}</pre>
+          <button onClick={() => copySnippet(embedExample, "embed")} className="absolute top-3 right-3 p-1.5 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
+            {copiedSnippet === "embed" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500">The embed renders a compact, branded widget with a link back to the full profile. Responsive, mobile-friendly, loads fast.</p>
+      </div>
+
+      {/* How to cite */}
+      <div className="bg-blue-50 rounded-2xl p-8 mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Cite OpenBenefacts</h2>
+        <p className="text-gray-500 mb-4">Every org profile has a "Cite this" button that copies a ready-to-use citation. For manual citations, use this format:</p>
+        <div className="bg-white rounded-xl p-4 relative border border-blue-200">
+          <pre className="text-xs text-gray-700 font-mono whitespace-pre-wrap">{citationExample}</pre>
+          <button onClick={() => copySnippet(citationExample, "cite")} className="absolute top-3 right-3 p-1.5 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors">
+            {copiedSnippet === "cite" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-blue-500" />}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mt-3">All data is sourced from the Charities Regulator, Companies Registration Office, and Revenue Commissioners. OpenBenefacts normalises, cross-references, and presents this public data — it does not generate or modify the underlying figures.</p>
+      </div>
+
+      {/* Data methodology */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-8 mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Data sources and methodology</h2>
+        <p className="text-sm text-gray-600 mb-4">OpenBenefacts aggregates public data from the following Irish regulatory sources. All data is updated as new filings become available.</p>
+        <div className="space-y-3">
+          {[
+            { source: "Charities Regulator", data: "Annual returns, financial statements, governance code compliance, charity register" },
+            { source: "Companies Registration Office (CRO)", data: "Company formations, annual returns, director appointments, constitutions" },
+            { source: "Revenue Commissioners", data: "Tax-exempt charity status (CHY numbers), resident charities register" },
+            { source: "Government Estimates & Appropriations", data: "State funding allocations to nonprofits via departmental budgets" },
+            { source: "data.gov.ie Open Data Portal", data: "Bulk charity register data, public sector spending data" },
+          ].map((s, i) => (
+            <div key={i} className="flex gap-3 text-sm">
+              <span className="text-gray-400 font-medium min-w-[200px]">{s.source}</span>
+              <span className="text-gray-600">{s.data}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-gray-400 mt-4">AI risk scores are computed algorithmically from the above data using multi-year trend analysis. The methodology is transparent and documented in each report. Risk scores are not editorial judgements.</p>
+      </div>
+
+      {/* Contact / tip line */}
+      <div className="bg-gray-900 rounded-2xl p-8 text-center text-white">
+        <h2 className="text-2xl font-bold mb-3">Working on a story?</h2>
+        <p className="text-gray-300 max-w-xl mx-auto mb-6">If you're investigating a nonprofit and need deeper data, custom exports, or background context on how to read charity financials, reach out. We support journalists.</p>
+        <a href="mailto:mark@openbenefacts.com?subject=Media%20Enquiry" className="inline-block px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-400 transition-colors">Contact the Data Team</a>
+        <p className="text-sm text-gray-500 mt-3">mark@openbenefacts.com</p>
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================
 // CSR / ESG LANDING PAGE — targeted at corporate giving teams
 // ===========================================================
 function CsrPage({ orgCount = 36803 }) {
@@ -2738,7 +2896,7 @@ function InnerApp() {
   }, []);
 
   const renderPage = () => {
-    if (page.startsWith("org:")) return <OrgProfilePage orgId={page.split(":")[1]} setPage={handleSetPage} watchlist={wl} />;
+    if (page.startsWith("org:")) return <OrgProfilePage orgId={page.split(":")[1]} setPage={handleSetPage} watchlist={wl} embed={isEmbed} />;
     if (page.startsWith("follow/")) return <FlowPage funderSlug={page.split("follow/")[1]} setPage={handleSetPage} embed={isEmbed} />;
     if (page.startsWith("flow:")) return <FlowPage funderSlug={page.split(":")[1]} setPage={handleSetPage} embed={isEmbed} />;
     switch (page) {
@@ -2747,6 +2905,7 @@ function InnerApp() {
       case "pricing": return <PricingPage orgCount={orgCount} setPage={handleSetPage} />;
       case "foundations": return <FoundationsPage orgCount={orgCount} />;
       case "csr": return <CsrPage orgCount={orgCount} />;
+      case "media": return <MediaPage orgCount={orgCount} />;
       case "api": return <ApiPage />;
       case "about": return <AboutPage orgCount={orgCount} />;
       default: return <HomePage setPage={handleSetPage} setInitialSearch={setInitialSearch} setInitialSector={setInitialSector} watchlist={wl} />;
@@ -2766,6 +2925,7 @@ function InnerApp() {
             <div className="flex items-center gap-2"><div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center"><Eye className="w-4 h-4 text-white" /></div><span className="font-bold text-gray-900">Open</span><span className="font-bold text-emerald-600">Benefacts</span></div>
             <div className="flex items-center gap-6 text-sm text-gray-400">
               <button onClick={() => handleSetPage("pricing")} className="hover:text-gray-600">Pricing</button>
+              <button onClick={() => handleSetPage("media")} className="hover:text-gray-600">Media</button>
               <button onClick={() => handleSetPage("about")} className="hover:text-gray-600">About</button>
               <a href="mailto:mark@openbenefacts.com" className="hover:text-gray-600">Contact</a>
             </div>
