@@ -2239,6 +2239,14 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
         </div>
       </div>
 
+      {/* Social share buttons */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        <span className="text-xs text-gray-400 self-center mr-1">Share:</span>
+        <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Follow the money: see where ${funder.name} sends ${fmt(funder.total)} in funding`)}&url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener" className="px-3 py-1.5 bg-gray-100 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-200 transition-colors">X / Twitter</a>
+        <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener" className="px-3 py-1.5 bg-gray-100 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-200 transition-colors">LinkedIn</a>
+        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener" className="px-3 py-1.5 bg-gray-100 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-200 transition-colors">Facebook</a>
+      </div>
+
       {/* Full recipient table */}
       {grants.length > 0 && (() => {
         const filteredGrants = progFilter ? grants.filter(g => g.programme === progFilter) : grants;
@@ -2439,6 +2447,93 @@ function ApiPage() {
           <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-6 py-3 bg-white text-emerald-700 rounded-xl font-semibold hover:bg-emerald-50">Start Free Trial</button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ===========================================================
+// "WHERE DOES THE MONEY GO?" — shareable viral page for political/social audience
+// ===========================================================
+function MoneyPage({ setPage, orgCount = 36803 }) {
+  const formattedCount = orgCount.toLocaleString();
+  const totalFunding = funderData.reduce((s, f) => s + (f.total || 0), 0);
+
+  // Top funders sorted by total
+  const topFunders = [...funderData].sort((a, b) => (b.total || 0) - (a.total || 0)).slice(0, 12);
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Hero — the screenshot-worthy headline */}
+      <div className="text-center mb-12 py-10 bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 rounded-3xl px-6">
+        <h1 className="text-5xl sm:text-6xl font-black text-white mb-4 leading-tight">Where Does Ireland's<br /><span className="text-emerald-400">€{(totalFunding / 1e9).toFixed(0)} Billion</span> Go?</h1>
+        <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-6">Every euro of government funding to Irish nonprofits — tracked, mapped, and searchable. {formattedCount} organisations. 11 years of data. Free and open.</p>
+        <div className="flex flex-wrap justify-center gap-4 mb-6">
+          <button onClick={() => setPage("funders")} className="px-6 py-3 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-400 transition-colors">Follow the Money</button>
+          <button onClick={() => setPage("orgs")} className="px-6 py-3 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/20 transition-colors">Search Organisations</button>
+        </div>
+        <p className="text-xs text-gray-500">Source: Charities Regulator, CRO, Revenue Commissioners, Government Estimates</p>
+      </div>
+
+      {/* The big number breakdown — designed to be screenshot-friendly */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
+        <div className="bg-white rounded-xl border border-gray-100 p-5 text-center">
+          <div className="text-3xl font-black text-gray-900">{formattedCount}</div>
+          <div className="text-xs text-gray-400 uppercase font-medium mt-1">Organisations</div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-5 text-center">
+          <div className="text-3xl font-black text-emerald-600">€{(totalFunding / 1e9).toFixed(1)}B</div>
+          <div className="text-xs text-gray-400 uppercase font-medium mt-1">State Funding Tracked</div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-5 text-center">
+          <div className="text-3xl font-black text-gray-900">{funderData.length}</div>
+          <div className="text-xs text-gray-400 uppercase font-medium mt-1">Government Funders</div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-5 text-center">
+          <div className="text-3xl font-black text-gray-900">11</div>
+          <div className="text-xs text-gray-400 uppercase font-medium mt-1">Years of Data</div>
+        </div>
+      </div>
+
+      {/* Top funders — the visual answer to "where does the money go?" */}
+      <div className="mb-12">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">The biggest government funders</h2>
+        <p className="text-gray-500 mb-6">Click any funder to see exactly where their money goes — every programme, every recipient, every euro.</p>
+        <div className="space-y-2">
+          {topFunders.map((f, i) => {
+            const pct = totalFunding > 0 ? (f.total / totalFunding) * 100 : 0;
+            return (
+              <button key={i} onClick={() => setPage(`follow/${getFunderSlug(funderData.indexOf(f))}`)} className="w-full flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-emerald-200 hover:shadow-sm transition-all text-left group">
+                <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 font-bold text-sm flex-shrink-0">{i + 1}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-gray-900 text-sm truncate group-hover:text-emerald-700">{f.name}</div>
+                  <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
+                    <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.min(pct * 2, 100)}%` }} />
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="font-bold text-gray-900 text-sm">{fmt(f.total)}</div>
+                  <div className="text-[10px] text-gray-400">{pct.toFixed(1)}%</div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-500 flex-shrink-0" />
+              </button>
+            );
+          })}
+        </div>
+        <button onClick={() => setPage("funders")} className="mt-4 text-sm text-emerald-600 font-medium hover:underline">View all {funderData.length} funders →</button>
+      </div>
+
+      {/* Share CTA */}
+      <div className="bg-gray-900 rounded-2xl p-8 text-center text-white">
+        <h2 className="text-2xl font-bold mb-3">Share this. People should know.</h2>
+        <p className="text-gray-300 max-w-xl mx-auto mb-6">Benefacts was shut down. This data almost disappeared. OpenBenefacts is rebuilding it — free, open, and independent. Help spread the word.</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Where does Ireland's €14 billion in nonprofit funding go? Track every euro at OpenBenefacts — free and open.")}&url=${encodeURIComponent("https://openbenefacts.vercel.app/#money")}`} target="_blank" rel="noopener" className="px-5 py-2.5 bg-white/10 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors">Share on X / Twitter</a>
+          <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://openbenefacts.vercel.app/#money")}`} target="_blank" rel="noopener" className="px-5 py-2.5 bg-white/10 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors">Share on LinkedIn</a>
+          <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://openbenefacts.vercel.app/#money")}`} target="_blank" rel="noopener" className="px-5 py-2.5 bg-white/10 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors">Share on Facebook</a>
+          <button onClick={() => { navigator.clipboard.writeText("https://openbenefacts.vercel.app/#money"); }} className="px-5 py-2.5 bg-emerald-500 rounded-xl text-sm font-medium hover:bg-emerald-400 transition-colors">Copy Link</button>
+        </div>
+        <p className="text-xs text-gray-500 mt-4">openbenefacts.vercel.app · Built in Ireland · Open source</p>
+      </div>
     </div>
   );
 }
@@ -2903,6 +2998,7 @@ function InnerApp() {
       case "orgs": return <OrgsPage setPage={handleSetPage} initialSearch={initialSearch} setInitialSearch={setInitialSearch} initialSector={initialSector} setInitialSector={setInitialSector} watchlist={wl} />;
       case "funders": return <FundersPage setPage={handleSetPage} setInitialSearch={setInitialSearch} />;
       case "pricing": return <PricingPage orgCount={orgCount} setPage={handleSetPage} />;
+      case "money": return <MoneyPage setPage={handleSetPage} orgCount={orgCount} />;
       case "foundations": return <FoundationsPage orgCount={orgCount} />;
       case "csr": return <CsrPage orgCount={orgCount} />;
       case "media": return <MediaPage orgCount={orgCount} />;
