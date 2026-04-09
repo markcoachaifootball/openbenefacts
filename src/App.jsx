@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Search, Building2, Users, TrendingUp, DollarSign, ChevronRight, ArrowLeft, Eye, Star, Shield, Menu, X, MapPin, Hash, Landmark, GraduationCap, Heart, Briefcase, Globe, Filter, ChevronDown, ExternalLink, Info, BarChart3, FileText, Award, Zap, Database, ArrowRight, Layers, Check, CreditCard, LogIn, UserPlus, Crown, Sparkles, LogOut, AlertTriangle, Lock, ArrowUpDown, Bookmark, Share2, Copy, Code } from "lucide-react";
+import { Search, Building2, Users, TrendingUp, DollarSign, ChevronRight, ArrowLeft, Eye, Star, Shield, Menu, X, MapPin, Hash, Landmark, GraduationCap, Heart, Briefcase, Globe, Filter, ChevronDown, ExternalLink, Info, BarChart3, FileText, Award, Zap, Database, ArrowRight, Layers, Check, CreditCard, LogIn, UserPlus, Crown, Sparkles, LogOut, AlertTriangle, Lock, ArrowUpDown, Bookmark, Share2, Copy, Code, Download } from "lucide-react";
 import { supabase, fetchStats, fetchFunders, fetchOrganisations, fetchOrganisation, searchOrganisations, fetchSectorCounts, fetchCountyCounts, fetchDirectorBoards, fetchFunderGrants, fetchFunderGrantsByName, fetchSectorBenchmark } from "./supabase.js";
 import { DATA } from "./data.js";
 
@@ -55,6 +55,16 @@ const fmt = (n) => {
   if (n >= 1e3) return `€${(n/1e3).toFixed(0)}K`;
   return `€${n.toLocaleString()}`;
 };
+// CSV download utility — free tier, no auth required
+const downloadCSV = (rows, headers, filename) => {
+  const escape = (v) => { const s = String(v ?? ""); return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s; };
+  const csv = [headers.join(","), ...rows.map(r => r.map(escape).join(","))].join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }); // BOM for Excel
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+};
+
 // ===========================================================
 // DATA NORMALISATION LAYER — clean corrupted values client-side
 // ===========================================================
@@ -1875,9 +1885,24 @@ function FundersPage({ setPage, setInitialSearch }) {
         <p className="text-gray-500">{funderData.length} funders distributing {fmt(totalFunding)} across {totalProgs} programmes</p>
       </div>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input type="text" placeholder="Search funders..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" />
+      <div className="flex gap-3 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input type="text" placeholder="Search funders..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" />
+        </div>
+        <button onClick={() => {
+          const rows = filtered.map(f => [
+            f.name,
+            f.type || "",
+            f.total || 0,
+            f.recipients || 0,
+            (f.programmes || []).length,
+            (f.programmes || []).join("; "),
+          ]);
+          downloadCSV(rows, ["Funder","Type","Total Funding","Recipients","Programmes Count","Programmes"], "ireland-state-funders.csv");
+        }} className="flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors whitespace-nowrap">
+          <Download className="w-4 h-4" /> Download CSV
+        </button>
       </div>
 
       <div className="space-y-4">
@@ -1970,6 +1995,7 @@ function FundersPage({ setPage, setInitialSearch }) {
 const FLOW_COLORS = ["#059669","#0d9488","#0891b2","#2563eb","#7c3aed","#db2777","#ea580c","#ca8a04","#65a30d","#dc2626"];
 
 function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProgrammeClick }) {
+  const [hover, setHover] = useState(null); // { type: "prog"|"org"|"flow", id, x, y, label, amount }
   if (!funder || !grants || grants.length === 0) return null;
 
   // Aggregate grants by programme, then by org within each programme
@@ -1996,7 +2022,7 @@ function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProg
   const svgW = compact ? 640 : 900;
   const svgH = compact ? 360 : Math.max(420, (hasProgrammes ? Math.max(programmes.length, topOrgs.length) : topOrgs.length) * 38 + 60);
   const pad = 16;
-  const colW = (svgW - pad * 2) / (hasProgrammes ? 5 : 3); // funder gets 1 col, progs 1.5, orgs 2.5
+  const colW = (svgW - pad * 2) / (hasProgrammes ? 5 : 3);
   const funderX = pad;
   const funderW = colW * 0.9;
   const progX = hasProgrammes ? pad + colW * 1.2 : 0;
@@ -2026,10 +2052,21 @@ function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProg
   const orgH = Math.max(20, (contentH - topOrgs.length * 3) / topOrgs.length);
   const maxOrgAmount = topOrgs[0]?.total || 1;
 
+  // Tooltip helper
+  const showTip = (e, type, id, label, amount) => {
+    const rect = e.currentTarget.closest("svg").getBoundingClientRect();
+    setHover({ type, id, x: e.clientX - rect.left, y: e.clientY - rect.top - 10, label, amount });
+  };
+  const hideTip = () => setHover(null);
+
   return (
-    <div className="w-full overflow-x-auto">
-      <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full" style={{ maxWidth: svgW, minWidth: compact ? 500 : 700 }}>
+    <div className="w-full overflow-x-auto relative">
+      <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full" style={{ maxWidth: svgW, minWidth: compact ? 500 : 700 }} onMouseLeave={hideTip}>
         <defs>
+          <filter id="sankey-glow">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
           {programmes.map((_, i) => (
             <linearGradient key={`pg-${i}`} id={`sankey-prog-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#059669" stopOpacity="0.5" />
@@ -2042,6 +2079,19 @@ function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProg
               <stop offset="100%" stopColor={FLOW_COLORS[i % FLOW_COLORS.length]} stopOpacity="0.2" />
             </linearGradient>
           ))}
+          {/* Highlighted versions for hover */}
+          {programmes.map((_, i) => (
+            <linearGradient key={`pgh-${i}`} id={`sankey-prog-hi-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#059669" stopOpacity="0.8" />
+              <stop offset="100%" stopColor={FLOW_COLORS[i % FLOW_COLORS.length]} stopOpacity="0.65" />
+            </linearGradient>
+          ))}
+          {topOrgs.map((_, i) => (
+            <linearGradient key={`ogh-${i}`} id={`sankey-org-hi-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor={FLOW_COLORS[i % FLOW_COLORS.length]} stopOpacity="0.7" />
+              <stop offset="100%" stopColor={FLOW_COLORS[i % FLOW_COLORS.length]} stopOpacity="0.5" />
+            </linearGradient>
+          ))}
         </defs>
 
         {/* Column headers */}
@@ -2050,7 +2100,7 @@ function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProg
         <text x={orgX + 60} y={12} textAnchor="start" fill="#9ca3af" fontSize="9" fontWeight="600">RECIPIENTS</text>
 
         {/* Funder box (left) */}
-        <rect x={funderX} y={funderY} width={funderW} height={funderH} rx="10" fill="#059669" />
+        <rect x={funderX} y={funderY} width={funderW} height={funderH} rx="10" fill="#059669" className="transition-opacity" opacity={hover && hover.type !== "funder" ? 0.7 : 1} />
         <text x={funderX + funderW / 2} y={funderY + funderH / 2 - 14} textAnchor="middle" fill="white" fontSize={compact ? 9 : 11} fontWeight="700">
           {funder.name.length > 20 ? funder.name.substring(0, 18) + "..." : funder.name}
         </text>
@@ -2071,25 +2121,28 @@ function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProg
               const thickness = Math.max(2, (p.total / totalProgAmount) * 16);
               const cx1 = funderX + funderW + (progX - funderX - funderW) * 0.4;
               const cx2 = funderX + funderW + (progX - funderX - funderW) * 0.6;
-              return <path key={`fp-${pi}`} d={`M ${funderX + funderW} ${fromY} C ${cx1} ${fromY}, ${cx2} ${toY}, ${progX} ${toY}`} fill="none" stroke={`url(#sankey-prog-${pi})`} strokeWidth={thickness} opacity="0.7" />;
+              const isHi = hover?.type === "prog" && hover.id === pi;
+              return <path key={`fp-${pi}`} d={`M ${funderX + funderW} ${fromY} C ${cx1} ${fromY}, ${cx2} ${toY}, ${progX} ${toY}`} fill="none" stroke={isHi ? `url(#sankey-prog-hi-${pi})` : `url(#sankey-prog-${pi})`} strokeWidth={isHi ? thickness + 2 : thickness} opacity={hover && !isHi ? 0.3 : 0.7} className="transition-all duration-200" />;
             })}
 
             {/* Programme boxes */}
-            {progPositions.map((p, pi) => (
-              <g key={`pb-${pi}`} style={{ cursor: onProgrammeClick ? "pointer" : "default" }} onClick={() => onProgrammeClick && onProgrammeClick(p.name)}>
-                <rect x={progX} y={p.y} width={progW} height={p.h} rx="6" fill={FLOW_COLORS[pi % FLOW_COLORS.length]} opacity="0.15" stroke={FLOW_COLORS[pi % FLOW_COLORS.length]} strokeWidth="1.5" />
-                <text x={progX + progW / 2} y={p.y + p.h / 2 - (p.h > 30 ? 5 : 0)} textAnchor="middle" fill="#333" fontSize={compact ? 8 : 9} fontWeight="600" dominantBaseline="middle">
-                  {p.name.length > 18 ? p.name.substring(0, 16) + "..." : p.name}
-                </text>
-                {p.h > 30 && <text x={progX + progW / 2} y={p.y + p.h / 2 + 10} textAnchor="middle" fill="#888" fontSize={compact ? 7 : 8} dominantBaseline="middle">{fmt(p.total)}</text>}
-              </g>
-            ))}
+            {progPositions.map((p, pi) => {
+              const isHi = hover?.type === "prog" && hover.id === pi;
+              return (
+                <g key={`pb-${pi}`} style={{ cursor: onProgrammeClick ? "pointer" : "default" }} onClick={() => onProgrammeClick && onProgrammeClick(p.name)} onMouseEnter={e => showTip(e, "prog", pi, p.name, p.total)} onMouseLeave={hideTip}>
+                  <rect x={progX} y={p.y} width={progW} height={p.h} rx="6" fill={FLOW_COLORS[pi % FLOW_COLORS.length]} opacity={isHi ? 0.3 : 0.15} stroke={FLOW_COLORS[pi % FLOW_COLORS.length]} strokeWidth={isHi ? 2.5 : 1.5} className="transition-all duration-200" />
+                  <text x={progX + progW / 2} y={p.y + p.h / 2 - (p.h > 30 ? 5 : 0)} textAnchor="middle" fill="#333" fontSize={compact ? 8 : 9} fontWeight="600" dominantBaseline="middle">
+                    {p.name.length > 18 ? p.name.substring(0, 16) + "..." : p.name}
+                  </text>
+                  {p.h > 30 && <text x={progX + progW / 2} y={p.y + p.h / 2 + 10} textAnchor="middle" fill="#888" fontSize={compact ? 7 : 8} dominantBaseline="middle">{fmt(p.total)}</text>}
+                </g>
+              );
+            })}
 
             {/* Programme → Org flows */}
             {topOrgs.map((org, oi) => {
               const orgY = 20 + oi * ((contentH) / topOrgs.length);
               const orgMidY = orgY + orgH / 2;
-              // Find which programmes contribute to this org and draw a flow from each
               return programmes.map((prog, pi) => {
                 const progOrg = byProg[prog.name]?.orgs[org.id];
                 if (!progOrg) return null;
@@ -2098,7 +2151,8 @@ function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProg
                 const thickness = Math.max(1, (progOrg.total / maxOrgAmount) * 8);
                 const cx1 = progX + progW + (orgX - progX - progW) * 0.4;
                 const cx2 = progX + progW + (orgX - progX - progW) * 0.6;
-                return <path key={`po-${pi}-${oi}`} d={`M ${progX + progW} ${fromY} C ${cx1} ${fromY}, ${cx2} ${orgMidY}, ${orgX} ${orgMidY}`} fill="none" stroke={`url(#sankey-org-${oi})`} strokeWidth={thickness} opacity="0.6" />;
+                const isHi = (hover?.type === "org" && hover.id === oi) || (hover?.type === "prog" && hover.id === pi);
+                return <path key={`po-${pi}-${oi}`} d={`M ${progX + progW} ${fromY} C ${cx1} ${fromY}, ${cx2} ${orgMidY}, ${orgX} ${orgMidY}`} fill="none" stroke={isHi ? `url(#sankey-org-hi-${oi})` : `url(#sankey-org-${oi})`} strokeWidth={isHi ? thickness + 1 : thickness} opacity={hover && !isHi ? 0.2 : 0.6} className="transition-all duration-200" />;
               });
             })}
           </>
@@ -2111,7 +2165,8 @@ function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProg
             const thickness = Math.max(2, (org.total / maxOrgAmount) * 14);
             const cx1 = funderX + funderW + (orgX - funderX - funderW) * 0.4;
             const cx2 = funderX + funderW + (orgX - funderX - funderW) * 0.6;
-            return <path key={`fo-${oi}`} d={`M ${funderX + funderW} ${fromY} C ${cx1} ${fromY}, ${cx2} ${orgMidY}, ${orgX} ${orgMidY}`} fill="none" stroke={`url(#sankey-org-${oi})`} strokeWidth={thickness} opacity="0.7" />;
+            const isHi = hover?.type === "org" && hover.id === oi;
+            return <path key={`fo-${oi}`} d={`M ${funderX + funderW} ${fromY} C ${cx1} ${fromY}, ${cx2} ${orgMidY}, ${orgX} ${orgMidY}`} fill="none" stroke={isHi ? `url(#sankey-org-hi-${oi})` : `url(#sankey-org-${oi})`} strokeWidth={isHi ? thickness + 2 : thickness} opacity={hover && !isHi ? 0.3 : 0.7} className="transition-all duration-200" />;
           })
         )}
 
@@ -2119,10 +2174,11 @@ function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProg
         {topOrgs.map((r, i) => {
           const y = 20 + i * ((contentH) / topOrgs.length);
           const barW = Math.max(30, (r.total / maxOrgAmount) * 100);
+          const isHi = hover?.type === "org" && hover.id === i;
           return (
-            <g key={r.id} style={{ cursor: onOrgClick ? "pointer" : "default" }} onClick={() => onOrgClick && r.id !== r.name && onOrgClick(r.id)}>
-              <rect x={orgX} y={y} width={barW} height={orgH} rx="4" fill={FLOW_COLORS[i % FLOW_COLORS.length]} opacity="0.85" />
-              <text x={orgX + barW + 6} y={y + orgH / 2 - 3} fill="#111" fontSize={compact ? 8 : 10} fontWeight="600" dominantBaseline="middle">
+            <g key={r.id} style={{ cursor: onOrgClick ? "pointer" : "default" }} onClick={() => onOrgClick && r.id !== r.name && onOrgClick(r.id)} onMouseEnter={e => showTip(e, "org", i, r.name, r.total)} onMouseLeave={hideTip}>
+              <rect x={orgX} y={y} width={barW} height={orgH} rx="4" fill={FLOW_COLORS[i % FLOW_COLORS.length]} opacity={isHi ? 1 : hover ? 0.5 : 0.85} className="transition-all duration-200" />
+              <text x={orgX + barW + 6} y={y + orgH / 2 - 3} fill="#111" fontSize={compact ? 8 : 10} fontWeight={isHi ? "800" : "600"} dominantBaseline="middle">
                 {r.name.length > (compact ? 20 : 28) ? r.name.substring(0, compact ? 18 : 26) + "..." : r.name}
               </text>
               <text x={orgX + barW + 6} y={y + orgH / 2 + 10} fill="#888" fontSize={compact ? 7 : 8} dominantBaseline="middle">
@@ -2135,6 +2191,14 @@ function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProg
         {/* Watermark */}
         <text x={svgW - 6} y={svgH - 6} textAnchor="end" fill="#ccc" fontSize="8" fontWeight="500">openbenefacts.vercel.app</text>
       </svg>
+
+      {/* Floating tooltip */}
+      {hover && (
+        <div className="absolute pointer-events-none bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-20" style={{ left: Math.min(hover.x, svgW - 180), top: hover.y - 40, maxWidth: 200 }}>
+          <div className="font-semibold truncate">{hover.label}</div>
+          <div className="text-emerald-300 font-bold">{fmt(hover.amount)}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2208,7 +2272,7 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
         <p className="text-gray-300 text-sm">Distributing <span className="text-emerald-400 font-bold">{fmt(funder.total)}</span> to <span className="font-bold">{(funder.recipients || 0).toLocaleString()}</span> organisations across <span className="font-bold">{(funder.programmes?.length || 0)}</span> programmes</p>
       </div>
 
-      {/* Share / Embed bar */}
+      {/* Share / Embed / Download bar */}
       <div className="flex flex-wrap gap-3 mb-6">
         <button onClick={() => copyToClip(shareUrl, "link")} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
           {copied === "link" ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4" />}
@@ -2217,6 +2281,22 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
         <button onClick={() => copyToClip(embedCode, "embed")} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
           {copied === "embed" ? <Check className="w-4 h-4 text-emerald-500" /> : <Code className="w-4 h-4" />}
           {copied === "embed" ? "Embed code copied!" : "Copy embed code"}
+        </button>
+        <button onClick={() => {
+          if (!grants.length) return;
+          const rows = grants.map(g => [
+            funder.name,
+            g.programme || "",
+            cleanName(g.organisations?.name || g.recipient_name_raw) || "Unknown",
+            g.organisations?.county || "",
+            g.organisations?.sector || "",
+            g.year || "",
+            g.amount || 0,
+            g.organisations?.charity_number || "",
+          ]);
+          downloadCSV(rows, ["Funder","Programme","Recipient","County","Sector","Year","Amount","RCN"], `${slug}-funding-data.csv`);
+        }} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
+          <Download className="w-4 h-4" /> Download CSV
         </button>
       </div>
 
