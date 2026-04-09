@@ -609,7 +609,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
 
       {/* Featured Org */}
       {featured && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div onClick={() => setPage(`org:${featured.id}`)} className="bg-white rounded-2xl border border-gray-100 p-6 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:border-emerald-200 hover:shadow-md transition-all">
           <div>
             <div className="text-xs font-medium text-emerald-600 mb-1">Featured Organization</div>
             <h3 className="text-lg font-bold text-gray-900">{cleanName(featured.name)}</h3>
