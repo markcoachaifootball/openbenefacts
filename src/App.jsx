@@ -55,6 +55,73 @@ const fmt = (n) => {
   if (n >= 1e3) return `€${(n/1e3).toFixed(0)}K`;
   return `€${n.toLocaleString()}`;
 };
+// ===========================================================
+// DATA NORMALISATION LAYER — clean corrupted values client-side
+// ===========================================================
+const COUNTY_CORRECTIONS = {
+  "DORK": "CORK", "LERRY": "DERRY", "DUBLING": "DUBLIN", "LOUHT": "LOUTH",
+  "LOUTHN": "LOUTH", "DUBLI 15": "DUBLIN 15", "P85HF62": null, // eircode, not a county
+  "OFFALY/LAOIS": "OFFALY", "KILDAR": "KILDARE", "GALWA": "GALWAY", "MEAHT": "MEATH",
+  "WEXFROD": "WEXFORD", "DONEGALL": "DONEGAL", "KILKENNEY": "KILKENNY",
+  "TIPPERAY": "TIPPERARY", "WATERORD": "WATERFORD", "ROSCOMMON.": "ROSCOMMON",
+};
+const VALID_COUNTIES = [
+  "ANTRIM","ARMAGH","CARLOW","CAVAN","CLARE","CORK","DERRY","DONEGAL","DOWN",
+  "DUBLIN","FERMANAGH","GALWAY","KERRY","KILDARE","KILKENNY","LAOIS","LEITRIM",
+  "LIMERICK","LONGFORD","LOUTH","MAYO","MEATH","MONAGHAN","OFFALY","ROSCOMMON",
+  "SLIGO","TIPPERARY","TYRONE","WATERFORD","WESTMEATH","WEXFORD","WICKLOW",
+];
+// Dublin postal districts (DUBLIN 1 – DUBLIN 24, DUBLIN 6W)
+for (let i = 1; i <= 24; i++) VALID_COUNTIES.push(`DUBLIN ${i}`);
+VALID_COUNTIES.push("DUBLIN 6W");
+
+function normaliseCounty(raw) {
+  const c = clean(raw);
+  if (!c) return null;
+  const upper = c.toUpperCase().trim().replace(/\s+/g, " ");
+  // Apply known corrections first
+  if (COUNTY_CORRECTIONS[upper] !== undefined) return COUNTY_CORRECTIONS[upper];
+  // Already valid
+  if (VALID_COUNTIES.includes(upper)) return upper;
+  // Fuzzy: strip trailing punctuation, extra chars
+  const stripped = upper.replace(/[^A-Z0-9 ]/g, "").trim();
+  if (VALID_COUNTIES.includes(stripped)) return stripped;
+  // Levenshtein-lite: find closest match for short edits (1-2 chars)
+  for (const valid of VALID_COUNTIES) {
+    if (Math.abs(stripped.length - valid.length) <= 2) {
+      let diff = 0;
+      const longer = stripped.length >= valid.length ? stripped : valid;
+      const shorter = stripped.length < valid.length ? stripped : valid;
+      for (let i = 0; i < longer.length; i++) { if (longer[i] !== shorter[i]) diff++; }
+      if (diff <= 2 && shorter.length >= 4) return valid;
+    }
+  }
+  return upper; // return as-is if no match found
+}
+
+function normaliseText(raw) {
+  if (!raw || typeof raw !== "string") return raw;
+  return raw
+    .replace(/[\u2018\u2019\u201A\uFF07]/g, "'")  // smart single quotes → straight
+    .replace(/[\u201C\u201D\u201E\uFF02]/g, '"')   // smart double quotes → straight
+    .replace(/[\u2013\u2014]/g, "-")                 // en/em dash → hyphen
+    .replace(/\u00A0/g, " ")                         // non-breaking space → space
+    .replace(/\u00E2\u0080\u0099/g, "'")             // UTF-8 mojibake for '
+    .replace(/\u00E2\u0080\u009C/g, '"')             // UTF-8 mojibake for "
+    .replace(/\u00E2\u0080\u009D/g, '"')             // UTF-8 mojibake for "
+    .replace(/\ufffd/g, "€");                        // replacement char → euro sign
+}
+
+// Apply normalisation to an org object in-place (idempotent)
+function normaliseOrg(org) {
+  if (!org || org._normalised) return org;
+  if (org.county) org.county = normaliseCounty(org.county);
+  if (org.name) org.name = normaliseText(org.name);
+  if (org.also_known_as) org.also_known_as = normaliseText(org.also_known_as);
+  org._normalised = true;
+  return org;
+}
+
 const funderData = Array.isArray(DATA?.funders) ? DATA.funders : [];
 const siteStats = DATA?.stats || {};
 const COLORS = ["#059669","#0d9488","#0891b2","#2563eb","#7c3aed","#db2777","#ea580c","#ca8a04","#65a30d","#475569","#dc2626","#4f46e5","#0e7490","#b91c1c"];
@@ -647,7 +714,14 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
 
   useEffect(() => {
     fetchSectorCounts().then(d => setSectors((d || []).slice(0, 8))).catch(() => {});
-    fetchCountyCounts().then(d => setCounties((d || []).map(c => c.county))).catch(() => {});
+    fetchCountyCounts().then(d => {
+      // Normalise county names and deduplicate
+      const raw = (d || []).map(c => ({ ...c, county: normaliseCounty(c.county) })).filter(c => c.county);
+      const merged = {};
+      raw.forEach(c => { merged[c.county] = (merged[c.county] || 0) + (c.org_count || 1); });
+      const sorted = Object.entries(merged).sort((a, b) => b[1] - a[1]).map(([county]) => county);
+      setCounties(sorted);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -687,7 +761,7 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
         sortBy: sortMap[sortBy] || "gross_income",
         sortDir: sortBy === "name" ? "asc" : "desc",
       });
-      setOrgs(result?.orgs || []);
+      setOrgs((result?.orgs || []).map(normaliseOrg));
       setTotal(result?.total || 0);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -705,7 +779,7 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
     timer.current = setTimeout(() => {
       setPageNum(1);
       if (v.trim().length >= 2) {
-        searchOrganisations(v.trim(), 8).then(r => setSuggestions(r || [])).catch(() => {});
+        searchOrganisations(v.trim(), 8).then(r => setSuggestions((r || []).map(normaliseOrg))).catch(() => {});
       } else {
         setSuggestions([]);
       }
@@ -900,6 +974,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
   useEffect(() => {
     setLoading(true);
     fetchOrganisation(orgId).then(d => {
+      normaliseOrg(d);
       setOrg(d);
       setLoading(false);
       if (d?.sector) fetchSectorBenchmark(d.sector).then(setBenchmark).catch(() => {});
