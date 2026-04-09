@@ -334,7 +334,7 @@ function AuthProvider({ children }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowOnboarding(false)}>
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><Eye className="w-8 h-8 text-white" /></div>
+              <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><span className="text-white font-extrabold text-2xl tracking-tight">OB</span></div>
               <h2 className="text-2xl font-bold text-gray-900">Welcome to OpenBenefacts!</h2>
               <p className="text-gray-500 mt-2">Your 30-day Professional trial is now active. Here's how to get the most out of it:</p>
             </div>
@@ -416,7 +416,7 @@ function Navbar({ page, setPage }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => nav("home")}>
-            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center"><Eye className="w-4 h-4 text-white" /></div>
+            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center"><span className="text-white font-extrabold text-xs tracking-tight">OB</span></div>
             <span className="font-bold text-gray-900">Open</span><span className="font-bold text-emerald-600">Benefacts</span>
             <span className="hidden sm:inline text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-medium ml-1">NONPROFIT TRANSPARENCY</span>
           </div>
@@ -1074,7 +1074,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
     return (
       <div className="p-5 bg-white min-h-0">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center"><Eye className="w-3 h-3 text-white" /></div>
+          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center"><span className="text-white font-extrabold text-[8px] tracking-tight">OB</span></div>
           <span className="font-bold text-sm text-gray-900">OpenBenefacts</span>
           <span className="text-xs text-gray-400">· Nonprofit Transparency</span>
         </div>
@@ -2526,7 +2526,7 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
     return (
       <div className="p-4 bg-white min-h-screen">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center"><Eye className="w-3 h-3 text-white" /></div>
+          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center"><span className="text-white font-extrabold text-[8px] tracking-tight">OB</span></div>
           <span className="font-bold text-sm text-gray-900">Follow the Money</span>
           <span className="text-xs text-gray-400">· openbenefacts.vercel.app</span>
         </div>
@@ -3453,7 +3453,7 @@ function InnerApp() {
       <footer className="bg-white border-t py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2"><div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center"><Eye className="w-4 h-4 text-white" /></div><span className="font-bold text-gray-900">Open</span><span className="font-bold text-emerald-600">Benefacts</span></div>
+            <div className="flex items-center gap-2"><div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center"><span className="text-white font-extrabold text-xs tracking-tight">OB</span></div><span className="font-bold text-gray-900">Open</span><span className="font-bold text-emerald-600">Benefacts</span></div>
             <div className="flex items-center gap-6 text-sm text-gray-400">
               <button onClick={() => handleSetPage("pricing")} className="hover:text-gray-600">Pricing</button>
               <button onClick={() => handleSetPage("media")} className="hover:text-gray-600">Media</button>
