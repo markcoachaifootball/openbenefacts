@@ -830,8 +830,9 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
       a.rel = "noopener";
       a.click();
     }
-    // Clean up blob URL after a delay (keep it alive long enough for the window to load)
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    // Clean up blob URL — if the window opened, let the window handle its own lifecycle;
+    // only revoke after a long delay so the user has time to read/print the report
+    setTimeout(() => URL.revokeObjectURL(url), 600000); // 10 minutes
   };
 
   useEffect(() => {
