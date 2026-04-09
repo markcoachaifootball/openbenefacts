@@ -224,7 +224,8 @@ function levenshtein(a, b) {
 async function main() {
   console.log('=== OpenBenefacts County Data Cleanup ===\n');
 
-  // Step 1: Get all distinct county values
+  // Step 1: Get all distinct county values — use RPC or raw query to get EXACT values
+  // Fetch raw county values WITHOUT trimming so we match the DB exactly
   const { data: counties, error } = await supabase
     .from('organisations')
     .select('county')
@@ -236,10 +237,10 @@ async function main() {
     return;
   }
 
-  // Count occurrences
+  // Count occurrences using the EXACT DB value (no trimming)
   const counts = {};
   counties.forEach(r => {
-    const c = r.county?.trim();
+    const c = r.county;
     if (c) counts[c] = (counts[c] || 0) + 1;
   });
 
@@ -284,7 +285,7 @@ async function main() {
     console.log('');
   }
 
-  // Step 3: Apply corrections
+  // Step 3: Apply corrections using .select() to verify rows affected
   let totalUpdated = 0;
   let totalErrors = 0;
 
@@ -292,28 +293,51 @@ async function main() {
     const { data, error: updateErr } = await supabase
       .from('organisations')
       .update({ county: to })
-      .eq('county', from);
+      .eq('county', from)
+      .select('id');
 
     if (updateErr) {
       console.error(`  ERROR updating "${from}" → "${to}": ${updateErr.message}`);
       totalErrors++;
     } else {
-      totalUpdated += count;
+      const affected = data?.length || 0;
+      if (affected === 0) {
+        console.warn(`  WARNING: "${from}" → "${to}" matched 0 rows (expected ${count}). Trying ilike...`);
+        // Fallback: case-insensitive match
+        const { data: d2, error: e2 } = await supabase
+          .from('organisations')
+          .update({ county: to })
+          .ilike('county', from)
+          .select('id');
+        if (e2) {
+          console.error(`    ilike fallback ERROR: ${e2.message}`);
+          totalErrors++;
+        } else {
+          console.log(`    ilike fallback updated ${d2?.length || 0} rows`);
+          totalUpdated += (d2?.length || 0);
+        }
+      } else {
+        console.log(`  ✓ "${from}" → "${to}" (${affected} rows)`);
+        totalUpdated += affected;
+      }
     }
   }
 
   // Set clearly garbage values to null
   for (const { raw, count } of unmatched) {
-    const { error: nullErr } = await supabase
+    const { data, error: nullErr } = await supabase
       .from('organisations')
       .update({ county: null })
-      .eq('county', raw);
+      .eq('county', raw)
+      .select('id');
 
     if (nullErr) {
       console.error(`  ERROR nulling "${raw}": ${nullErr.message}`);
       totalErrors++;
     } else {
-      totalUpdated += count;
+      const affected = data?.length || 0;
+      console.log(`  ✓ "${raw}" → null (${affected} rows)`);
+      totalUpdated += affected;
     }
   }
 
