@@ -376,10 +376,10 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
         <p className="text-lg sm:text-xl text-gray-900 font-semibold max-w-2xl mx-auto mb-8">We rebuilt it. {orgCount.toLocaleString()} organisations. {financialCount.toLocaleString()} financial records. Open to everyone.</p>
         {/* Search */}
         <div className="max-w-xl mx-auto mb-4">
-          <div className="relative">
+          <form onSubmit={e => { e.preventDefault(); doSearch(); }} className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input type="text" placeholder={`Search ${orgCount.toLocaleString()} organisations...`} value={heroSearch} onChange={e => setHeroSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()} className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl text-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none shadow-sm" />
-          </div>
+            <input type="text" placeholder={`Search ${orgCount.toLocaleString()} organisations...`} value={heroSearch} onChange={e => setHeroSearch(e.target.value)} className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl text-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none shadow-sm" />
+          </form>
           <div className="flex flex-wrap gap-2 mt-3 justify-center">
             {chips.map(c => <button key={c} onClick={() => doSearch(c)} className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm text-gray-600 hover:border-emerald-300 hover:text-emerald-700 transition-colors">{c}</button>)}
           </div>
