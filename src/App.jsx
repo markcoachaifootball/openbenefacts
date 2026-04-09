@@ -1600,17 +1600,8 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   })()}
               </div>
 
-              {/* PRO: Income breakdown + sector benchmarking */}
-              <div className="relative mt-6">
-                {!isPro && (
-                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-10">
-                    <Lock className="w-8 h-8 text-gray-400 mb-2" />
-                    <p className="font-semibold text-gray-700">Income analysis & sector benchmarking</p>
-                    <p className="text-sm text-gray-500 mb-3">Available on Pro and above</p>
-                    <button onClick={() => requirePro("Income Analysis")} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700">Upgrade to Pro — €29/mo</button>
-                  </div>
-                )}
-                <div className="space-y-6">
+              {/* Income source breakdown — FREE for everyone */}
+              <div className="mt-6 space-y-6">
 
                   {/* Income source breakdown */}
                   {org.financials && org.financials[0] && (() => {
@@ -1654,6 +1645,19 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     );
                   })()}
 
+              </div>
+
+              {/* PRO: Sector benchmarking */}
+              <div className="relative mt-6">
+                {!isPro && (
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-10">
+                    <Lock className="w-8 h-8 text-gray-400 mb-2" />
+                    <p className="font-semibold text-gray-700">Sector benchmarking & ranking</p>
+                    <p className="text-sm text-gray-500 mb-3">See how this org compares — available on Pro</p>
+                    <button onClick={() => requirePro("Sector Benchmarking")} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700">Upgrade to Pro — €29/mo</button>
+                  </div>
+                )}
+                <div className="space-y-6">
                   {/* Sector Benchmarking */}
                   {benchmark && org.financials?.[0]?.gross_income > 0 && (
                     <div className="bg-gray-50 rounded-xl p-6">
