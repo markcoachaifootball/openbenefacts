@@ -135,14 +135,18 @@ export async function fetchDirectorBoards(directorId) {
 /**
  * Fetch grants for a specific funder
  */
-export async function fetchFunderGrants(funderId, { page = 1, pageSize = 50 } = {}) {
+export async function fetchFunderGrants(funderId, { page = 1, pageSize = 50, programme = null } = {}) {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, error, count } = await supabase
+  let query = supabase
     .from('funding_grants')
-    .select('*, organisations(name, sector, county)', { count: 'exact' })
-    .eq('funder_id', funderId)
+    .select('*, organisations(id, name, sector, county)', { count: 'exact' })
+    .eq('funder_id', funderId);
+
+  if (programme) query = query.eq('programme', programme);
+
+  const { data, error, count } = await query
     .order('amount', { ascending: false })
     .range(from, to);
 

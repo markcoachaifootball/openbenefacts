@@ -1402,6 +1402,7 @@ function FundersPage({ setPage, setInitialSearch }) {
   const totalProgs = funderData.reduce((s, f) => s + (f.programmes?.length || 0), 0);
   const [search, setSearch] = useState("");
   const [selectedFunder, setSelectedFunder] = useState(null);
+  const [selectedProgramme, setSelectedProgramme] = useState(null); // programme filter
   const [funderGrants, setFunderGrants] = useState([]);
   const [grantsLoading, setGrantsLoading] = useState(false);
 
@@ -1411,21 +1412,49 @@ function FundersPage({ setPage, setInitialSearch }) {
     return sorted.filter(f => f.name.toLowerCase().includes(q));
   }, [sorted, search]);
 
-  const handleFunderClick = async (funder) => {
-    if (selectedFunder?.name === funder.name) { setSelectedFunder(null); setFunderGrants([]); return; }
+  // Grants filtered by selected programme (client-side for speed)
+  const displayGrants = useMemo(() => {
+    if (!selectedProgramme) return funderGrants;
+    return funderGrants.filter(g => g.programme === selectedProgramme);
+  }, [funderGrants, selectedProgramme]);
+
+  // Unique programmes in the currently loaded grants
+  const grantProgrammes = useMemo(() => {
+    const progs = [...new Set(funderGrants.map(g => g.programme).filter(Boolean))];
+    return progs.sort();
+  }, [funderGrants]);
+
+  const loadFunderGrants = async (funder, programme = null) => {
     setSelectedFunder(funder);
+    setSelectedProgramme(programme);
     setGrantsLoading(true);
     try {
       if (funder.id) {
-        const result = await fetchFunderGrants(funder.id, { pageSize: 100 });
+        const result = await fetchFunderGrants(funder.id, { pageSize: 200 });
         setFunderGrants(result?.grants || []);
       } else {
-        // Fallback: look up funder by name then fetch their grants
-        const result = await fetchFunderGrantsByName(funder.name, { pageSize: 100 });
+        const result = await fetchFunderGrantsByName(funder.name, { pageSize: 200 });
         setFunderGrants(result?.grants || []);
       }
     } catch (e) { console.error(e); setFunderGrants([]); }
     setGrantsLoading(false);
+  };
+
+  const handleFunderClick = async (funder) => {
+    if (selectedFunder?.name === funder.name && !selectedProgramme) { setSelectedFunder(null); setFunderGrants([]); setSelectedProgramme(null); return; }
+    setSelectedProgramme(null);
+    await loadFunderGrants(funder);
+  };
+
+  const handleProgrammeClick = async (funder, programme) => {
+    if (selectedFunder?.name === funder.name && selectedProgramme === programme) {
+      setSelectedProgramme(null); return; // Toggle off
+    }
+    if (selectedFunder?.name !== funder.name) {
+      await loadFunderGrants(funder, programme);
+    } else {
+      setSelectedProgramme(programme);
+    }
   };
 
   return (
@@ -1458,10 +1487,12 @@ function FundersPage({ setPage, setInitialSearch }) {
                   <div className="text-lg font-bold text-gray-900">{(f.recipients || 0).toLocaleString()}</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-2.5 col-span-2">
-                  <div className="text-xs text-gray-400">Programmes</div>
+                  <div className="text-xs text-gray-400">Programmes <span className="text-gray-300">(click to see recipients)</span></div>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {(f.programmes || []).slice(0, 4).map((p, j) => <span key={j} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full truncate max-w-[140px]">{p}</span>)}
-                    {(f.programmes || []).length > 4 && <span className="text-[10px] text-gray-400">+{f.programmes.length - 4}</span>}
+                    {(f.programmes || []).slice(0, 6).map((p, j) => (
+                      <button key={j} onClick={() => handleProgrammeClick(f, p)} className={`text-[10px] px-2 py-0.5 rounded-full truncate max-w-[180px] transition-colors ${selectedFunder?.name === f.name && selectedProgramme === p ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-emerald-100 hover:text-emerald-700"}`}>{p}</button>
+                    ))}
+                    {(f.programmes || []).length > 6 && <span className="text-[10px] text-gray-400">+{f.programmes.length - 6}</span>}
                   </div>
                 </div>
               </div>
@@ -1480,9 +1511,25 @@ function FundersPage({ setPage, setInitialSearch }) {
               <div className="border-t border-gray-100 bg-gray-50 p-5">
                 {grantsLoading ? <Spinner /> : funderGrants.length > 0 ? (
                   <div>
-                    <p className="text-xs text-gray-500 mb-3">{funderGrants.length} grant records found</p>
-                    <div className="space-y-2">
-                      {funderGrants.map((g, j) => (
+                    {/* Programme filter tabs */}
+                    {grantProgrammes.length > 1 && (
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        <button onClick={() => setSelectedProgramme(null)} className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${!selectedProgramme ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-emerald-50 border border-gray-200"}`}>All programmes ({funderGrants.length})</button>
+                        {grantProgrammes.map(p => {
+                          const count = funderGrants.filter(g => g.programme === p).length;
+                          return <button key={p} onClick={() => setSelectedProgramme(selectedProgramme === p ? null : p)} className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${selectedProgramme === p ? "bg-emerald-600 text-white" : "bg-white text-gray-600 hover:bg-emerald-50 border border-gray-200"}`}>{p} ({count})</button>;
+                        })}
+                      </div>
+                    )}
+                    {selectedProgramme && (
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-3 flex items-center justify-between">
+                        <span className="text-xs text-emerald-700 font-medium">Showing recipients of: <strong>{selectedProgramme}</strong> ({displayGrants.length} grants, {fmt(displayGrants.reduce((s, g) => s + (g.amount || 0), 0))} total)</span>
+                        <button onClick={() => setSelectedProgramme(null)} className="text-xs text-emerald-600 hover:text-emerald-800 font-medium">Clear filter</button>
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mb-3">{displayGrants.length} grant records{selectedProgramme ? ` in ${selectedProgramme}` : ""}</p>
+                    <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                      {displayGrants.map((g, j) => (
                         <button key={j} onClick={() => g.organisations?.id ? setPage(`org:${g.organisations.id}`) : g.org_id ? setPage(`org:${g.org_id}`) : null} className="w-full text-left flex items-center justify-between p-3 bg-white rounded-lg hover:shadow-sm transition-shadow">
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-gray-900 truncate">{cleanName(g.organisations?.name || g.recipient_name_raw) || "Unknown"}</div>
@@ -1511,85 +1558,165 @@ function FundersPage({ setPage, setInitialSearch }) {
 // ===========================================================
 const FLOW_COLORS = ["#059669","#0d9488","#0891b2","#2563eb","#7c3aed","#db2777","#ea580c","#ca8a04","#65a30d","#dc2626"];
 
-function FundingFlowWidget({ funder, grants, compact = false, onOrgClick }) {
+function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProgrammeClick }) {
   if (!funder || !grants || grants.length === 0) return null;
 
-  // Aggregate grants by recipient org, take top 10
+  // Aggregate grants by programme, then by org within each programme
+  const byProg = {};
   const byOrg = {};
   grants.forEach(g => {
+    const prog = g.programme || "General";
     const name = cleanName(g.organisations?.name || g.recipient_name_raw) || "Unknown";
     const id = g.organisations?.id || g.org_id || name;
+    if (!byProg[prog]) byProg[prog] = { name: prog, total: 0, orgs: {} };
+    byProg[prog].total += (g.amount || 0);
+    if (!byProg[prog].orgs[id]) byProg[prog].orgs[id] = { id, name, total: 0, county: g.organisations?.county || "" };
+    byProg[prog].orgs[id].total += (g.amount || 0);
     if (!byOrg[id]) byOrg[id] = { id, name, total: 0, county: g.organisations?.county || "", sector: g.organisations?.sector || "" };
     byOrg[id].total += (g.amount || 0);
   });
-  const top10 = Object.values(byOrg).sort((a, b) => b.total - a.total).slice(0, 10);
-  const maxAmount = top10[0]?.total || 1;
-  const totalFlowing = top10.reduce((s, r) => s + r.total, 0);
 
-  const svgW = compact ? 560 : 720;
-  const svgH = compact ? 320 : 420;
-  const leftX = 20;
-  const rightX = svgW - 200;
-  const funderBoxW = 180;
-  const funderBoxH = Math.min(svgH - 40, top10.length * 36);
-  const funderBoxY = (svgH - funderBoxH) / 2;
-  const recipH = Math.max(24, (svgH - 60) / top10.length - 4);
+  const programmes = Object.values(byProg).sort((a, b) => b.total - a.total).slice(0, 8);
+  const topOrgs = Object.values(byOrg).sort((a, b) => b.total - a.total).slice(0, 10);
+  const totalFlowing = topOrgs.reduce((s, r) => s + r.total, 0);
+  const hasProgrammes = programmes.length > 1 || (programmes.length === 1 && programmes[0].name !== "General");
+
+  // SVG layout — 3 columns: Funder | Programmes | Recipients
+  const svgW = compact ? 640 : 900;
+  const svgH = compact ? 360 : Math.max(420, (hasProgrammes ? Math.max(programmes.length, topOrgs.length) : topOrgs.length) * 38 + 60);
+  const pad = 16;
+  const colW = (svgW - pad * 2) / (hasProgrammes ? 5 : 3); // funder gets 1 col, progs 1.5, orgs 2.5
+  const funderX = pad;
+  const funderW = colW * 0.9;
+  const progX = hasProgrammes ? pad + colW * 1.2 : 0;
+  const progW = colW * 0.8;
+  const orgX = hasProgrammes ? pad + colW * 2.8 : pad + colW * 1.4;
+
+  // Funder box dimensions
+  const contentH = svgH - 40;
+  const funderH = Math.min(contentH, 120);
+  const funderY = (svgH - funderH) / 2;
+
+  // Programme positions
+  const progGap = 4;
+  const totalProgAmount = programmes.reduce((s, p) => s + p.total, 0);
+  let progPositions = [];
+  if (hasProgrammes) {
+    let yAcc = 20;
+    progPositions = programmes.map(p => {
+      const h = Math.max(22, (p.total / totalProgAmount) * (contentH - programmes.length * progGap));
+      const pos = { ...p, y: yAcc, h };
+      yAcc += h + progGap;
+      return pos;
+    });
+  }
+
+  // Org positions
+  const orgH = Math.max(20, (contentH - topOrgs.length * 3) / topOrgs.length);
+  const maxOrgAmount = topOrgs[0]?.total || 1;
 
   return (
     <div className="w-full overflow-x-auto">
-      <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full" style={{ maxWidth: svgW, minWidth: compact ? 400 : 560 }}>
+      <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full" style={{ maxWidth: svgW, minWidth: compact ? 500 : 700 }}>
         <defs>
-          {top10.map((_, i) => (
-            <linearGradient key={i} id={`flow-grad-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#059669" stopOpacity="0.6" />
-              <stop offset="100%" stopColor={FLOW_COLORS[i % FLOW_COLORS.length]} stopOpacity="0.4" />
+          {programmes.map((_, i) => (
+            <linearGradient key={`pg-${i}`} id={`sankey-prog-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#059669" stopOpacity="0.5" />
+              <stop offset="100%" stopColor={FLOW_COLORS[i % FLOW_COLORS.length]} stopOpacity="0.35" />
+            </linearGradient>
+          ))}
+          {topOrgs.map((_, i) => (
+            <linearGradient key={`og-${i}`} id={`sankey-org-${i}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor={FLOW_COLORS[i % FLOW_COLORS.length]} stopOpacity="0.4" />
+              <stop offset="100%" stopColor={FLOW_COLORS[i % FLOW_COLORS.length]} stopOpacity="0.2" />
             </linearGradient>
           ))}
         </defs>
 
+        {/* Column headers */}
+        <text x={funderX + funderW / 2} y={12} textAnchor="middle" fill="#9ca3af" fontSize="9" fontWeight="600" textDecoration="uppercase">SOURCE</text>
+        {hasProgrammes && <text x={progX + progW / 2} y={12} textAnchor="middle" fill="#9ca3af" fontSize="9" fontWeight="600">PROGRAMME</text>}
+        <text x={orgX + 60} y={12} textAnchor="start" fill="#9ca3af" fontSize="9" fontWeight="600">RECIPIENTS</text>
+
         {/* Funder box (left) */}
-        <rect x={leftX} y={funderBoxY} width={funderBoxW} height={funderBoxH} rx="12" fill="#059669" />
-        <text x={leftX + funderBoxW / 2} y={funderBoxY + funderBoxH / 2 - 12} textAnchor="middle" fill="white" fontSize={compact ? 10 : 12} fontWeight="700">
-          {funder.name.length > 22 ? funder.name.substring(0, 20) + "..." : funder.name}
+        <rect x={funderX} y={funderY} width={funderW} height={funderH} rx="10" fill="#059669" />
+        <text x={funderX + funderW / 2} y={funderY + funderH / 2 - 14} textAnchor="middle" fill="white" fontSize={compact ? 9 : 11} fontWeight="700">
+          {funder.name.length > 20 ? funder.name.substring(0, 18) + "..." : funder.name}
         </text>
-        <text x={leftX + funderBoxW / 2} y={funderBoxY + funderBoxH / 2 + 6} textAnchor="middle" fill="#a7f3d0" fontSize={compact ? 9 : 11} fontWeight="600">
+        <text x={funderX + funderW / 2} y={funderY + funderH / 2 + 4} textAnchor="middle" fill="#a7f3d0" fontSize={compact ? 10 : 13} fontWeight="700">
           {fmt(totalFlowing)}
         </text>
-        <text x={leftX + funderBoxW / 2} y={funderBoxY + funderBoxH / 2 + 22} textAnchor="middle" fill="#6ee7b7" fontSize={compact ? 8 : 9}>
-          to top {top10.length} recipients
+        <text x={funderX + funderW / 2} y={funderY + funderH / 2 + 20} textAnchor="middle" fill="#6ee7b7" fontSize={compact ? 7 : 8}>
+          {topOrgs.length} top recipients
         </text>
 
-        {/* Recipient boxes + flow paths */}
-        {top10.map((r, i) => {
-          const y = 20 + i * ((svgH - 40) / top10.length);
-          const barW = Math.max(40, (r.total / maxAmount) * 140);
-          const funderOutY = funderBoxY + (funderBoxH / (top10.length + 1)) * (i + 1);
-          const recipMidY = y + recipH / 2;
+        {/* SANKEY FLOWS */}
+        {hasProgrammes ? (
+          <>
+            {/* Funder → Programme flows */}
+            {progPositions.map((p, pi) => {
+              const fromY = funderY + (funderH / (programmes.length + 1)) * (pi + 1);
+              const toY = p.y + p.h / 2;
+              const thickness = Math.max(2, (p.total / totalProgAmount) * 16);
+              const cx1 = funderX + funderW + (progX - funderX - funderW) * 0.4;
+              const cx2 = funderX + funderW + (progX - funderX - funderW) * 0.6;
+              return <path key={`fp-${pi}`} d={`M ${funderX + funderW} ${fromY} C ${cx1} ${fromY}, ${cx2} ${toY}, ${progX} ${toY}`} fill="none" stroke={`url(#sankey-prog-${pi})`} strokeWidth={thickness} opacity="0.7" />;
+            })}
 
-          // Curved path from funder to recipient
-          const pathThickness = Math.max(2, (r.total / maxAmount) * 14);
-          const cx1 = leftX + funderBoxW + (rightX - leftX - funderBoxW) * 0.4;
-          const cx2 = leftX + funderBoxW + (rightX - leftX - funderBoxW) * 0.6;
-          const path = `M ${leftX + funderBoxW} ${funderOutY} C ${cx1} ${funderOutY}, ${cx2} ${recipMidY}, ${rightX} ${recipMidY}`;
-
-          return (
-            <g key={r.id}>
-              {/* Flow path */}
-              <path d={path} fill="none" stroke={`url(#flow-grad-${i})`} strokeWidth={pathThickness} opacity="0.7" />
-
-              {/* Recipient bar + label */}
-              <g
-                style={{ cursor: onOrgClick ? "pointer" : "default" }}
-                onClick={() => onOrgClick && r.id !== r.name && onOrgClick(r.id)}
-              >
-                <rect x={rightX} y={y} width={barW} height={recipH} rx="4" fill={FLOW_COLORS[i % FLOW_COLORS.length]} opacity="0.85" />
-                <text x={rightX + barW + 6} y={y + recipH / 2 - 3} fill="#111" fontSize={compact ? 9 : 10} fontWeight="600" dominantBaseline="middle">
-                  {r.name.length > 24 ? r.name.substring(0, 22) + "..." : r.name}
+            {/* Programme boxes */}
+            {progPositions.map((p, pi) => (
+              <g key={`pb-${pi}`} style={{ cursor: onProgrammeClick ? "pointer" : "default" }} onClick={() => onProgrammeClick && onProgrammeClick(p.name)}>
+                <rect x={progX} y={p.y} width={progW} height={p.h} rx="6" fill={FLOW_COLORS[pi % FLOW_COLORS.length]} opacity="0.15" stroke={FLOW_COLORS[pi % FLOW_COLORS.length]} strokeWidth="1.5" />
+                <text x={progX + progW / 2} y={p.y + p.h / 2 - (p.h > 30 ? 5 : 0)} textAnchor="middle" fill="#333" fontSize={compact ? 8 : 9} fontWeight="600" dominantBaseline="middle">
+                  {p.name.length > 18 ? p.name.substring(0, 16) + "..." : p.name}
                 </text>
-                <text x={rightX + barW + 6} y={y + recipH / 2 + 10} fill="#888" fontSize={compact ? 7 : 8} dominantBaseline="middle">
-                  {fmt(r.total)}{r.county ? ` · ${r.county}` : ""}
-                </text>
+                {p.h > 30 && <text x={progX + progW / 2} y={p.y + p.h / 2 + 10} textAnchor="middle" fill="#888" fontSize={compact ? 7 : 8} dominantBaseline="middle">{fmt(p.total)}</text>}
               </g>
+            ))}
+
+            {/* Programme → Org flows */}
+            {topOrgs.map((org, oi) => {
+              const orgY = 20 + oi * ((contentH) / topOrgs.length);
+              const orgMidY = orgY + orgH / 2;
+              // Find which programmes contribute to this org and draw a flow from each
+              return programmes.map((prog, pi) => {
+                const progOrg = byProg[prog.name]?.orgs[org.id];
+                if (!progOrg) return null;
+                const pp = progPositions[pi];
+                const fromY = pp.y + pp.h / 2;
+                const thickness = Math.max(1, (progOrg.total / maxOrgAmount) * 8);
+                const cx1 = progX + progW + (orgX - progX - progW) * 0.4;
+                const cx2 = progX + progW + (orgX - progX - progW) * 0.6;
+                return <path key={`po-${pi}-${oi}`} d={`M ${progX + progW} ${fromY} C ${cx1} ${fromY}, ${cx2} ${orgMidY}, ${orgX} ${orgMidY}`} fill="none" stroke={`url(#sankey-org-${oi})`} strokeWidth={thickness} opacity="0.6" />;
+              });
+            })}
+          </>
+        ) : (
+          /* Direct Funder → Org flows (no programmes) */
+          topOrgs.map((org, oi) => {
+            const orgY = 20 + oi * ((contentH) / topOrgs.length);
+            const orgMidY = orgY + orgH / 2;
+            const fromY = funderY + (funderH / (topOrgs.length + 1)) * (oi + 1);
+            const thickness = Math.max(2, (org.total / maxOrgAmount) * 14);
+            const cx1 = funderX + funderW + (orgX - funderX - funderW) * 0.4;
+            const cx2 = funderX + funderW + (orgX - funderX - funderW) * 0.6;
+            return <path key={`fo-${oi}`} d={`M ${funderX + funderW} ${fromY} C ${cx1} ${fromY}, ${cx2} ${orgMidY}, ${orgX} ${orgMidY}`} fill="none" stroke={`url(#sankey-org-${oi})`} strokeWidth={thickness} opacity="0.7" />;
+          })
+        )}
+
+        {/* Recipient org bars + labels (right column) */}
+        {topOrgs.map((r, i) => {
+          const y = 20 + i * ((contentH) / topOrgs.length);
+          const barW = Math.max(30, (r.total / maxOrgAmount) * 100);
+          return (
+            <g key={r.id} style={{ cursor: onOrgClick ? "pointer" : "default" }} onClick={() => onOrgClick && r.id !== r.name && onOrgClick(r.id)}>
+              <rect x={orgX} y={y} width={barW} height={orgH} rx="4" fill={FLOW_COLORS[i % FLOW_COLORS.length]} opacity="0.85" />
+              <text x={orgX + barW + 6} y={y + orgH / 2 - 3} fill="#111" fontSize={compact ? 8 : 10} fontWeight="600" dominantBaseline="middle">
+                {r.name.length > (compact ? 20 : 28) ? r.name.substring(0, compact ? 18 : 26) + "..." : r.name}
+              </text>
+              <text x={orgX + barW + 6} y={y + orgH / 2 + 10} fill="#888" fontSize={compact ? 7 : 8} dominantBaseline="middle">
+                {fmt(r.total)}{r.county ? ` · ${r.county}` : ""}
+              </text>
             </g>
           );
         })}
@@ -1612,6 +1739,7 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
   const [grants, setGrants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(null); // "link" | "embed" | null
+  const [progFilter, setProgFilter] = useState(null); // programme filter for table
 
   useEffect(() => {
     if (!funder) { setLoading(false); return; }
@@ -1683,9 +1811,10 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
 
       {/* Visualization */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-8">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Funding Flow — Top 10 Recipients</h2>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Funding Flow — Where the Money Goes</h2>
+        <p className="text-xs text-gray-400 mb-4">Click a programme to filter the recipients table below</p>
         {loading ? <Spinner /> : grants.length > 0 ? (
-          <FundingFlowWidget funder={funder} grants={grants} onOrgClick={(id) => setPage(`org:${id}`)} />
+          <FundingFlowWidget funder={funder} grants={grants} onOrgClick={(id) => setPage(`org:${id}`)} onProgrammeClick={(prog) => setProgFilter(progFilter === prog ? null : prog)} />
         ) : (
           <EmptyState icon={Database} title="Grant data loading" sub="Individual grant records for this funder are being collected" />
         )}
@@ -1705,8 +1834,10 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
 
       {/* Full recipient table */}
       {grants.length > 0 && (() => {
+        const filteredGrants = progFilter ? grants.filter(g => g.programme === progFilter) : grants;
+        const uniqueProgs = [...new Set(grants.map(g => g.programme).filter(Boolean))].sort();
         const byOrg = {};
-        grants.forEach(g => {
+        filteredGrants.forEach(g => {
           const name = cleanName(g.organisations?.name || g.recipient_name_raw) || "Unknown";
           const id = g.organisations?.id || g.org_id || name;
           if (!byOrg[id]) byOrg[id] = { id, name, total: 0, count: 0, county: g.organisations?.county || "", sector: g.organisations?.sector || "" };
@@ -1717,7 +1848,25 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
 
         return (
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">All Recipients ({allRecipients.length})</h2>
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+              {progFilter ? `Recipients — ${progFilter}` : `All Recipients`} ({allRecipients.length})
+            </h2>
+            {/* Programme filter pills */}
+            {uniqueProgs.length > 1 && (
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                <button onClick={() => setProgFilter(null)} className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${!progFilter ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-emerald-50"}`}>All ({grants.length})</button>
+                {uniqueProgs.map(p => {
+                  const ct = grants.filter(g => g.programme === p).length;
+                  return <button key={p} onClick={() => setProgFilter(progFilter === p ? null : p)} className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${progFilter === p ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-emerald-50"}`}>{p} ({ct})</button>;
+                })}
+              </div>
+            )}
+            {progFilter && (
+              <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-4 flex items-center justify-between">
+                <span className="text-xs text-emerald-700 font-medium">Filtering by programme: <strong>{progFilter}</strong> — {fmt(filteredGrants.reduce((s, g) => s + (g.amount || 0), 0))} to {allRecipients.length} organisations</span>
+                <button onClick={() => setProgFilter(null)} className="text-xs text-emerald-600 hover:text-emerald-800 font-medium">Clear</button>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="text-xs text-gray-400 border-b border-gray-200">

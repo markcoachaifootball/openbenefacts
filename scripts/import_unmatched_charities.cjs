@@ -215,6 +215,7 @@ async function main() {
 
     newOrgs.push({
       name: name,
+      name_normalised: name.toUpperCase().trim(),
       charity_number: rcn,
       cro_number: croNum || null,
       governing_form: govForm || null,
