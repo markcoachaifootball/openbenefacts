@@ -605,6 +605,9 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
     { label: "Over €100M", value: "100m+", min: 100000000, max: null },
   ];
 
+  const resultsRef = useRef(null);
+  const isFirstLoad = useRef(true);
+
   const loadOrgs = useCallback(async () => {
     setLoading(true);
     try {
@@ -626,6 +629,10 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
       setTotal(result?.total || 0);
     } catch (e) { console.error(e); }
     setLoading(false);
+    if (!isFirstLoad.current) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    isFirstLoad.current = false;
   }, [search, pageNum, sector, county, govForm, incomeRange, sortBy]);
 
   useEffect(() => { loadOrgs(); }, [loadOrgs]);
