@@ -65,61 +65,123 @@ const findFunderBySlug = (slug) => funderSlugs.find(f => f.slug === slug || f.sl
 const getFunderSlug = (index) => funderSlugs[index]?.slug || String(index);
 
 // ===========================================================
-// AI RISK SCORE — algorithmic financial health assessment
+// AI RISK SCORE — multi-year algorithmic financial health assessment
 // ===========================================================
 function computeRiskScore(org) {
   if (!org?.financials || org.financials.length === 0) return null;
   const latest = org.financials[0];
-  let score = 70; // Base score
+  const years = org.financials.length;
+  let score = 65; // Base score — neutral starting point
   const factors = [];
 
-  // 1. Expenditure ratio (spending within income?)
+  // Helper: compute year-over-year changes for a metric across all years
+  const yoyChanges = (metric) => {
+    const vals = org.financials.map(f => f[metric]).filter(v => v != null && v > 0);
+    if (vals.length < 2) return [];
+    // financials[0] is latest, so changes[0] = latest vs previous
+    return vals.slice(0, -1).map((v, i) => (v - vals[i + 1]) / vals[i + 1]);
+  };
+
+  // Helper: standard deviation
+  const stdDev = (arr) => {
+    if (arr.length < 2) return 0;
+    const mean = arr.reduce((s, v) => s + v, 0) / arr.length;
+    return Math.sqrt(arr.reduce((s, v) => s + (v - mean) ** 2, 0) / arr.length);
+  };
+
+  // ── 1. DATA DEPTH — more years = more confidence ──
+  if (years >= 5) { score += 10; factors.push({ label: `${years} years of filings — strong data depth`, impact: "positive" }); }
+  else if (years >= 3) { score += 5; factors.push({ label: `${years} years of filings — adequate data`, impact: "positive" }); }
+  else if (years === 2) { factors.push({ label: "2 years of data — limited trend analysis", impact: "neutral" }); }
+  else { score -= 10; factors.push({ label: "Only 1 year of data — risk score is indicative only", impact: "negative" }); }
+
+  // ── 2. EXPENDITURE RATIO (latest year) ──
   if (latest.gross_income > 0 && latest.gross_expenditure > 0) {
     const ratio = latest.gross_expenditure / latest.gross_income;
-    if (ratio > 1.1) { score -= 15; factors.push({ label: "Spending exceeds income", impact: "negative" }); }
-    else if (ratio > 0.95) { score += 5; factors.push({ label: "Balanced budget", impact: "positive" }); }
-    else if (ratio < 0.7) { score -= 5; factors.push({ label: "Low spending ratio — possible reserves accumulation", impact: "neutral" }); }
-    else { score += 10; factors.push({ label: "Healthy spending ratio", impact: "positive" }); }
+    if (ratio > 1.2) { score -= 15; factors.push({ label: `Spending exceeds income by ${Math.round((ratio - 1) * 100)}%`, impact: "negative" }); }
+    else if (ratio > 1.0) { score -= 8; factors.push({ label: "Slight deficit — spending marginally exceeds income", impact: "negative" }); }
+    else if (ratio >= 0.75) { score += 8; factors.push({ label: "Healthy spending ratio", impact: "positive" }); }
+    else if (ratio < 0.5) { score -= 3; factors.push({ label: "Very low spending ratio — possible reserves hoarding", impact: "neutral" }); }
+    else { score += 5; factors.push({ label: "Balanced budget", impact: "positive" }); }
   }
 
-  // 2. Income trend (multi-year)
-  if (org.financials.length >= 2) {
-    const prev = org.financials[1];
-    if (latest.gross_income > 0 && prev.gross_income > 0) {
-      const change = (latest.gross_income - prev.gross_income) / prev.gross_income;
-      if (change > 0.1) { score += 10; factors.push({ label: "Income growing", impact: "positive" }); }
-      else if (change < -0.2) { score -= 15; factors.push({ label: "Significant income decline", impact: "negative" }); }
-      else if (change < -0.05) { score -= 5; factors.push({ label: "Slight income decline", impact: "neutral" }); }
+  // ── 3. MULTI-YEAR INCOME TREND ──
+  const incomeChanges = yoyChanges("gross_income");
+  if (incomeChanges.length >= 2) {
+    const avgChange = incomeChanges.reduce((s, v) => s + v, 0) / incomeChanges.length;
+    const consecutiveDeclines = incomeChanges.filter(c => c < -0.02).length;
+    const volatility = stdDev(incomeChanges);
+
+    // Average trend direction
+    if (avgChange > 0.08) { score += 10; factors.push({ label: `Income growing avg ${Math.round(avgChange * 100)}% per year over ${incomeChanges.length + 1} years`, impact: "positive" }); }
+    else if (avgChange > 0.02) { score += 5; factors.push({ label: `Steady income growth (avg +${Math.round(avgChange * 100)}%/yr)`, impact: "positive" }); }
+    else if (avgChange < -0.1) { score -= 15; factors.push({ label: `Significant income decline (avg ${Math.round(avgChange * 100)}%/yr over ${incomeChanges.length + 1} years)`, impact: "negative" }); }
+    else if (avgChange < -0.03) { score -= 8; factors.push({ label: `Income declining (avg ${Math.round(avgChange * 100)}%/yr)`, impact: "negative" }); }
+
+    // Consecutive declines are a red flag
+    if (consecutiveDeclines >= 3) { score -= 12; factors.push({ label: `${consecutiveDeclines} consecutive years of income decline`, impact: "negative" }); }
+    else if (consecutiveDeclines === 2) { score -= 5; factors.push({ label: "2 consecutive years of income decline", impact: "neutral" }); }
+
+    // Income volatility — high year-to-year swings suggest instability
+    if (volatility > 0.3) { score -= 8; factors.push({ label: "High income volatility — unpredictable revenue", impact: "negative" }); }
+    else if (volatility > 0.15) { score -= 3; factors.push({ label: "Moderate income volatility", impact: "neutral" }); }
+    else if (volatility < 0.08 && incomeChanges.length >= 3) { score += 3; factors.push({ label: "Stable, predictable income", impact: "positive" }); }
+  } else if (incomeChanges.length === 1) {
+    // Only 2 years — simple comparison
+    const change = incomeChanges[0];
+    if (change > 0.1) { score += 5; factors.push({ label: "Income growing year-over-year", impact: "positive" }); }
+    else if (change < -0.15) { score -= 10; factors.push({ label: `Income dropped ${Math.round(Math.abs(change) * 100)}% year-over-year`, impact: "negative" }); }
+    else if (change < -0.05) { score -= 3; factors.push({ label: "Slight income decline", impact: "neutral" }); }
+  }
+
+  // ── 4. EXPENDITURE TREND — is spending outpacing income? ──
+  const expendChanges = yoyChanges("gross_expenditure");
+  if (expendChanges.length >= 2 && incomeChanges.length >= 2) {
+    const avgIncGrowth = incomeChanges.reduce((s, v) => s + v, 0) / incomeChanges.length;
+    const avgExpGrowth = expendChanges.reduce((s, v) => s + v, 0) / expendChanges.length;
+    if (avgExpGrowth > avgIncGrowth + 0.05) {
+      score -= 8;
+      factors.push({ label: "Expenditure growing faster than income over time", impact: "negative" });
+    } else if (avgIncGrowth > avgExpGrowth + 0.05) {
+      score += 5;
+      factors.push({ label: "Income outpacing expenditure growth", impact: "positive" });
     }
-    factors.push({ label: `${org.financials.length} years of filings`, impact: org.financials.length >= 3 ? "positive" : "neutral" });
-    if (org.financials.length >= 3) score += 5;
-  } else {
-    score -= 10; factors.push({ label: "Only 1 year of data", impact: "neutral" });
   }
 
-  // 3. Asset coverage
+  // ── 5. RESERVE TREND — are assets growing or shrinking? ──
+  const assetChanges = yoyChanges("total_assets");
+  if (assetChanges.length >= 2) {
+    const avgAssetChange = assetChanges.reduce((s, v) => s + v, 0) / assetChanges.length;
+    if (avgAssetChange < -0.1) { score -= 8; factors.push({ label: "Reserves declining over multiple years", impact: "negative" }); }
+    else if (avgAssetChange > 0.05) { score += 5; factors.push({ label: "Growing reserves over time", impact: "positive" }); }
+  }
+  // Latest reserve coverage
   if (latest.total_assets > 0 && latest.gross_expenditure > 0) {
     const coverage = latest.total_assets / latest.gross_expenditure;
-    if (coverage > 0.5) { score += 5; factors.push({ label: "Adequate reserves", impact: "positive" }); }
-    else { score -= 5; factors.push({ label: "Low reserve coverage", impact: "neutral" }); }
+    if (coverage > 1.0) { score += 5; factors.push({ label: "Strong reserves (>1 year of expenditure)", impact: "positive" }); }
+    else if (coverage > 0.25) { score += 2; factors.push({ label: "Adequate reserves", impact: "positive" }); }
+    else { score -= 5; factors.push({ label: "Low reserve coverage (<3 months)", impact: "neutral" }); }
   }
 
-  // 4. State funding dependency
+  // ── 6. STATE FUNDING DEPENDENCY ──
   if (org.grants && org.grants.length > 0 && latest.gross_income > 0) {
     const grantTotal = org.grants.reduce((s, g) => s + (g.amount || 0), 0);
     const dependency = grantTotal / latest.gross_income;
-    if (dependency > 0.8) { factors.push({ label: "High state funding dependency", impact: "neutral" }); }
-    else if (dependency > 0) { factors.push({ label: "Diversified income sources", impact: "positive" }); score += 5; }
+    if (dependency > 0.9) { score -= 3; factors.push({ label: "Very high state funding dependency (>90%)", impact: "neutral" }); }
+    else if (dependency > 0.7) { factors.push({ label: "High state funding dependency", impact: "neutral" }); }
+    else if (dependency > 0) { score += 3; factors.push({ label: "Diversified income sources", impact: "positive" }); }
   }
 
-  // 5. Governance
-  if (org.boardMembers && org.boardMembers.length >= 3) { score += 5; factors.push({ label: `${org.boardMembers.length} board members on record`, impact: "positive" }); }
-  else if (org.boardMembers && org.boardMembers.length > 0) { factors.push({ label: "Small board", impact: "neutral" }); }
+  // ── 7. GOVERNANCE ──
+  if (org.boardMembers && org.boardMembers.length >= 5) { score += 5; factors.push({ label: `${org.boardMembers.length} board members on record`, impact: "positive" }); }
+  else if (org.boardMembers && org.boardMembers.length >= 3) { score += 3; factors.push({ label: `${org.boardMembers.length} board members`, impact: "positive" }); }
+  else if (org.boardMembers && org.boardMembers.length > 0) { factors.push({ label: "Small board size", impact: "neutral" }); }
 
   score = Math.max(0, Math.min(100, score));
   const level = score >= 75 ? "low" : score >= 50 ? "moderate" : "elevated";
   const color = score >= 75 ? "emerald" : score >= 50 ? "amber" : "red";
-  return { score, level, color, factors };
+  const confidence = years >= 5 ? "high" : years >= 3 ? "moderate" : "low";
+  return { score, level, color, factors, confidence, yearsAnalysed: years };
 }
 
 // ===========================================================
@@ -905,7 +967,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                   </style></head><body>
                     <h1>${org.name}</h1>
                     <div class="sub">${[clean(org.county),clean(org.sector),clean(org.charity_number) ? "RCN "+org.charity_number : ""].filter(Boolean).join(" · ")}</div>
-                    ${risk ? `<div style="background:${risk.color==="emerald"?"#ecfdf5":risk.color==="amber"?"#fffbeb":"#fef2f2"};padding:12px;border-radius:8px;margin-bottom:20px"><strong>AI Risk Score: ${risk.score}/100</strong> — <span class="badge" style="background:${risk.color==="emerald"?"#ecfdf5":risk.color==="amber"?"#fffbeb":"#fef2f2"}">${risk.level} risk</span></div>` : ""}
+                    ${risk ? `<div style="background:${risk.color==="emerald"?"#ecfdf5":risk.color==="amber"?"#fffbeb":"#fef2f2"};padding:12px;border-radius:8px;margin-bottom:20px"><strong>AI Risk Score: ${risk.score}/100</strong> — <span class="badge" style="background:${risk.color==="emerald"?"#ecfdf5":risk.color==="amber"?"#fffbeb":"#fef2f2"}">${risk.level} risk</span> <span style="font-size:11px;color:#666;margin-left:8px">${risk.yearsAnalysed} year${risk.yearsAnalysed!==1?"s":""} analysed · ${risk.confidence} confidence</span></div>` : ""}
                     ${latest ? `<h2>Latest Financials (${latest.year || "Most Recent"})</h2><div class="grid">
                       ${latest.gross_income!=null ? `<div class="card"><div class="label">Gross Income</div><div class="val">${fmt(latest.gross_income)}</div></div>` : ""}
                       ${latest.gross_expenditure!=null ? `<div class="card"><div class="label">Gross Expenditure</div><div class="val">${fmt(latest.gross_expenditure)}</div></div>` : ""}
@@ -978,6 +1040,7 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                     <div class="section">
                       <div class="risk-box" style="background:${risk.color==="emerald"?"#ecfdf5":risk.color==="amber"?"#fffbeb":"#fef2f2"}">
                         <strong style="font-size:16px">Overall Risk Score: ${risk.score}/100 — ${risk.level.charAt(0).toUpperCase()+risk.level.slice(1)} Risk</strong>
+                        <div style="font-size:12px;color:#666;margin-top:4px">${risk.yearsAnalysed} year${risk.yearsAnalysed!==1?"s":""} of data analysed · ${risk.confidence} confidence score</div>
                         <div style="margin-top:12px">${risk.factors.map(f => `<div class="factor"><span class="dot" style="background:${f.impact==="positive"?"#059669":f.impact==="negative"?"#dc2626":"#9ca3af"}"></span> ${f.label}</div>`).join("")}</div>
                       </div>
                     </div>` : ""}
@@ -1073,6 +1136,12 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                     </div>
                     <div className="w-full h-2 bg-gray-200 rounded-full mb-3">
                       <div className={`h-2 rounded-full ${c.bar} transition-all`} style={{ width: `${risk.score}%` }} />
+                    </div>
+                    <div className="flex items-center gap-3 mb-3 text-[10px] text-gray-500">
+                      <span className="flex items-center gap-1"><Database className="w-3 h-3" /> {risk.yearsAnalysed} year{risk.yearsAnalysed !== 1 ? "s" : ""} analysed</span>
+                      <span className={`px-1.5 py-0.5 rounded ${risk.confidence === "high" ? "bg-emerald-100 text-emerald-700" : risk.confidence === "moderate" ? "bg-amber-100 text-amber-700" : "bg-gray-200 text-gray-600"}`}>
+                        {risk.confidence} confidence
+                      </span>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-2">
                       {risk.factors.map((f, i) => (
@@ -1182,15 +1251,30 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
               <p className="text-gray-500 text-sm mb-4">Financial data sourced from Charities Regulator and CRO filings.</p>
               {org.financials && org.financials.length > 0 ? (
                 <div className="mb-6">
-                  <div className="bg-emerald-50 rounded-xl p-4 mb-4">
+                  <div className="bg-emerald-50 rounded-xl p-4 mb-4 flex items-center justify-between">
                     <p className="text-sm text-emerald-700 font-medium">Latest Annual Return ({org.financials[0].year || "Most Recent"})</p>
+                    {org.financials.length > 1 && <span className="text-xs text-emerald-600">{org.financials.length} years on file</span>}
                   </div>
-                  <div className="grid sm:grid-cols-2 gap-4 mb-6">
-                    {org.financials[0].gross_income != null && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Gross Income</div><div className="text-xl font-bold text-gray-900 mt-1">{fmt(org.financials[0].gross_income)}</div></div>}
-                    {org.financials[0].gross_expenditure != null && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Gross Expenditure</div><div className="text-xl font-bold text-gray-900 mt-1">{fmt(org.financials[0].gross_expenditure)}</div></div>}
-                    {org.financials[0].total_assets != null && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Total Assets</div><div className="text-xl font-bold text-gray-900 mt-1">{fmt(org.financials[0].total_assets)}</div></div>}
-                    {org.financials[0].employees != null && org.financials[0].employees > 0 && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Employees</div><div className="text-xl font-bold text-gray-900 mt-1">{org.financials[0].employees.toLocaleString()}</div></div>}
-                  </div>
+                  {/* YoY helper for change indicators */}
+                  {(() => {
+                    const cur = org.financials[0];
+                    const prev = org.financials.length >= 2 ? org.financials[1] : null;
+                    const yoyBadge = (curVal, prevVal) => {
+                      if (!prev || curVal == null || prevVal == null || prevVal === 0) return null;
+                      const pct = ((curVal - prevVal) / Math.abs(prevVal)) * 100;
+                      if (Math.abs(pct) < 0.5) return <span className="text-[10px] text-gray-400 ml-1">unchanged</span>;
+                      const up = pct > 0;
+                      return <span className={`text-[10px] ml-1 font-medium ${up ? "text-emerald-600" : "text-red-500"}`}>{up ? "▲" : "▼"} {Math.abs(pct).toFixed(0)}% vs {prev.year || "prior"}</span>;
+                    };
+                    return (
+                      <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                        {cur.gross_income != null && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Gross Income</div><div className="text-xl font-bold text-gray-900 mt-1">{fmt(cur.gross_income)} {yoyBadge(cur.gross_income, prev?.gross_income)}</div></div>}
+                        {cur.gross_expenditure != null && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Gross Expenditure</div><div className="text-xl font-bold text-gray-900 mt-1">{fmt(cur.gross_expenditure)} {yoyBadge(cur.gross_expenditure, prev?.gross_expenditure)}</div></div>}
+                        {cur.total_assets != null && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Total Assets</div><div className="text-xl font-bold text-gray-900 mt-1">{fmt(cur.total_assets)} {yoyBadge(cur.total_assets, prev?.total_assets)}</div></div>}
+                        {cur.employees != null && cur.employees > 0 && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Employees</div><div className="text-xl font-bold text-gray-900 mt-1">{cur.employees.toLocaleString()} {yoyBadge(cur.employees, prev?.employees)}</div></div>}
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-xl p-6 text-center mb-6">
@@ -1199,17 +1283,36 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
               )}
               {/* FREE: Multi-year trends + year-by-year table */}
               <div className="space-y-6">
-                  {/* Multi-year trend chart */}
+                  {/* Multi-year trend chart with summary */}
                   {org.financials && org.financials.length > 1 && (() => {
-                    const trendData = [...org.financials].reverse().map(f => ({
+                    const sorted = [...org.financials].reverse(); // oldest first
+                    const trendData = sorted.map(f => ({
                       year: f.year || "—",
                       Income: f.gross_income || 0,
                       Expenditure: f.gross_expenditure || 0,
-                      Assets: f.total_assets || 0,
                     }));
+                    // Compute overall CAGR (Compound Annual Growth Rate) for income
+                    const first = sorted[0]?.gross_income;
+                    const last = sorted[sorted.length - 1]?.gross_income;
+                    const nYears = sorted.length - 1;
+                    let cagrLabel = null;
+                    if (first > 0 && last > 0 && nYears >= 2) {
+                      const cagr = (Math.pow(last / first, 1 / nYears) - 1) * 100;
+                      const dir = cagr >= 0 ? "+" : "";
+                      cagrLabel = `${dir}${cagr.toFixed(1)}% CAGR over ${nYears + 1} years`;
+                    }
+                    // Compute surplus/deficit trend
+                    const surplusYears = sorted.filter(f => f.gross_income > 0 && f.gross_expenditure > 0 && f.gross_income >= f.gross_expenditure).length;
+                    const deficitYears = sorted.filter(f => f.gross_income > 0 && f.gross_expenditure > 0 && f.gross_expenditure > f.gross_income).length;
                     return (
                       <div className="bg-gray-50 rounded-xl p-6">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-4">Financial Trends ({trendData.length} years)</h4>
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="text-sm font-semibold text-gray-700">Financial Trends ({trendData.length} years)</h4>
+                          {cagrLabel && <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${last >= first ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>{cagrLabel}</span>}
+                        </div>
+                        {(surplusYears > 0 || deficitYears > 0) && (
+                          <p className="text-[11px] text-gray-500 mb-4">Surplus in {surplusYears} of {surplusYears + deficitYears} years{deficitYears > 0 ? ` · deficit in ${deficitYears}` : ""}</p>
+                        )}
                         <ResponsiveContainer width="100%" height={240}>
                           <BarChart data={trendData}>
                             <XAxis dataKey="year" fontSize={11} />
@@ -1227,30 +1330,44 @@ function OrgProfilePage({ orgId, setPage, watchlist }) {
                     );
                   })()}
 
-                  {/* Year-by-year table — FREE for everyone */}
-                  {org.financials && org.financials.length > 1 && (
+                  {/* Year-by-year table with YoY changes — FREE for everyone */}
+                  {org.financials && org.financials.length > 1 && (() => {
+                    const yoyPct = (cur, prev) => {
+                      if (cur == null || prev == null || prev === 0) return null;
+                      return ((cur - prev) / Math.abs(prev)) * 100;
+                    };
+                    const yoyCell = (pct) => {
+                      if (pct == null) return <td className="py-2 px-1 text-right text-[10px] text-gray-300">—</td>;
+                      const up = pct >= 0;
+                      return <td className={`py-2 px-1 text-right text-[10px] font-medium ${up ? "text-emerald-600" : "text-red-500"}`}>{up ? "+" : ""}{pct.toFixed(0)}%</td>;
+                    };
+                    return (
                     <div className="bg-gray-50 rounded-xl p-6">
                       <h4 className="text-sm font-semibold text-gray-700 mb-3">Year-by-Year Comparison</h4>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead><tr className="text-xs text-gray-400 border-b border-gray-200">
-                            <th className="text-left py-2 pr-3">Year</th><th className="text-right py-2 px-3">Income</th><th className="text-right py-2 px-3">Expenditure</th><th className="text-right py-2 px-3">Assets</th><th className="text-right py-2 pl-3">Employees</th>
+                            <th className="text-left py-2 pr-3">Year</th><th className="text-right py-2 px-2">Income</th><th className="text-right py-2 px-1 text-[10px]">YoY</th><th className="text-right py-2 px-2">Expenditure</th><th className="text-right py-2 px-1 text-[10px]">YoY</th><th className="text-right py-2 px-2">Assets</th><th className="text-right py-2 pl-2">Employees</th>
                           </tr></thead>
                           <tbody>
-                            {org.financials.map((f, i) => (
+                            {org.financials.map((f, i) => {
+                              const prev = org.financials[i + 1];
+                              return (
                               <tr key={i} className={`border-b border-gray-100 ${i === 0 ? "font-semibold" : ""}`}>
                                 <td className="py-2 pr-3 text-gray-700">{f.year || "—"}</td>
-                                <td className="py-2 px-3 text-right text-gray-900">{f.gross_income != null ? fmt(f.gross_income) : "—"}</td>
-                                <td className="py-2 px-3 text-right text-gray-900">{f.gross_expenditure != null ? fmt(f.gross_expenditure) : "—"}</td>
-                                <td className="py-2 px-3 text-right text-gray-900">{f.total_assets != null ? fmt(f.total_assets) : "—"}</td>
-                                <td className="py-2 pl-3 text-right text-gray-900">{f.employees > 0 ? f.employees.toLocaleString() : "—"}</td>
-                              </tr>
-                            ))}
+                                <td className="py-2 px-2 text-right text-gray-900">{f.gross_income != null ? fmt(f.gross_income) : "—"}</td>
+                                {yoyCell(prev ? yoyPct(f.gross_income, prev.gross_income) : null)}
+                                <td className="py-2 px-2 text-right text-gray-900">{f.gross_expenditure != null ? fmt(f.gross_expenditure) : "—"}</td>
+                                {yoyCell(prev ? yoyPct(f.gross_expenditure, prev.gross_expenditure) : null)}
+                                <td className="py-2 px-2 text-right text-gray-900">{f.total_assets != null ? fmt(f.total_assets) : "—"}</td>
+                                <td className="py-2 pl-2 text-right text-gray-900">{f.employees > 0 ? f.employees.toLocaleString() : "—"}</td>
+                              </tr>);
+                            })}
                           </tbody>
                         </table>
                       </div>
-                    </div>
-                  )}
+                    </div>);
+                  })()}
               </div>
 
               {/* PRO: Income breakdown + sector benchmarking */}
