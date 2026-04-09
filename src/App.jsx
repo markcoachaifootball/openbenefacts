@@ -2477,6 +2477,110 @@ function FoundationsPage({ orgCount = 36803 }) {
 }
 
 // ===========================================================
+// CSR / ESG LANDING PAGE — targeted at corporate giving teams
+// ===========================================================
+function CsrPage({ orgCount = 36803 }) {
+  const { setShowAuth, setAuthMode } = useAuth();
+  const formattedCount = orgCount.toLocaleString();
+
+  const risks = [
+    { icon: "&#9888;", title: "Reputational damage", desc: "A single donation to a poorly governed charity can generate months of negative press coverage." },
+    { icon: "&#128200;", title: "Compliance exposure", desc: "ESG reporting frameworks (GRI, CSRD) require demonstrable due diligence on charitable partnerships." },
+    { icon: "&#128176;", title: "Wasted impact", desc: "Organisations running persistent deficits or with declining income may not effectively deploy your funding." },
+  ];
+
+  const features = [
+    "AI risk score for every Irish nonprofit",
+    "Multi-year financial trend analysis",
+    "Board governance and cross-directorship checks",
+    "State funding dependency mapping",
+    "Spending ratio and reserve coverage",
+    "Filing history completeness",
+    "One-click PDF reports for compliance files",
+    "Watchlist alerts for portfolio charities",
+  ];
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Hero */}
+      <div className="text-center mb-16">
+        <div className="inline-block px-3 py-1 bg-amber-100 text-amber-700 text-xs font-semibold uppercase tracking-wider rounded-full mb-4">For Corporate CSR &amp; ESG Teams</div>
+        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 leading-tight">Know before you give</h1>
+        <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8">Since the Rehab Group and Console scandals, corporate Ireland knows the reputational cost of donating to a poorly governed charity. OpenBenefacts gives your CSR team instant financial and governance intelligence on {formattedCount} Irish nonprofits — so every donation is defensible.</p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors">Start Free 14-Day Trial</button>
+          <a href="mailto:mark@openbenefacts.com?subject=CSR%20Team%20Enquiry" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Talk to Us</a>
+        </div>
+        <p className="text-sm text-gray-400 mt-3">No credit card required · Pro plan from €299/year</p>
+      </div>
+
+      {/* Risk cards */}
+      <div className="mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">The risk of not vetting</h2>
+        <p className="text-gray-500 text-center mb-8 max-w-lg mx-auto">Every unvetted donation is a reputational liability. These are the risks your legal and compliance teams already worry about.</p>
+        <div className="grid sm:grid-cols-3 gap-4">
+          {risks.map((r, i) => (
+            <div key={i} className="bg-red-50 border border-red-100 rounded-xl p-5">
+              <div className="text-2xl mb-2" dangerouslySetInnerHTML={{ __html: r.icon }} />
+              <h3 className="font-bold text-gray-900 mb-1">{r.title}</h3>
+              <p className="text-sm text-gray-600">{r.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* What you get */}
+      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-8 mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">What your CSR team gets</h2>
+        <p className="text-gray-500 mb-6">Everything you need to vet charity partners and document due diligence for ESG reporting.</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {features.map((f, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+              <span className="text-sm text-gray-700">{f}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ROI / pricing */}
+      <div className="bg-white rounded-2xl border-2 border-emerald-200 p-8 mb-16 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-3">A trivial cost for total confidence</h2>
+        <p className="text-gray-500 max-w-xl mx-auto mb-6">For a company managing a €500K annual charity budget, a Pro plan at €299/year is less than 0.06% of your giving — and eliminates 100% of the "we didn't know" risk.</p>
+        <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+          <div><div className="text-3xl font-bold text-gray-900">€299</div><div className="text-xs text-gray-400">Per year</div></div>
+          <div><div className="text-3xl font-bold text-emerald-600">0.06%</div><div className="text-xs text-gray-400">Of a €500K budget</div></div>
+          <div><div className="text-3xl font-bold text-emerald-600">100%</div><div className="text-xs text-gray-400">Due diligence coverage</div></div>
+        </div>
+      </div>
+
+      {/* Use case: charity portfolio monitoring */}
+      <div className="bg-gray-50 rounded-2xl p-8 mb-16">
+        <h2 className="text-2xl font-bold text-gray-900 mb-3">Monitor your charity portfolio</h2>
+        <p className="text-gray-500 mb-4">Add every charity your company supports to your watchlist. OpenBenefacts will track their financial health, flag governance changes, and alert you to emerging risks — so you never get surprised by a headline.</p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl p-4 border border-gray-100">
+            <div className="text-xs text-gray-400 font-medium uppercase mb-1">Before OpenBenefacts</div>
+            <p className="text-sm text-gray-600">Annual review of charity partners based on their own self-reported information. No independent verification. React to problems after they appear in the press.</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 border border-emerald-200">
+            <div className="text-xs text-emerald-600 font-medium uppercase mb-1">With OpenBenefacts</div>
+            <p className="text-sm text-gray-600">Continuous monitoring with AI risk scores, real regulatory data, and instant alerts. Proactive risk management. Every donation decision backed by evidence.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div className="bg-gray-900 rounded-2xl p-8 text-center text-white">
+        <h2 className="text-2xl font-bold mb-3">Protect your brand. Maximise your impact.</h2>
+        <p className="text-gray-300 max-w-xl mx-auto mb-6">Join corporate CSR teams who use OpenBenefacts to make every charitable donation defensible, compliant, and impactful.</p>
+        <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="inline-block px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-400 transition-colors">Start Free Trial — €299/year</button>
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================
 // PRICING PAGE
 // ===========================================================
 function PricingPage({ orgCount = 36803, setPage }) {
@@ -2486,7 +2590,7 @@ function PricingPage({ orgCount = 36803, setPage }) {
 
   const plans = [
     { name: "Free", price: 0, desc: "Genuinely useful transparency", features: [`Browse ${formattedCount} organizations`,"5-year financial trend charts","Year-by-year comparison tables","Board member & cross-directorships","State funding received","AI risk score (summary)","Full search & filters"], cta: "Get Started" },
-    { name: "Pro", price: annual ? 299 : 29, period: annual ? "/year" : "/month", desc: "Financial intelligence", features: ["Everything in Free","Income source breakdown","Sector benchmarking","Full AI risk assessment","PDF profile downloads","Watchlist & alerts"], highlight: true, cta: "Start Free Trial", badge: annual ? "Save 15%" : null },
+    { name: "Pro", price: annual ? 299 : 29, period: annual ? "/year" : "/month", desc: "Know before you give", features: ["Everything in Free","Full AI risk assessment","Charity portfolio watchlist","Sector benchmarking","Income source breakdown","PDF profile downloads","ESG-ready compliance reports"], highlight: true, cta: "Start Free Trial", badge: annual ? "Save 15%" : null },
     { name: "Professional", price: annual ? 1499 : 149, period: annual ? "/year" : "/month", desc: "Grant due diligence in one click", features: ["Everything in Pro","One-click due diligence reports","Grant readiness assessment","White-label branded reports","Bulk CSV/Excel export","API access (1,000 calls/mo)","Priority support"], cta: "Start Free Trial" },
     { name: "Enterprise", price: null, desc: "Custom solutions", features: ["Everything in Professional","Unlimited API access","Custom dashboards","White-label reports","Dedicated account manager","Custom data integration","SLA guarantee"], cta: "Contact Sales" },
   ];
@@ -2533,6 +2637,18 @@ function PricingPage({ orgCount = 36803, setPage }) {
             <p className="text-sm text-gray-500">See how OpenBenefacts saves foundations thousands of hours on grant applicant screening.</p>
           </div>
           <button onClick={() => setPage("foundations")} className="flex-shrink-0 px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors whitespace-nowrap">Learn More</button>
+        </div>
+      )}
+
+      {/* CSR / ESG CTA */}
+      {setPage && (
+        <div className="mt-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
+          <div className="flex-1">
+            <div className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">For Corporate CSR &amp; ESG Teams</div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Know before you give</h3>
+            <p className="text-sm text-gray-500">Protect your brand with instant financial and governance checks on every charity your company supports.</p>
+          </div>
+          <button onClick={() => setPage("csr")} className="flex-shrink-0 px-6 py-3 bg-amber-600 text-white rounded-xl font-semibold hover:bg-amber-700 transition-colors whitespace-nowrap">Learn More</button>
         </div>
       )}
     </div>
@@ -2630,6 +2746,7 @@ function InnerApp() {
       case "funders": return <FundersPage setPage={handleSetPage} setInitialSearch={setInitialSearch} />;
       case "pricing": return <PricingPage orgCount={orgCount} setPage={handleSetPage} />;
       case "foundations": return <FoundationsPage orgCount={orgCount} />;
+      case "csr": return <CsrPage orgCount={orgCount} />;
       case "api": return <ApiPage />;
       case "about": return <AboutPage orgCount={orgCount} />;
       default: return <HomePage setPage={handleSetPage} setInitialSearch={setInitialSearch} setInitialSector={setInitialSector} watchlist={wl} />;
