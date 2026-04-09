@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback, createContext, useContext } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { Search, Building2, Users, TrendingUp, DollarSign, ChevronRight, ArrowLeft, Eye, Star, Shield, Menu, X, MapPin, Hash, Landmark, GraduationCap, Heart, Briefcase, Globe, Filter, ChevronDown, ExternalLink, Info, BarChart3, FileText, Award, Zap, Database, ArrowRight, Layers, Check, CreditCard, LogIn, UserPlus, Crown, Sparkles, LogOut, AlertTriangle, Lock, ArrowUpDown, Bookmark, Share2, Copy, Code, Download } from "lucide-react";
 import { supabase, fetchStats, fetchFunders, fetchOrganisations, fetchOrganisation, searchOrganisations, fetchSectorCounts, fetchCountyCounts, fetchDirectorBoards, fetchFunderGrants, fetchFunderGrantsByName, fetchSectorBenchmark } from "./supabase.js";
 import { DATA } from "./data.js";
@@ -299,10 +299,10 @@ function AuthProvider({ children }) {
   const [pass, setPass] = useState("");
   const [name, setName] = useState("");
 
-  // Trial: check if user is within 14-day Pro trial
-  const trialDaysLeft = user?.trialStart ? Math.max(0, 14 - Math.floor((Date.now() - new Date(user.trialStart).getTime()) / 86400000)) : 0;
+  // Trial: check if user is within 30-day Professional trial
+  const trialDaysLeft = user?.trialStart ? Math.max(0, 30 - Math.floor((Date.now() - new Date(user.trialStart).getTime()) / 86400000)) : 0;
   const isTrialActive = trialDaysLeft > 0;
-  const tier = user?.tier || (isTrialActive ? "pro" : "free");
+  const tier = user?.tier || (isTrialActive ? "professional" : "free");
   const isPro = tier === "pro" || tier === "professional" || tier === "enterprise";
   const logout = () => { setUser(null); localStorage.removeItem("ob_user"); };
   const requirePro = (feature) => { if (!isPro) { setUpgradePrompt(feature); setShowPricing(true); return false; } return true; };
@@ -336,7 +336,7 @@ function AuthProvider({ children }) {
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><Eye className="w-8 h-8 text-white" /></div>
               <h2 className="text-2xl font-bold text-gray-900">Welcome to OpenBenefacts!</h2>
-              <p className="text-gray-500 mt-2">Your 14-day Pro trial is now active. Here's how to get the most out of it:</p>
+              <p className="text-gray-500 mt-2">Your 30-day Professional trial is now active. Here's how to get the most out of it:</p>
             </div>
             <div className="space-y-3 mb-6">
               {[
@@ -352,7 +352,7 @@ function AuthProvider({ children }) {
               ))}
             </div>
             <button onClick={() => setShowOnboarding(false)} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700">Start exploring</button>
-            <p className="text-center text-xs text-gray-400 mt-3">Your Pro trial lasts 14 days. No credit card required.</p>
+            <p className="text-center text-xs text-gray-400 mt-3">Your Professional trial lasts 30 days. No credit card required.</p>
           </div>
         </div>
       )}
@@ -437,7 +437,7 @@ function Navbar({ page, setPage }) {
                       <p className="font-medium text-gray-900 text-sm">{user.name || user.email}</p>
                       <p className="text-xs text-gray-500">{user.email}</p>
                       {isTrialActive ? (
-                        <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">Pro Trial · {trialDaysLeft} days left</span>
+                        <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">Professional Trial · {trialDaysLeft} days left</span>
                       ) : (
                         <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full capitalize">{user.tier}</span>
                       )}
@@ -1127,6 +1127,43 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     });
                     yoyHtml = '<h3 style="font-size:13px;font-weight:600;margin:16px 0 8px">Year-over-Year Financial History</h3><table><tr><th>Year</th><th style="text-align:right">Income</th><th style="text-align:right">Expenditure</th><th style="text-align:right">Assets</th><th style="text-align:right">Income \u0394</th></tr>' + rows.join("") + '</table>';
                   }
+                  // Compute 5-year summary for DD report
+                  const fiveYearFinancials = (org.financials || []).slice(0, 5);
+                  const fiveYearFirst = fiveYearFinancials[fiveYearFinancials.length - 1];
+                  const fiveYearLast = fiveYearFinancials[0];
+                  const fiveYrCagr = fiveYearFirst?.gross_income > 0 && fiveYearLast?.gross_income > 0 && fiveYearFinancials.length >= 3 ? ((Math.pow(fiveYearLast.gross_income / fiveYearFirst.gross_income, 1 / (fiveYearFinancials.length - 1)) - 1) * 100).toFixed(1) : null;
+                  const surplusCount = fiveYearFinancials.filter(f => f.gross_income > 0 && f.gross_expenditure > 0 && f.gross_income >= f.gross_expenditure).length;
+                  const deficitCount = fiveYearFinancials.filter(f => f.gross_income > 0 && f.gross_expenditure > 0 && f.gross_expenditure > f.gross_income).length;
+
+                  // Governance risk flags
+                  const govFlags = [];
+                  const boardCount = org.boardMembers?.length || 0;
+                  if (boardCount < 5 && boardCount > 0) govFlags.push({ flag: "Below recommended minimum of 5 board members (" + boardCount + " on record)", severity: "warn" });
+                  if (boardCount === 0) govFlags.push({ flag: "No board member data available", severity: "fail" });
+                  if (boardCount >= 5) govFlags.push({ flag: boardCount + " board members — meets Charities Governance Code minimum", severity: "pass" });
+                  // Tenure check
+                  const tenures = (org.boardMembers || []).filter(bm => bm.start_date).map(bm => new Date().getFullYear() - parseInt(bm.start_date.slice(0, 4)));
+                  if (tenures.length > 0) {
+                    const longServing = tenures.filter(t => t > 9).length;
+                    if (longServing > tenures.length / 2) govFlags.push({ flag: longServing + " of " + tenures.length + " directors serving 10+ years — potential board renewal concern", severity: "warn" });
+                    else govFlags.push({ flag: "Board tenure diversity: average " + (tenures.reduce((a,b) => a+b, 0) / tenures.length).toFixed(1) + " years", severity: "pass" });
+                  }
+                  // Cross-directorship count (from already-fetched data)
+                  const crossDirCount = Object.values(directorBoards).reduce((s, boards) => s + boards.length, 0);
+                  if (crossDirCount > 0) govFlags.push({ flag: crossDirCount + " cross-directorship(s) identified across board members", severity: boardCount > 0 && crossDirCount > boardCount * 2 ? "warn" : "pass" });
+
+                  // Sector benchmarking HTML
+                  let benchHtml = "";
+                  if (benchmark && latest?.gross_income > 0) {
+                    const incomeRatio = benchmark.medianIncome > 0 ? (latest.gross_income / benchmark.medianIncome) : 0;
+                    const incomePctile = incomeRatio > 3 ? "Top 5%" : incomeRatio > 1.5 ? "Top 25%" : incomeRatio > 0.8 ? "Middle 50%" : "Bottom 25%";
+                    const spendRatio = latest.gross_income > 0 ? ((latest.gross_expenditure / latest.gross_income) * 100).toFixed(0) : "—";
+                    const sectorSpendRatio = benchmark.avgIncome > 0 ? ((benchmark.avgExpenditure / benchmark.avgIncome) * 100).toFixed(0) : "—";
+                    benchHtml = '<div class="grid3"><div class="card" style="text-align:center"><div class="label">Income vs Sector Median</div><div class="val" style="color:' + (incomeRatio >= 1 ? "#059669" : "#d97706") + '">' + (incomeRatio >= 10 ? "10x+" : incomeRatio.toFixed(1) + "x") + '</div><div style="font-size:10px;color:#999">' + incomePctile + '</div><div style="font-size:10px;color:#bbb">Median: ' + fmt(benchmark.medianIncome) + '</div></div>' +
+                      '<div class="card" style="text-align:center"><div class="label">Spending Efficiency</div><div class="val">' + spendRatio + '%</div><div style="font-size:10px;color:#999">of income spent</div><div style="font-size:10px;color:#bbb">Sector avg: ' + sectorSpendRatio + '%</div></div>' +
+                      '<div class="card" style="text-align:center"><div class="label">Sector Rank</div><div class="val">' + incomePctile + '</div><div style="font-size:10px;color:#999">by income</div><div style="font-size:10px;color:#bbb">' + benchmark.orgCount.toLocaleString() + ' orgs in sector</div></div></div>';
+                  }
+
                   const ddHtml = `<!DOCTYPE html><html><head><title>Due Diligence Report — ${org.name}</title><style>
                     body{font-family:-apple-system,sans-serif;max-width:800px;margin:0 auto;padding:40px;color:#111;font-size:13px}
                     .cover{text-align:center;padding:80px 0;border-bottom:3px solid #059669;margin-bottom:40px}
@@ -1141,8 +1178,11 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     .risk-box{padding:16px;border-radius:8px;margin-bottom:20px}
                     .factor{display:flex;align-items:center;gap:6px;font-size:12px;margin:4px 0}
                     .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+                    .flag{display:flex;align-items:center;gap:8px;font-size:12px;margin:6px 0}
                     .footer{margin-top:40px;padding-top:16px;border-top:2px solid #059669;font-size:10px;color:#999;text-align:center}
                     .section{page-break-inside:avoid} .confidential{color:#dc2626;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+                    .summary-bar{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+                    .summary-pill{font-size:11px;padding:4px 10px;border-radius:12px;font-weight:600}
                     @media print{body{padding:20px}.cover{padding:40px 0}}
                   </style></head><body>
                     <div class="cover">
@@ -1157,6 +1197,12 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     <h2>1. Executive Summary</h2>
                     <div class="section">
                       <p>${org.name} is a${/^[aeiou]/i.test(org.sector || "") ? "n" : ""} ${(org.sector || "nonprofit").toLowerCase()} organisation based in ${clean(org.county) || "Ireland"}. ${latest ? `In its most recent filing (${latest.year || "latest"}), it reported gross income of ${fmt(latest.gross_income)} and expenditure of ${fmt(latest.gross_expenditure)}.` : "No financial data is currently on file."} ${org.grants?.length > 0 ? `The organisation has ${org.grants.length} government funding records totalling ${fmt(grantTotal)} (${statePct}% of income).` : ""}</p>
+                      ${fiveYearFinancials.length >= 2 ? `<div class="summary-bar">
+                        <span class="summary-pill" style="background:#ecfdf5;color:#059669">${fiveYearFinancials.length}-year data</span>
+                        ${fiveYrCagr ? `<span class="summary-pill" style="background:${parseFloat(fiveYrCagr) >= 0 ? "#ecfdf5;color:#059669" : "#fef2f2;color:#dc2626"}">${parseFloat(fiveYrCagr) >= 0 ? "+" : ""}${fiveYrCagr}% CAGR</span>` : ""}
+                        <span class="summary-pill" style="background:${deficitCount === 0 ? "#ecfdf5;color:#059669" : "#fffbeb;color:#d97706"}">Surplus ${surplusCount}/${surplusCount + deficitCount} years</span>
+                        ${risk ? `<span class="summary-pill" style="background:${risk.color==="emerald"?"#ecfdf5;color:#059669":risk.color==="amber"?"#fffbeb;color:#d97706":"#fef2f2;color:#dc2626"}">${risk.level} risk (${risk.score}/100)</span>` : ""}
+                      </div>` : ""}
                     </div>
 
                     ${risk ? `<h2>2. Risk Assessment</h2>
@@ -1168,10 +1214,10 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                       </div>
                     </div>` : ""}
 
-                    ${latest ? `<h2>3. Financial Overview</h2>
+                    ${latest ? `<h2>3. Five-Year Financial Summary</h2>
                     <div class="section">
                       <div class="grid">
-                        ${latest.gross_income!=null ? `<div class="card"><div class="label">Gross Income</div><div class="val">${fmt(latest.gross_income)}</div></div>` : ""}
+                        ${latest.gross_income!=null ? `<div class="card"><div class="label">Gross Income (${latest.year || "Latest"})</div><div class="val">${fmt(latest.gross_income)}</div></div>` : ""}
                         ${latest.gross_expenditure!=null ? `<div class="card"><div class="label">Gross Expenditure</div><div class="val">${fmt(latest.gross_expenditure)}</div></div>` : ""}
                         ${latest.total_assets > 0 ? `<div class="card"><div class="label">Total Assets</div><div class="val">${fmt(latest.total_assets)}</div></div>` : ""}
                         ${latest.employees>0 ? `<div class="card"><div class="label">Employees</div><div class="val">${latest.employees}</div></div>` : ""}
@@ -1184,47 +1230,67 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                       ${yoyHtml}
                     </div>` : ""}
 
-                    ${org.grants?.length > 0 ? `<h2>4. Government Funding History</h2>
+                    ${benchHtml ? `<h2>${latest ? "4" : "3"}. Sector Benchmarking</h2>
+                    <div class="section">
+                      <p style="font-size:12px;color:#666;margin-bottom:12px">Compared to ${benchmark.orgCount.toLocaleString()} organisations in the ${benchmark.sectorName} sector.</p>
+                      ${benchHtml}
+                    </div>` : ""}
+
+                    ${org.grants?.length > 0 ? `<h2>${(latest ? 4 : 3) + (benchHtml ? 1 : 0) + 1}. Government Funding History</h2>
                     <div class="section">
                       <table><tr><th>Funder</th><th>Programme</th><th>Year</th><th style="text-align:right">Amount</th></tr>${org.grants.map(g=>`<tr><td>${g.funders?.name||g.funder_name||"Government"}</td><td>${g.programme||"—"}</td><td>${g.year||"—"}</td><td style="text-align:right">${g.amount>0?fmt(g.amount):"—"}</td></tr>`).join("")}</table>
                     </div>` : ""}
 
-                    ${org.boardMembers?.length > 0 ? `<h2>5. Governance</h2>
-                    <div class="section">
-                      <p>${org.boardMembers.length} board member${org.boardMembers.length>1?"s":""} on record.</p>
-                      <table><tr><th>Name</th><th>Role</th><th>Since</th></tr>${org.boardMembers.map(bm=>`<tr><td>${bm.directors?.name||"—"}</td><td>${bm.role||"Trustee"}</td><td>${bm.start_date?.slice(0,4)||"—"}</td></tr>`).join("")}</table>
-                    </div>` : ""}
-
                     ${(() => {
-                      // Grant Readiness Assessment — automated checks for foundations
-                      let secNum = 4;
+                      // Dynamic section numbering
+                      let secNum = latest ? 4 : 3;
+                      if (benchHtml) secNum++;
                       if (org.grants?.length > 0) secNum++;
-                      if (org.boardMembers?.length > 0) secNum++;
-                      const grSecNum = secNum;
-                      secNum++;
-                      const detSecNum = secNum;
-                      secNum++;
+                      const govSecNum = secNum; secNum++;
+                      const grSecNum = secNum; secNum++;
+                      const detSecNum = secNum; secNum++;
                       const srcSecNum = secNum;
 
+                      // Governance section with risk flags
+                      let govHtml = "";
+                      if (org.boardMembers?.length > 0 || govFlags.length > 0) {
+                        const flagsHtml = govFlags.map(gf => {
+                          const icon = gf.severity === "pass" ? "&#10003;" : gf.severity === "warn" ? "&#9888;" : "&#10007;";
+                          const color = gf.severity === "pass" ? "#059669" : gf.severity === "warn" ? "#d97706" : "#dc2626";
+                          return '<div class="flag"><span style="color:' + color + ';font-size:14px;width:16px;text-align:center">' + icon + '</span> ' + gf.flag + '</div>';
+                        }).join("");
+
+                        const boardTable = org.boardMembers?.length > 0 ?
+                          '<table><tr><th>Name</th><th>Role</th><th>Since</th><th>Tenure</th></tr>' +
+                          org.boardMembers.map(function(bm) {
+                            const since = bm.start_date?.slice(0, 4) || "—";
+                            const tenure = bm.start_date ? (new Date().getFullYear() - parseInt(bm.start_date.slice(0, 4))) + " yrs" : "—";
+                            return '<tr><td>' + (bm.directors?.name || "—") + '</td><td>' + (bm.role || "Trustee") + '</td><td>' + since + '</td><td>' + tenure + '</td></tr>';
+                          }).join("") + '</table>' : "";
+
+                        govHtml = '<h2>' + govSecNum + '. Governance & Risk Flags</h2><div class="section">' +
+                          '<p>' + (org.boardMembers?.length || 0) + ' board member(s) on record.</p>' +
+                          '<div style="background:#f9fafb;padding:12px;border-radius:8px;margin:12px 0">' + flagsHtml + '</div>' +
+                          boardTable + '</div>';
+                      }
+
+                      // Grant Readiness Assessment
                       const checks = [];
                       const pass = (label) => checks.push({ label, status: "pass" });
                       const warn = (label) => checks.push({ label, status: "warn" });
                       const fail = (label) => checks.push({ label, status: "fail" });
 
-                      // 1. Filing history
                       const filingYears = org.financials?.length || 0;
                       if (filingYears >= 3) pass("Filing history: " + filingYears + " years of annual returns on record");
                       else if (filingYears >= 1) warn("Filing history: Only " + filingYears + " year(s) of returns — limited track record");
                       else fail("Filing history: No annual returns on file");
 
-                      // 2. Governance
                       const boardSize = org.boardMembers?.length || 0;
                       if (boardSize >= 5) pass("Board governance: " + boardSize + " board members — meets Charities Governance Code minimum");
                       else if (boardSize >= 3) warn("Board governance: " + boardSize + " board members — below recommended minimum of 5");
                       else if (boardSize > 0) fail("Board governance: Only " + boardSize + " board member(s) — governance risk");
                       else warn("Board governance: No board data available");
 
-                      // 3. Financial health — spending ratio
                       if (latest && latest.gross_income > 0 && latest.gross_expenditure > 0) {
                         const ratio = latest.gross_expenditure / latest.gross_income;
                         if (ratio <= 1.0 && ratio >= 0.6) pass("Spending ratio: " + (ratio * 100).toFixed(0) + "% — balanced budget");
@@ -1233,19 +1299,16 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                         else warn("Spending ratio: " + (ratio * 100).toFixed(0) + "% — unusually low");
                       } else { warn("Spending ratio: Insufficient data"); }
 
-                      // 4. Reserve levels
                       if (latest && latest.total_assets > 0 && latest.gross_expenditure > 0) {
                         const coverage = latest.total_assets / latest.gross_expenditure;
                         if (coverage >= 0.25) pass("Reserves: " + coverage.toFixed(1) + "x annual expenditure — adequate reserve coverage");
                         else warn("Reserves: " + coverage.toFixed(1) + "x annual expenditure — low reserve coverage");
                       } else { warn("Reserves: No asset data available"); }
 
-                      // 5. Income diversification (state dependency)
                       if (statePct <= 50) pass("Income diversification: " + statePct + "% state-funded — diversified income base");
                       else if (statePct <= 80) warn("Income diversification: " + statePct + "% state-funded — moderate dependency");
                       else if (statePct > 80) fail("Income diversification: " + statePct + "% state-funded — high dependency risk");
 
-                      // 6. Income stability
                       if (org.financials?.length >= 3) {
                         const incomes = org.financials.map(f => f.gross_income).filter(v => v > 0);
                         if (incomes.length >= 3) {
@@ -1257,7 +1320,6 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                         }
                       }
 
-                      // 7. Regulatory registration
                       if (clean(org.charity_number)) pass("Registered charity: RCN " + org.charity_number);
                       else fail("Not on the Register of Charities");
 
@@ -1274,7 +1336,8 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                         return '<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:6px 0"><span style="color:' + color + ';font-size:14px;width:16px;text-align:center">' + icon + '</span> ' + c.label + '</div>';
                       }).join("");
 
-                      return '<h2>' + grSecNum + '. Grant Readiness Assessment</h2>' +
+                      return govHtml +
+                        '<h2>' + grSecNum + '. Grant Readiness Assessment</h2>' +
                         '<div class="section">' +
                         '<div style="background:' + readinessBg + ';padding:14px;border-radius:8px;margin-bottom:12px">' +
                         '<strong style="color:' + readinessColor + ';font-size:15px">' + readiness + '</strong>' +
@@ -1475,6 +1538,103 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     );
                   })}
                   <p className="text-xs text-gray-400 mt-3">Source: Charities Regulator public register. Click a name to see cross-directorships.</p>
+
+                  {/* Board Network Graph — visual cross-directorship map */}
+                  {(() => {
+                    // Build network: center node = this org, director nodes radiate out, connected org nodes on outer ring
+                    const directors = org.boardMembers.filter(bm => bm.directors).map(bm => ({
+                      id: bm.directors.id,
+                      name: bm.directors.name,
+                      role: bm.role || "Trustee",
+                      otherBoards: directorBoards[bm.directors.id] || [],
+                    }));
+                    const hasConnections = directors.some(d => d.otherBoards.length > 0);
+                    if (directors.length === 0) return null;
+
+                    // SVG layout: center org, directors in inner ring, connected orgs in outer ring
+                    const svgW = 700, svgH = 500;
+                    const cx = svgW / 2, cy = svgH / 2;
+                    const innerR = 130, outerR = 220;
+
+                    // Director positions (inner ring)
+                    const dirPositions = directors.map((d, i) => {
+                      const angle = (2 * Math.PI * i / directors.length) - Math.PI / 2;
+                      return { ...d, x: cx + innerR * Math.cos(angle), y: cy + innerR * Math.sin(angle) };
+                    });
+
+                    // Connected orgs (outer ring) — deduplicate
+                    const connectedOrgs = {};
+                    dirPositions.forEach(d => {
+                      d.otherBoards.forEach(ob => {
+                        const oid = ob.org_id || ob.organisations?.id;
+                        if (!oid) return;
+                        if (!connectedOrgs[oid]) connectedOrgs[oid] = { id: oid, name: cleanName(ob.organisations?.name) || "Unknown", sector: ob.organisations?.sector || "", directors: [] };
+                        connectedOrgs[oid].directors.push(d.id);
+                      });
+                    });
+                    const outerNodes = Object.values(connectedOrgs).slice(0, 16);
+                    const outerPositions = outerNodes.map((o, i) => {
+                      const angle = (2 * Math.PI * i / Math.max(outerNodes.length, 1)) - Math.PI / 2;
+                      return { ...o, x: cx + outerR * Math.cos(angle), y: cy + outerR * Math.sin(angle) };
+                    });
+
+                    return (
+                      <div className="mt-6 bg-gray-50 rounded-xl p-6">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2"><Users className="w-4 h-4" /> Board Network Graph</h4>
+                        <p className="text-[11px] text-gray-400 mb-3">{directors.length} directors{hasConnections ? ` · ${outerNodes.length} connected organisations via cross-directorships` : " · No cross-directorships detected yet — click names above to load"}</p>
+                        <div className="overflow-x-auto">
+                          <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full" style={{ maxWidth: svgW, minHeight: 400 }}>
+                            {/* Connections: directors → connected orgs */}
+                            {outerPositions.map((op, oi) =>
+                              op.directors.map(did => {
+                                const dp = dirPositions.find(d => d.id === did);
+                                if (!dp) return null;
+                                return <line key={`conn-${oi}-${did}`} x1={dp.x} y1={dp.y} x2={op.x} y2={op.y} stroke="#d1d5db" strokeWidth="1" strokeDasharray="4 3" opacity="0.6" />;
+                              })
+                            )}
+                            {/* Connections: center → directors */}
+                            {dirPositions.map((dp, i) => (
+                              <line key={`cdir-${i}`} x1={cx} y1={cy} x2={dp.x} y2={dp.y} stroke="#059669" strokeWidth="2" opacity="0.3" />
+                            ))}
+
+                            {/* Connected org nodes (outer) */}
+                            {outerPositions.map((op, i) => (
+                              <g key={`outer-${i}`} style={{ cursor: "pointer" }} onClick={() => setPage(`org:${op.id}`)}>
+                                <circle cx={op.x} cy={op.y} r={16} fill="#f3f4f6" stroke="#d1d5db" strokeWidth="1.5" />
+                                <text x={op.x} y={op.y + 1} textAnchor="middle" dominantBaseline="middle" fill="#6b7280" fontSize="8" fontWeight="600">{op.name.charAt(0)}</text>
+                                <text x={op.x} y={op.y + 28} textAnchor="middle" fill="#6b7280" fontSize="8" fontWeight="500">
+                                  {op.name.length > 18 ? op.name.substring(0, 16) + "…" : op.name}
+                                </text>
+                              </g>
+                            ))}
+
+                            {/* Director nodes (inner ring) */}
+                            {dirPositions.map((dp, i) => (
+                              <g key={`dir-${i}`}>
+                                <circle cx={dp.x} cy={dp.y} r={20} fill="#ecfdf5" stroke="#059669" strokeWidth="2" />
+                                <text x={dp.x} y={dp.y - 2} textAnchor="middle" dominantBaseline="middle" fill="#059669" fontSize="10" fontWeight="700">{dp.name.split(" ").map(w => w[0]).join("").slice(0, 2)}</text>
+                                <text x={dp.x} y={dp.y + 10} textAnchor="middle" fill="#059669" fontSize="7">{dp.otherBoards.length > 0 ? `+${dp.otherBoards.length}` : ""}</text>
+                              </g>
+                            ))}
+
+                            {/* Center node: this org */}
+                            <circle cx={cx} cy={cy} r={32} fill="#059669" stroke="#047857" strokeWidth="2" />
+                            <text x={cx} y={cy - 6} textAnchor="middle" fill="white" fontSize="9" fontWeight="700">
+                              {cleanName(org.name).length > 14 ? cleanName(org.name).substring(0, 12) + "…" : cleanName(org.name)}
+                            </text>
+                            <text x={cx} y={cy + 8} textAnchor="middle" fill="#a7f3d0" fontSize="8">{directors.length} directors</text>
+
+                            {/* Legend */}
+                            <g transform={`translate(12, ${svgH - 50})`}>
+                              <circle cx={8} cy={0} r={6} fill="#059669" /><text x={20} y={4} fill="#666" fontSize="9">This organisation</text>
+                              <circle cx={8} cy={18} r={6} fill="#ecfdf5" stroke="#059669" strokeWidth="1.5" /><text x={20} y={22} fill="#666" fontSize="9">Board member</text>
+                              <circle cx={140} cy={0} r={6} fill="#f3f4f6" stroke="#d1d5db" strokeWidth="1.5" /><text x={152} y={4} fill="#666" fontSize="9">Connected via shared director</text>
+                            </g>
+                          </svg>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-xl p-6 text-center">
@@ -1565,6 +1725,63 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                         <div className="flex items-center justify-center gap-4 mt-2">
                           <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-emerald-600" /> Income</div>
                           <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-cyan-600" /> Expenditure</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* PRO: Enhanced multi-year trend analysis with surplus/deficit area + asset line */}
+                  {isPro && org.financials && org.financials.length > 2 && (() => {
+                    const sorted = [...org.financials].reverse();
+                    const areaData = sorted.map(f => {
+                      const income = f.gross_income || 0;
+                      const expend = f.gross_expenditure || 0;
+                      return { year: f.year || "—", Income: income, Expenditure: expend, Surplus: Math.max(0, income - expend), Deficit: Math.max(0, expend - income), Assets: f.total_assets || 0 };
+                    });
+                    const hasAssets = areaData.some(d => d.Assets > 0);
+                    // Compute volatility (coefficient of variation of income)
+                    const incomes = sorted.map(f => f.gross_income).filter(v => v > 0);
+                    const avgInc = incomes.reduce((a,b) => a+b, 0) / incomes.length;
+                    const stdDev = Math.sqrt(incomes.reduce((s, v) => s + Math.pow(v - avgInc, 2), 0) / incomes.length);
+                    const volatility = avgInc > 0 ? ((stdDev / avgInc) * 100).toFixed(0) : 0;
+                    const volatilityLabel = volatility < 15 ? "Stable" : volatility < 30 ? "Moderate" : "Volatile";
+                    const volatilityColor = volatility < 15 ? "emerald" : volatility < 30 ? "amber" : "red";
+
+                    return (
+                      <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-6 border border-gray-100">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Crown className="w-4 h-4 text-emerald-600" /> Multi-Year Trend Analysis</h4>
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full bg-${volatilityColor}-100 text-${volatilityColor}-700`}>Income volatility: {volatilityLabel} ({volatility}% CV)</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mb-4">{areaData.length} years · Surplus/deficit overlay with {hasAssets ? "asset position" : "trend lines"}</p>
+                        <ResponsiveContainer width="100%" height={280}>
+                          <AreaChart data={areaData}>
+                            <defs>
+                              <linearGradient id="surplusGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#059669" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#059669" stopOpacity={0} />
+                              </linearGradient>
+                              <linearGradient id="deficitGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#dc2626" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#dc2626" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <XAxis dataKey="year" fontSize={11} />
+                            <YAxis tickFormatter={v => v >= 1e6 ? `€${(v/1e6).toFixed(0)}M` : v >= 1e3 ? `€${(v/1e3).toFixed(0)}K` : `€${v}`} fontSize={10} />
+                            <Tooltip formatter={v => fmt(v)} />
+                            <Area type="monotone" dataKey="Surplus" stroke="#059669" fill="url(#surplusGrad)" strokeWidth={0} />
+                            <Area type="monotone" dataKey="Deficit" stroke="#dc2626" fill="url(#deficitGrad)" strokeWidth={0} />
+                            <Line type="monotone" dataKey="Income" stroke="#059669" strokeWidth={2.5} dot={{ r: 3, fill: "#059669" }} />
+                            <Line type="monotone" dataKey="Expenditure" stroke="#0891b2" strokeWidth={2.5} dot={{ r: 3, fill: "#0891b2" }} />
+                            {hasAssets && <Line type="monotone" dataKey="Assets" stroke="#7c3aed" strokeWidth={1.5} strokeDasharray="5 5" dot={{ r: 2, fill: "#7c3aed" }} />}
+                          </AreaChart>
+                        </ResponsiveContainer>
+                        <div className="flex items-center justify-center gap-4 mt-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-emerald-600" /> Income</div>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-cyan-600" /> Expenditure</div>
+                          {hasAssets && <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-1 rounded bg-purple-600" style={{borderTop: "2px dashed #7c3aed"}} /> Assets</div>}
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-emerald-200" /> Surplus</div>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-red-200" /> Deficit</div>
                         </div>
                       </div>
                     );
@@ -2655,7 +2872,7 @@ function FoundationsPage({ orgCount = 36803 }) {
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 leading-tight">Grant due diligence<br />in one click</h1>
         <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8">Stop spending hours manually checking the Charities Register, CRO filings, and Revenue records. OpenBenefacts generates a comprehensive due diligence report on any Irish nonprofit in seconds — covering {formattedCount} organisations.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors">Start Free 14-Day Trial</button>
+          <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors">Start Free 30-Day Trial</button>
           <a href="mailto:mark@openbenefacts.com?subject=Foundation%20Pilot%20Programme" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Request Pilot Access</a>
         </div>
         <p className="text-sm text-gray-400 mt-3">No credit card required · Professional plan €1,499/year</p>
@@ -2845,7 +3062,7 @@ function CsrPage({ orgCount = 36803 }) {
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 leading-tight">Know before you give</h1>
         <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8">Since the Rehab Group and Console scandals, corporate Ireland knows the reputational cost of donating to a poorly governed charity. OpenBenefacts gives your CSR team instant financial and governance intelligence on {formattedCount} Irish nonprofits — so every donation is defensible.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors">Start Free 14-Day Trial</button>
+          <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors">Start Free 30-Day Trial</button>
           <a href="mailto:mark@openbenefacts.com?subject=CSR%20Team%20Enquiry" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Talk to Us</a>
         </div>
         <p className="text-sm text-gray-400 mt-3">No credit card required · Pro plan from €299/year</p>
@@ -2937,7 +3154,7 @@ function PricingPage({ orgCount = 36803, setPage }) {
       <div className="text-center mb-10">
         <h1 className="text-4xl font-bold text-gray-900 mb-3">Simple, Transparent Pricing</h1>
         <p className="text-gray-500 mb-2">Choose the plan that fits your needs. Cancel anytime.</p>
-        <p className="text-sm text-emerald-600 font-medium mb-4">All paid plans include a 14-day free Pro trial. No credit card required.</p>
+        <p className="text-sm text-emerald-600 font-medium mb-4">All paid plans include a 30-day free Professional trial. No credit card required.</p>
         <div className="flex items-center justify-center gap-3">
           <span className={`text-sm ${!annual ? "text-gray-900 font-medium" : "text-gray-400"}`}>Monthly</span>
           <button onClick={() => setAnnual(!annual)} className={`relative w-12 h-6 rounded-full transition-colors ${annual ? "bg-emerald-600" : "bg-gray-300"}`}>
