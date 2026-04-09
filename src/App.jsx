@@ -501,27 +501,87 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Hero — bold narrative */}
-      <div className="text-center mb-10">
-        <div className="inline-flex items-center gap-2 mb-4 text-xs font-semibold tracking-wide uppercase">
-          <span className="bg-red-50 text-red-700 px-3 py-1 rounded-full">The gap in Irish transparency</span>
-          <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full">Now filled</span>
-        </div>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-5 leading-tight">
-          Every year, Ireland pours<br/><span className="text-emerald-600">€14 billion</span> into nonprofits.<br/>
-          <span className="text-gray-400 text-3xl sm:text-4xl lg:text-5xl">Nobody was tracking where it went.</span>
-        </h1>
-        <p className="text-lg sm:text-xl text-gray-500 max-w-3xl mx-auto mb-3">Benefacts tracked every euro. The government defunded it in 2022. For four years, the money trail went dark.</p>
-        <p className="text-lg sm:text-xl text-gray-900 font-semibold max-w-2xl mx-auto mb-8">We rebuilt it. {orgCount.toLocaleString()} organisations. {financialCount.toLocaleString()} financial records. Open to everyone.</p>
-        {/* Search */}
-        <div className="max-w-xl mx-auto mb-4">
-          <form onSubmit={e => { e.preventDefault(); doSearch(); }} className="relative">
+      {/* Hero — left-aligned Candid-style layout */}
+      <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 mb-12 pt-4">
+        {/* Left: copy + search */}
+        <div className="flex-1 max-w-2xl">
+          <div className="inline-flex items-center gap-2 mb-5 text-xs font-semibold tracking-wide uppercase">
+            <span className="bg-red-50 text-red-700 px-3 py-1 rounded-full">The gap in Irish transparency</span>
+            <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full">Now filled</span>
+          </div>
+          <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold text-gray-900 mb-5 leading-[1.1] tracking-tight">
+            Tracking where Ireland's <span className="text-emerald-600">€14 billion</span> in nonprofit funding goes
+          </h1>
+          <p className="text-lg sm:text-xl text-gray-500 mb-6 leading-relaxed max-w-xl">
+            Search {orgCount.toLocaleString()} organisations and {financialCount.toLocaleString()} financial records. Follow the money from government to nonprofits — open to everyone.
+          </p>
+          <form onSubmit={e => { e.preventDefault(); doSearch(); }} className="relative max-w-lg mb-4">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input type="text" placeholder={`Search ${orgCount.toLocaleString()} organisations...`} value={heroSearch} onChange={e => setHeroSearch(e.target.value)} className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl text-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none shadow-sm" />
+            <input type="text" placeholder="Search by name, sector, or county..." value={heroSearch} onChange={e => setHeroSearch(e.target.value)} className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl text-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none shadow-sm bg-white" />
           </form>
-          <div className="flex flex-wrap gap-2 mt-3 justify-center">
+          <div className="flex flex-wrap gap-2">
             {chips.map(c => <button key={c} onClick={() => doSearch(c)} className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm text-gray-600 hover:border-emerald-300 hover:text-emerald-700 transition-colors">{c}</button>)}
           </div>
+        </div>
+
+        {/* Right: abstract illustration SVG */}
+        <div className="hidden lg:block flex-shrink-0 w-[420px] h-[380px] relative">
+          <svg viewBox="0 0 420 380" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+            {/* Background blobs */}
+            <circle cx="210" cy="190" r="160" fill="#ecfdf5" />
+            <circle cx="310" cy="120" r="80" fill="#d1fae5" opacity="0.6" />
+            <circle cx="120" cy="280" r="60" fill="#d1fae5" opacity="0.4" />
+
+            {/* Money flow lines */}
+            <path d="M60 190 Q140 100 210 160 Q280 220 360 140" stroke="#059669" strokeWidth="3" fill="none" strokeDasharray="8 4" opacity="0.5" />
+            <path d="M80 240 Q160 170 230 210 Q300 250 380 190" stroke="#0d9488" strokeWidth="2.5" fill="none" strokeDasharray="6 4" opacity="0.4" />
+            <path d="M40 300 Q130 230 210 270 Q290 310 370 250" stroke="#10b981" strokeWidth="2" fill="none" strokeDasharray="5 3" opacity="0.3" />
+
+            {/* Government node */}
+            <rect x="30" y="155" width="70" height="70" rx="16" fill="#059669" />
+            <text x="65" y="185" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">GOV</text>
+            <text x="65" y="200" textAnchor="middle" fill="white" fontSize="8" opacity="0.8">€14B</text>
+
+            {/* Org nodes */}
+            <rect x="170" y="80" width="80" height="55" rx="14" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
+            <text x="210" y="103" textAnchor="middle" fill="#374151" fontSize="9" fontWeight="600">Education</text>
+            <text x="210" y="118" textAnchor="middle" fill="#059669" fontSize="9" fontWeight="700">€2.7B</text>
+
+            <rect x="170" y="165" width="80" height="55" rx="14" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
+            <text x="210" y="188" textAnchor="middle" fill="#374151" fontSize="9" fontWeight="600">Health</text>
+            <text x="210" y="203" textAnchor="middle" fill="#059669" fontSize="9" fontWeight="700">€37.7B</text>
+
+            <rect x="170" y="250" width="80" height="55" rx="14" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
+            <text x="210" y="273" textAnchor="middle" fill="#374151" fontSize="9" fontWeight="600">Housing</text>
+            <text x="210" y="288" textAnchor="middle" fill="#059669" fontSize="9" fontWeight="700">€970M</text>
+
+            {/* Recipient nodes */}
+            <circle cx="340" cy="100" r="28" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
+            <text x="340" y="98" textAnchor="middle" fill="#374151" fontSize="7" fontWeight="600">1,523</text>
+            <text x="340" y="108" textAnchor="middle" fill="#9ca3af" fontSize="6">orgs</text>
+
+            <circle cx="355" cy="195" r="24" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
+            <text x="355" y="193" textAnchor="middle" fill="#374151" fontSize="7" fontWeight="600">272</text>
+            <text x="355" y="203" textAnchor="middle" fill="#9ca3af" fontSize="6">orgs</text>
+
+            <circle cx="340" cy="280" r="22" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
+            <text x="340" y="278" textAnchor="middle" fill="#374151" fontSize="7" fontWeight="600">1,066</text>
+            <text x="340" y="288" textAnchor="middle" fill="#9ca3af" fontSize="6">orgs</text>
+
+            {/* Connection lines */}
+            <line x1="100" y1="190" x2="170" y2="107" stroke="#059669" strokeWidth="2" opacity="0.3" />
+            <line x1="100" y1="190" x2="170" y2="192" stroke="#059669" strokeWidth="2.5" opacity="0.4" />
+            <line x1="100" y1="190" x2="170" y2="277" stroke="#059669" strokeWidth="2" opacity="0.3" />
+            <line x1="250" y1="107" x2="312" y2="100" stroke="#d1d5db" strokeWidth="1.5" />
+            <line x1="250" y1="192" x2="331" y2="195" stroke="#d1d5db" strokeWidth="1.5" />
+            <line x1="250" y1="277" x2="318" y2="280" stroke="#d1d5db" strokeWidth="1.5" />
+
+            {/* Sparkle accents */}
+            <circle cx="135" cy="130" r="3" fill="#059669" opacity="0.4" />
+            <circle cx="295" cy="150" r="2.5" fill="#0d9488" opacity="0.3" />
+            <circle cx="380" cy="240" r="3" fill="#10b981" opacity="0.3" />
+            <circle cx="150" cy="310" r="2" fill="#059669" opacity="0.25" />
+          </svg>
         </div>
       </div>
 
@@ -3389,6 +3449,7 @@ function InnerApp() {
     <div className="min-h-screen bg-gray-50">
       <Navbar page={page} setPage={handleSetPage} />
       {renderPage()}
+      <DonationPopup />
       <footer className="bg-white border-t py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -3403,6 +3464,65 @@ function InnerApp() {
           <p className="text-xs text-gray-300 mt-4 text-center">&copy; 2026 OpenBenefacts</p>
         </div>
       </footer>
+    </div>
+  );
+}
+
+// ===========================================================
+// DONATION POPUP
+// ===========================================================
+function DonationPopup() {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    // Don't show if dismissed in last 30 days
+    const dismissed = localStorage.getItem("ob_donate_dismissed");
+    if (dismissed && Date.now() - Number(dismissed) < 30 * 86400000) return;
+
+    // Show after 45 seconds on the site
+    const timer = setTimeout(() => setShow(true), 45000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const dismiss = () => {
+    setShow(false);
+    localStorage.setItem("ob_donate_dismissed", String(Date.now()));
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={dismiss}>
+      <div onClick={e => e.stopPropagation()} className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-in">
+        <button onClick={dismiss} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+
+        <div className="flex justify-center mb-5">
+          <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center">
+            <Heart className="w-8 h-8 text-emerald-600" />
+          </div>
+        </div>
+
+        <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Keep the money trail public</h2>
+
+        <p className="text-gray-500 text-center text-sm leading-relaxed mb-2">
+          OpenBenefacts tracks <span className="font-semibold text-gray-700">€14 billion</span> in nonprofit funding — for free, for everyone.
+        </p>
+        <p className="text-gray-500 text-center text-sm leading-relaxed mb-6">
+          The original Benefacts was defunded in 2022. We rebuilt it, but we need your help to keep it alive. Even €5 makes a difference.
+        </p>
+
+        <a href="https://buy.stripe.com/test_00g00000000000000" target="_blank" rel="noopener noreferrer"
+           className="block w-full text-center py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-200 mb-3">
+          Donate to OpenBenefacts
+        </a>
+
+        <button onClick={dismiss}
+                className="block w-full text-center py-3 bg-gray-50 text-gray-500 font-medium rounded-xl hover:bg-gray-100 transition-colors text-sm">
+          Not now, thank you
+        </button>
+
+        <p className="text-xs text-gray-300 text-center mt-4">OpenBenefacts is a nonprofit transparency project</p>
+      </div>
     </div>
   );
 }
