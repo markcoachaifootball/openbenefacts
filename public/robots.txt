@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Let Google and other crawlers index everything
+# OpenBenefacts is a public transparency platform
+
+Sitemap: https://openbenefacts.vercel.app/sitemap.xml

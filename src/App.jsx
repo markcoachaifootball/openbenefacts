@@ -17,7 +17,7 @@ class ErrorBoundary extends Component {
       return React.createElement("div", { style: { padding: "40px", textAlign: "center", fontFamily: "-apple-system, sans-serif" } },
         React.createElement("h2", { style: { color: "#dc2626" } }, "Something went wrong"),
         React.createElement("p", { style: { color: "#666", margin: "12px 0" } }, String(this.state.error?.message || this.state.error)),
-        React.createElement("button", { onClick: () => { this.setState({ hasError: false }); window.location.hash = ""; window.location.reload(); }, style: { background: "#059669", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer" } }, "Go Home")
+        React.createElement("button", { onClick: () => { this.setState({ hasError: false }); window.location.href = "/"; }, style: { background: "#059669", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer" } }, "Go Home")
       );
     }
     return this.props.children;
@@ -711,16 +711,25 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
           <button onClick={() => setPage("funders")} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium">View all</button>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {topFunders.map((f, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow">
-              <h3 className="font-semibold text-gray-900 text-sm mb-2">{f.name}</h3>
-              <div className="flex items-center gap-4 text-sm">
-                <span className="font-bold text-gray-900">{fmt(f.total)}</span>
-                <span className="text-gray-400">{(f.recipients || 0).toLocaleString()} recipients</span>
-                <span className="text-gray-400">{(f.programmes?.length || 0)} programmes</span>
+          {topFunders.map((f, i) => {
+            const funderIdx = funderData.indexOf(f);
+            return (
+              <div key={i} onClick={() => setPage(`follow/${getFunderSlug(funderIdx >= 0 ? funderIdx : i)}`)} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer group">
+                <div className="flex items-start justify-between mb-2 gap-2">
+                  <h3 className="font-semibold text-gray-900 text-sm">{f.name}</h3>
+                  <Layers className="w-4 h-4 text-gray-300 group-hover:text-emerald-600 flex-shrink-0 transition-colors" />
+                </div>
+                <div className="flex items-center gap-4 text-sm mb-3">
+                  <span className="font-bold text-gray-900">{fmt(f.total)}</span>
+                  <span className="text-gray-400">{(f.recipients || 0).toLocaleString()} recipients</span>
+                  <span className="text-gray-400">{(f.programmes?.length || 0)} programmes</span>
+                </div>
+                <div className="text-xs font-medium text-emerald-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  View funding flow <ArrowRight className="w-3 h-3" />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -1070,7 +1079,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
   if (embed) {
     const latest = org.financials?.[0];
     const risk = computeRiskScore(org);
-    const orgUrl = `${window.location.origin}#org:${org.id}`;
+    const orgUrl = `${window.location.origin}/org/${org.id}`;
     return (
       <div className="p-5 bg-white min-h-0">
         <div className="flex items-center gap-2 mb-3">
@@ -1439,8 +1448,8 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
 
         {/* Share / Cite / Embed bar */}
         {(() => {
-          const orgUrl = `${window.location.origin}#org:${org.id}`;
-          const orgEmbed = `<iframe src="${orgUrl}&embed=true" width="100%" height="420" frameborder="0" style="border:1px solid #e5e7eb;border-radius:12px"></iframe>`;
+          const orgUrl = `${window.location.origin}/org/${org.id}`;
+          const orgEmbed = `<iframe src="${orgUrl}?embed=true" width="100%" height="420" frameborder="0" style="border:1px solid #e5e7eb;border-radius:12px"></iframe>`;
           const citation = `"${cleanName(org.name)}," OpenBenefacts, accessed ${new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" })}, ${orgUrl}`;
           return (
             <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex flex-wrap gap-2">
@@ -2209,12 +2218,12 @@ function FundersPage({ setPage, setInitialSearch }) {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <button onClick={() => handleFunderClick(f)} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1">
-                  {selectedFunder?.name === f.name ? "Hide" : "View"} Recipients <ChevronDown className={`w-3 h-3 transition-transform ${selectedFunder?.name === f.name ? "rotate-180" : ""}`} />
+              <div className="flex flex-wrap items-center gap-2">
+                <button onClick={() => { const idx = funderData.indexOf(f); setPage(`follow/${getFunderSlug(idx >= 0 ? idx : sorted.indexOf(f))}`); }} className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 shadow-sm hover:shadow transition-all">
+                  <Layers className="w-4 h-4" /> View Funding Flow
                 </button>
-                <button onClick={() => { const idx = funderData.indexOf(f); setPage(`follow/${getFunderSlug(idx >= 0 ? idx : sorted.indexOf(f))}`); }} className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1.5">
-                  <Share2 className="w-3.5 h-3.5" /> Follow the Money
+                <button onClick={() => handleFunderClick(f)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:border-emerald-300 hover:text-emerald-700 transition-colors">
+                  {selectedFunder?.name === f.name ? "Hide" : "View"} Recipients <ChevronDown className={`w-3 h-3 transition-transform ${selectedFunder?.name === f.name ? "rotate-180" : ""}`} />
                 </button>
               </div>
             </div>
@@ -2512,8 +2521,8 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
   }, [funderIndex]);
 
   const slug = getFunderSlug(funderIndex);
-  const shareUrl = `${window.location.origin}#follow/${slug}`;
-  const embedCode = `<iframe src="${shareUrl}&embed=true" width="100%" height="500" frameborder="0" style="border:1px solid #e5e7eb;border-radius:12px"></iframe>`;
+  const shareUrl = `${window.location.origin}/follow/${slug}`;
+  const embedCode = `<iframe src="${shareUrl}?embed=true" width="100%" height="500" frameborder="0" style="border:1px solid #e5e7eb;border-radius:12px"></iframe>`;
 
   const copyToClip = (text, type) => {
     navigator.clipboard.writeText(text).then(() => { setCopied(type); setTimeout(() => setCopied(null), 2000); });
@@ -3075,8 +3084,8 @@ function MediaPage({ orgCount = 36803 }) {
     { title: "Cross-directorship mapping", desc: "See every board a director sits on across the entire nonprofit sector. Identify overlapping governance networks.", route: "orgs" },
   ];
 
-  const embedExample = `<iframe src="${window.location.origin}#follow/hse&embed=true"\n  width="100%" height="500" frameborder="0"\n  style="border:1px solid #e5e7eb;border-radius:12px">\n</iframe>`;
-  const citationExample = `"[Organisation Name]," OpenBenefacts, accessed ${new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" })}, ${window.location.origin}#org:[id]`;
+  const embedExample = `<iframe src="${window.location.origin}/follow/hse?embed=true"\n  width="100%" height="500" frameborder="0"\n  style="border:1px solid #e5e7eb;border-radius:12px">\n</iframe>`;
+  const citationExample = `"[Organisation Name]," OpenBenefacts, accessed ${new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" })}, ${window.location.origin}/org/[id]`;
 
   const copySnippet = (text, id) => {
     navigator.clipboard.writeText(text).then(() => { setCopiedSnippet(id); setTimeout(() => setCopiedSnippet(null), 2000); });
@@ -3398,13 +3407,41 @@ function AboutPage({ orgCount = 36803 }) {
 // INNER APP (state-based routing)
 // ===========================================================
 function InnerApp() {
-  // Hash-based routing for shareable links (e.g. #flow:3)
-  const getInitialPage = () => {
-    const hash = window.location.hash.replace("#", "");
-    if (hash) return hash.split("&")[0]; // strip &embed=true
-    return "home";
+  // ---- Path-based routing (SEO-friendly) ----
+  // Internal page state uses identifiers like "orgs", "org:UUID", "follow/hse".
+  // These are converted to/from real URL paths like "/orgs", "/org/UUID", "/follow/hse".
+  const pageToPath = (p) => {
+    if (!p || p === "home") return "/";
+    if (p.startsWith("org:")) return `/org/${p.slice(4)}`;
+    if (p.startsWith("follow/")) return `/follow/${p.slice(7)}`;
+    if (p.startsWith("flow:")) return `/follow/${p.slice(5)}`; // normalise legacy flow: to follow/
+    return `/${p}`;
   };
-  const isEmbed = window.location.hash.includes("embed=true") || new URLSearchParams(window.location.search).get("embed") === "true";
+
+  const pathToPage = (path) => {
+    const clean = (path || "/").replace(/\/$/, "") || "/";
+    if (clean === "/" || clean === "") return "home";
+    const parts = clean.slice(1).split("/"); // drop leading slash
+    if (parts[0] === "org" && parts[1]) return `org:${parts[1]}`;
+    if (parts[0] === "follow" && parts[1]) return `follow/${parts[1]}`;
+    if (parts[0] === "flow" && parts[1]) return `follow/${parts[1]}`;
+    return parts[0];
+  };
+
+  const getInitialPage = () => {
+    // Legacy support: if someone visits with a hash URL (e.g. old shared links
+    // like /#orgs or /#org:UUID), convert it to the new path and update history.
+    const hash = window.location.hash.replace("#", "").split("&")[0];
+    if (hash) {
+      const p = hash; // e.g. "orgs" or "org:UUID" or "follow/hse" or "flow:3"
+      const newPath = pageToPath(p);
+      window.history.replaceState({}, "", newPath + window.location.search);
+      return p.startsWith("flow:") ? `follow/${p.slice(5)}` : p;
+    }
+    return pathToPage(window.location.pathname);
+  };
+
+  const isEmbed = new URLSearchParams(window.location.search).get("embed") === "true" || window.location.hash.includes("embed=true");
 
   const [page, setPage] = useState(getInitialPage);
   const [initialSearch, setInitialSearch] = useState("");
@@ -3415,13 +3452,23 @@ function InnerApp() {
   useEffect(() => { fetchStats().then(setGlobalStats).catch(() => {}); }, []);
   const orgCount = globalStats?.total_orgs || siteStats.totalOrgs || 36803;
 
-  const handleSetPage = (p) => { setPage(p); window.scrollTo(0, 0); if (p.startsWith("follow/") || p.startsWith("flow:")) window.location.hash = p; };
+  const handleSetPage = (p) => {
+    setPage(p);
+    window.scrollTo(0, 0);
+    const newPath = pageToPath(p);
+    if (window.location.pathname !== newPath) {
+      window.history.pushState({ page: p }, "", newPath);
+    }
+  };
 
-  // Listen for hash changes (browser back/forward)
+  // Listen for browser back/forward
   useEffect(() => {
-    const onHash = () => { const h = window.location.hash.replace("#", "").split("&")[0]; if (h) setPage(h); };
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    const onPop = () => {
+      const p = pathToPage(window.location.pathname);
+      setPage(p);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   const renderPage = () => {
@@ -3580,7 +3627,7 @@ function TermsPage() {
       <p>We work hard to keep data accurate and up to date, but OpenBenefacts is provided <em>as is</em> with no warranty. Financial and governance data is derived from regulator filings and may contain errors, omissions, or outdated entries. Always verify important decisions against primary sources.</p>
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Corrections</h2>
-      <p>If you spot an error on your organisation's listing, see the <button onClick={() => { window.location.hash = "claim"; }} className="text-emerald-600 hover:underline">Claim your listing</button> page or email <a href="mailto:corrections@openbenefacts.com" className="text-emerald-600 hover:underline">corrections@openbenefacts.com</a>.</p>
+      <p>If you spot an error on your organisation's listing, see the <button onClick={() => { window.history.pushState({}, "", "/claim"); window.dispatchEvent(new PopStateEvent("popstate")); }} className="text-emerald-600 hover:underline">Claim your listing</button> page or email <a href="mailto:corrections@openbenefacts.com" className="text-emerald-600 hover:underline">corrections@openbenefacts.com</a>.</p>
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Limitation of liability</h2>
       <p>OpenBenefacts shall not be liable for any indirect, incidental, or consequential damages arising from use of the platform or its data.</p>
@@ -3625,7 +3672,7 @@ function DataSourcesPage() {
       </div>
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">How we process data</h2>
-      <p>Each month, our scrapers pull the latest data from CKAN APIs, regulator websites, and open data portals. We normalise organisation names (e.g. "CHILDANDFAMILY AGENCY" → "Child And Family Agency"), cross-reference identifiers (charity numbers, CHY numbers, CRO numbers), and link financial records to the organisations they describe. All raw downloads are archived to cold storage with SHA-256 hashes so researchers can verify that data hasn't been altered.</p>
+      <p>Each month, our data analysts pull the latest data from CKAN APIs, regulator websites, and open data portals. They normalise organisation names (e.g. "CHILDANDFAMILY AGENCY" → "Child And Family Agency"), cross-reference identifiers (charity numbers, CHY numbers, CRO numbers), and link financial records to the organisations they describe. All raw downloads are archived to cold storage with SHA-256 hashes so researchers can verify that data hasn't been altered.</p>
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Missing a source?</h2>
       <p>If you know of a public dataset we should be ingesting, email <a href="mailto:data@openbenefacts.com" className="text-emerald-600 hover:underline">data@openbenefacts.com</a>. We prioritise sources by coverage, update frequency, and public interest value.</p>
@@ -3640,7 +3687,7 @@ function ClaimListingPage() {
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">How it works</h2>
       <ol className="list-decimal pl-6 space-y-2">
-        <li>Find your organisation in the <button onClick={() => { window.location.hash = "orgs"; }} className="text-emerald-600 hover:underline">directory</button>.</li>
+        <li>Find your organisation in the <button onClick={() => { window.history.pushState({}, "", "/orgs"); window.dispatchEvent(new PopStateEvent("popstate")); }} className="text-emerald-600 hover:underline">directory</button>.</li>
         <li>Copy the URL of your profile page.</li>
         <li>Email <a href="mailto:claims@openbenefacts.com" className="text-emerald-600 hover:underline">claims@openbenefacts.com</a> from an address matching your organisation's domain, with the URL and the correction you'd like to make.</li>
         <li>We verify your authority and update the listing — usually within 5 working days.</li>

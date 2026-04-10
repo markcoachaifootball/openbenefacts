@@ -1,32 +1,116 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-IE">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Where does Ireland's €14 billion in nonprofit funding go? OpenBenefacts tracks government money to 26,000+ organisations — with financials, risk scores, and Follow the Money visualisations." />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>OpenBenefacts — Follow the Money in Irish Nonprofits</title>
 
-    <!-- Open Graph — social sharing cards -->
+    <!-- Primary SEO -->
+    <title>OpenBenefacts — Irish Nonprofit Transparency | Search 39,000+ Charities, Funders & Financials</title>
+    <meta name="description" content="OpenBenefacts is Ireland's nonprofit transparency platform. Search 39,000+ charities, AHBs, schools and clubs. Track €14 billion in government funding. Free financial records, board data, and Follow the Money visualisations." />
+    <meta name="keywords" content="Irish nonprofits, Ireland charities database, Irish charity finances, nonprofit transparency Ireland, charity regulator Ireland, Benefacts replacement, Irish nonprofit database, Ireland government funding nonprofits, charity due diligence Ireland, follow the money Ireland" />
+    <meta name="author" content="OpenBenefacts" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
+
+    <link rel="canonical" href="https://openbenefacts.vercel.app/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Open Graph — social sharing -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="OpenBenefacts" />
-    <meta property="og:title" content="Where Does Ireland's €14 Billion Go?" />
-    <meta property="og:description" content="Follow the money. Track government funding to 26,000+ Irish nonprofits — financials, risk scores, board members, and funding flows. Free and open." />
-    <meta property="og:url" content="https://openbenefacts.vercel.app" />
+    <meta property="og:title" content="OpenBenefacts — Ireland's Nonprofit Transparency Platform" />
+    <meta property="og:description" content="Search 39,000+ Irish charities. Track €14 billion in government funding. Free financial records, governance data, and Follow the Money visualisations — open to everyone." />
+    <meta property="og:url" content="https://openbenefacts.vercel.app/" />
     <meta property="og:image" content="https://openbenefacts.vercel.app/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="OpenBenefacts — Irish Nonprofit Transparency" />
     <meta property="og:locale" content="en_IE" />
 
     <!-- Twitter / X card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Where Does Ireland's €14 Billion Go?" />
-    <meta name="twitter:description" content="Follow the money. Track government funding to 26,000+ Irish nonprofits — financials, risk scores, and funding flows." />
+    <meta name="twitter:site" content="@openbenefacts" />
+    <meta name="twitter:title" content="OpenBenefacts — Ireland's Nonprofit Transparency Platform" />
+    <meta name="twitter:description" content="Search 39,000+ Irish charities. Track €14 billion in government funding. Financial records, governance data, and Follow the Money visualisations." />
     <meta name="twitter:image" content="https://openbenefacts.vercel.app/og-image.png" />
 
     <!-- Dynamic OG tags for shared pages (updated by app.jsx) -->
-    <meta property="og:title" id="og-title" content="Where Does Ireland's €14 Billion Go?" />
-    <meta property="og:description" id="og-description" content="Follow the money. Track government funding to 26,000+ Irish nonprofits." />
+    <meta property="og:title" id="og-title" content="OpenBenefacts — Ireland's Nonprofit Transparency Platform" />
+    <meta property="og:description" id="og-description" content="Search 39,000+ Irish charities. Track €14 billion in government funding." />
+
+    <!-- JSON-LD structured data: Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "OpenBenefacts",
+      "alternateName": "Open Benefacts",
+      "url": "https://openbenefacts.vercel.app",
+      "logo": "https://openbenefacts.vercel.app/og-image.png",
+      "description": "OpenBenefacts is Ireland's nonprofit transparency platform — an independent, free-to-search database of 39,000+ charities, housing bodies, schools and sports clubs, with financial records and government funding data.",
+      "foundingDate": "2026",
+      "areaServed": {
+        "@type": "Country",
+        "name": "Ireland"
+      },
+      "sameAs": []
+    }
+    </script>
+
+    <!-- JSON-LD structured data: WebSite with sitelinks search box -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "OpenBenefacts",
+      "url": "https://openbenefacts.vercel.app",
+      "description": "Ireland's nonprofit transparency platform. Search 39,000+ charities and track €14 billion in government funding.",
+      "inLanguage": "en-IE",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://openbenefacts.vercel.app/orgs?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- JSON-LD structured data: Dataset (for Google Dataset Search) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Dataset",
+      "name": "OpenBenefacts — Irish Nonprofit Financial Records",
+      "description": "A comprehensive, continuously updated dataset of 39,000+ Irish nonprofit organisations including charities, approved housing bodies, schools, and sports clubs. Contains 64,000+ financial records and €14 billion in tracked government funding flows. Sourced from the Charities Regulator, Revenue Commissioners, CRO, and other Irish government datasets.",
+      "url": "https://openbenefacts.vercel.app",
+      "keywords": ["Irish charities", "nonprofit transparency", "Ireland government funding", "charity financials", "Benefacts"],
+      "creator": {
+        "@type": "Organization",
+        "name": "OpenBenefacts"
+      },
+      "license": "https://creativecommons.org/licenses/by/4.0/",
+      "isAccessibleForFree": true,
+      "spatialCoverage": {
+        "@type": "Place",
+        "name": "Ireland"
+      },
+      "temporalCoverage": "2015/..",
+      "distribution": [
+        {
+          "@type": "DataDownload",
+          "encodingFormat": "CSV",
+          "contentUrl": "https://openbenefacts.vercel.app/#funders"
+        },
+        {
+          "@type": "DataDownload",
+          "encodingFormat": "application/json",
+          "contentUrl": "https://openbenefacts.vercel.app/api/v1/organisations"
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
