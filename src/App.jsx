@@ -334,7 +334,7 @@ function AuthProvider({ children }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowOnboarding(false)}>
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><span className="text-white font-extrabold text-2xl tracking-tight">OB</span></div>
+              <div className="font-wordmark text-[32px] text-[#0F4C5C] mb-4 text-center">OpenBenefacts</div>
               <h2 className="text-2xl font-bold text-gray-900">Welcome to OpenBenefacts!</h2>
               <p className="text-gray-500 mt-2">Your 30-day Professional trial is now active. Here's how to get the most out of it:</p>
             </div>
@@ -412,23 +412,21 @@ function Navbar({ page, setPage }) {
   const links = [["home","Dashboard"],["orgs","Organizations"],["funders","Funders"],["pricing","Pricing"],["api","API"],["about","About"]];
 
   return (
-    <nav className="bg-white border-b border-gray-100 sticky top-0 z-40">
+    <nav className="bg-[#FAF6EE] border-b border-[#0F4C5C]/10 sticky top-0 z-40 backdrop-blur">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => nav("home")}>
-            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center"><span className="text-white font-extrabold text-xs tracking-tight">OB</span></div>
-            <span className="font-bold text-gray-900">Open</span><span className="font-bold text-emerald-600">Benefacts</span>
-            <span className="hidden sm:inline text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-medium ml-1">NONPROFIT TRANSPARENCY</span>
+        <div className="flex items-center justify-between h-20">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => nav("home")}>
+            <span className="font-wordmark text-[26px] sm:text-[28px] text-[#0F4C5C] leading-none">OpenBenefacts</span>
           </div>
           <div className="hidden md:flex items-center gap-1">
             {links.map(([key, label]) => (
-              <button key={key} onClick={() => nav(key)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${page === key ? "bg-emerald-50 text-emerald-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"}`}>{label}</button>
+              <button key={key} onClick={() => nav(key)} className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${page === key ? "bg-[#0F4C5C] text-white" : "text-[#0F4C5C]/80 hover:text-[#0F4C5C] hover:bg-[#0F4C5C]/5"}`}>{label}</button>
             ))}
           </div>
           <div className="flex items-center gap-2">
             {user ? (
               <div className="relative" ref={avatarRef}>
-                <button onClick={() => setAvatarOpen(!avatarOpen)} className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 font-semibold text-sm flex items-center justify-center hover:bg-emerald-200">
+                <button onClick={() => setAvatarOpen(!avatarOpen)} className="w-10 h-10 rounded-full bg-[#0F4C5C] text-white font-semibold text-sm flex items-center justify-center hover:bg-[#0a3b47]">
                   {(user.name || user.email)[0].toUpperCase()}
                 </button>
                 {avatarOpen && (
@@ -449,17 +447,17 @@ function Navbar({ page, setPage }) {
               </div>
             ) : (
               <>
-                <button onClick={() => { setShowAuth(true); setAuthMode("login"); }} className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium hidden sm:block">Sign in</button>
-                <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg font-medium hover:bg-emerald-700">Sign up free</button>
+                <button onClick={() => { setShowAuth(true); setAuthMode("login"); }} className="px-3 py-2 text-sm text-[#0F4C5C]/80 hover:text-[#0F4C5C] font-semibold hidden sm:block">Sign in</button>
+                <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-5 py-2.5 bg-[#0F4C5C] text-white text-sm rounded-full font-semibold hover:bg-[#0a3b47] transition-colors">Sign up free</button>
               </>
             )}
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-gray-600">{mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-[#0F4C5C]">{mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
           </div>
         </div>
       </div>
       {mobileOpen && (
-        <div className="md:hidden border-t bg-white px-4 py-3 space-y-1">
-          {links.map(([key, label]) => (<button key={key} onClick={() => nav(key)} className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${page === key ? "bg-emerald-50 text-emerald-700 font-medium" : "text-gray-600"}`}>{label}</button>))}
+        <div className="md:hidden border-t border-[#0F4C5C]/10 bg-[#FAF6EE] px-4 py-3 space-y-1">
+          {links.map(([key, label]) => (<button key={key} onClick={() => nav(key)} className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${page === key ? "bg-[#0F4C5C] text-white font-semibold" : "text-[#0F4C5C]/80"}`}>{label}</button>))}
           {user && <button onClick={() => { logout(); setMobileOpen(false); }} className="block w-full text-left px-3 py-2 rounded-lg text-sm text-red-600">Sign Out</button>}
         </div>
       )}
@@ -500,90 +498,74 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
   const sectorIcons = { "Education, Research": GraduationCap, "Health": Heart, "Social Services": Users, "Arts, Culture, Heritage": Award, "Arts, Culture, Media": Award, "Recreation, Sports": Zap, "Local Development, Housing": Building2, "Religion": Star, "International": Globe, "Environment": Globe, "Advocacy": Shield, "Philanthropy": Sparkles };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Hero — left-aligned Candid-style layout */}
-      <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16 mb-12 pt-4">
-        {/* Left: copy + search */}
-        <div className="flex-1 max-w-2xl">
-          <div className="inline-flex items-center gap-2 mb-5 text-xs font-semibold tracking-wide uppercase">
-            <span className="bg-red-50 text-red-700 px-3 py-1 rounded-full">The gap in Irish transparency</span>
-            <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full">Now filled</span>
+    <div className="bg-[#FAF6EE]">
+      {/* Hero — Blackbaud-style: cream, editorial headline, bold serif feel */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20">
+        <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+          {/* Left: copy + search */}
+          <div className="flex-1 max-w-2xl">
+            <div className="inline-flex items-center gap-2 mb-6 text-[11px] font-bold tracking-[0.15em] uppercase text-[#0F4C5C]">
+              <span className="w-8 h-px bg-[#0F4C5C]"></span>
+              Nonprofit transparency for Ireland
+            </div>
+            <h1 className="font-wordmark text-[44px] sm:text-[64px] lg:text-[76px] text-[#0F2327] mb-6 leading-[0.95]">
+              Where does Ireland's <span className="text-[#0F4C5C]">€14 billion</span> go?
+            </h1>
+            <p className="text-lg sm:text-xl text-[#0F4C5C]/75 mb-8 leading-relaxed max-w-xl">
+              Search {orgCount.toLocaleString()} organisations and {financialCount.toLocaleString()} financial records. Follow the money from government to nonprofits — free and open to everyone.
+            </p>
+            <form onSubmit={e => { e.preventDefault(); doSearch(); }} className="relative max-w-lg mb-4">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#0F4C5C]/40" />
+              <input type="text" placeholder="Search by name, sector, or county..." value={heroSearch} onChange={e => setHeroSearch(e.target.value)} className="w-full pl-14 pr-32 py-5 border-2 border-[#0F4C5C]/15 rounded-full text-base focus:border-[#0F4C5C] focus:outline-none shadow-sm bg-white placeholder:text-[#0F4C5C]/40" />
+              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-3 bg-[#0F4C5C] text-white text-sm rounded-full font-semibold hover:bg-[#0a3b47] transition-colors">Search</button>
+            </form>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs text-[#0F4C5C]/50 font-semibold tracking-wide uppercase py-1.5 mr-1">Try:</span>
+              {chips.map(c => <button key={c} onClick={() => doSearch(c)} className="px-4 py-1.5 bg-white border border-[#0F4C5C]/15 rounded-full text-sm text-[#0F4C5C]/80 hover:border-[#0F4C5C] hover:text-[#0F4C5C] transition-colors">{c}</button>)}
+            </div>
           </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold text-gray-900 mb-5 leading-[1.1] tracking-tight">
-            Tracking where Ireland's <span className="text-emerald-600">€14 billion</span> in nonprofit funding goes
-          </h1>
-          <p className="text-lg sm:text-xl text-gray-500 mb-6 leading-relaxed max-w-xl">
-            Search {orgCount.toLocaleString()} organisations and {financialCount.toLocaleString()} financial records. Follow the money from government to nonprofits — open to everyone.
-          </p>
-          <form onSubmit={e => { e.preventDefault(); doSearch(); }} className="relative max-w-lg mb-4">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input type="text" placeholder="Search by name, sector, or county..." value={heroSearch} onChange={e => setHeroSearch(e.target.value)} className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl text-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none shadow-sm bg-white" />
-          </form>
-          <div className="flex flex-wrap gap-2">
-            {chips.map(c => <button key={c} onClick={() => doSearch(c)} className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm text-gray-600 hover:border-emerald-300 hover:text-emerald-700 transition-colors">{c}</button>)}
+
+          {/* Right: Blackbaud-style illustration — bold geometric funding flow */}
+          <div className="hidden lg:block flex-shrink-0 w-[440px] h-[440px] relative">
+            <svg viewBox="0 0 440 440" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+              {/* Big background accent circle */}
+              <circle cx="220" cy="220" r="210" fill="#C4E86B" opacity="0.35" />
+              <circle cx="320" cy="140" r="90" fill="#0F4C5C" opacity="0.08" />
+
+              {/* Big gov node */}
+              <rect x="20" y="170" width="110" height="100" rx="20" fill="#0F4C5C" />
+              <text x="75" y="210" textAnchor="middle" fill="white" fontSize="14" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">GOV</text>
+              <text x="75" y="232" textAnchor="middle" fill="#C4E86B" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€14B</text>
+              <text x="75" y="248" textAnchor="middle" fill="white" fontSize="9" opacity="0.75">annual outflow</text>
+
+              {/* Flow paths */}
+              <path d="M130 200 Q210 140 300 130" stroke="#0F4C5C" strokeWidth="3" fill="none" />
+              <path d="M130 220 Q210 220 300 220" stroke="#0F4C5C" strokeWidth="4" fill="none" />
+              <path d="M130 240 Q210 300 300 310" stroke="#0F4C5C" strokeWidth="2.5" fill="none" />
+
+              {/* Sector cards */}
+              <rect x="300" y="100" width="130" height="70" rx="14" fill="white" stroke="#0F4C5C" strokeWidth="2" />
+              <text x="365" y="125" textAnchor="middle" fill="#0F4C5C" fontSize="11" fontWeight="700">Education</text>
+              <text x="365" y="150" textAnchor="middle" fill="#0F4C5C" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€2.7B</text>
+
+              <rect x="300" y="185" width="130" height="70" rx="14" fill="#0F4C5C" />
+              <text x="365" y="210" textAnchor="middle" fill="#C4E86B" fontSize="11" fontWeight="700">Health</text>
+              <text x="365" y="235" textAnchor="middle" fill="white" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€37.7B</text>
+
+              <rect x="300" y="270" width="130" height="70" rx="14" fill="white" stroke="#0F4C5C" strokeWidth="2" />
+              <text x="365" y="295" textAnchor="middle" fill="#0F4C5C" fontSize="11" fontWeight="700">Housing</text>
+              <text x="365" y="320" textAnchor="middle" fill="#0F4C5C" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€970M</text>
+
+              {/* Connecting dots */}
+              <circle cx="290" cy="135" r="5" fill="#0F4C5C" />
+              <circle cx="290" cy="220" r="5" fill="#0F4C5C" />
+              <circle cx="290" cy="305" r="5" fill="#0F4C5C" />
+            </svg>
           </div>
-        </div>
-
-        {/* Right: abstract illustration SVG */}
-        <div className="hidden lg:block flex-shrink-0 w-[420px] h-[380px] relative">
-          <svg viewBox="0 0 420 380" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-            {/* Background blobs */}
-            <circle cx="210" cy="190" r="160" fill="#ecfdf5" />
-            <circle cx="310" cy="120" r="80" fill="#d1fae5" opacity="0.6" />
-            <circle cx="120" cy="280" r="60" fill="#d1fae5" opacity="0.4" />
-
-            {/* Money flow lines */}
-            <path d="M60 190 Q140 100 210 160 Q280 220 360 140" stroke="#059669" strokeWidth="3" fill="none" strokeDasharray="8 4" opacity="0.5" />
-            <path d="M80 240 Q160 170 230 210 Q300 250 380 190" stroke="#0d9488" strokeWidth="2.5" fill="none" strokeDasharray="6 4" opacity="0.4" />
-            <path d="M40 300 Q130 230 210 270 Q290 310 370 250" stroke="#10b981" strokeWidth="2" fill="none" strokeDasharray="5 3" opacity="0.3" />
-
-            {/* Government node */}
-            <rect x="30" y="155" width="70" height="70" rx="16" fill="#059669" />
-            <text x="65" y="185" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">GOV</text>
-            <text x="65" y="200" textAnchor="middle" fill="white" fontSize="8" opacity="0.8">€14B</text>
-
-            {/* Org nodes */}
-            <rect x="170" y="80" width="80" height="55" rx="14" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
-            <text x="210" y="103" textAnchor="middle" fill="#374151" fontSize="9" fontWeight="600">Education</text>
-            <text x="210" y="118" textAnchor="middle" fill="#059669" fontSize="9" fontWeight="700">€2.7B</text>
-
-            <rect x="170" y="165" width="80" height="55" rx="14" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
-            <text x="210" y="188" textAnchor="middle" fill="#374151" fontSize="9" fontWeight="600">Health</text>
-            <text x="210" y="203" textAnchor="middle" fill="#059669" fontSize="9" fontWeight="700">€37.7B</text>
-
-            <rect x="170" y="250" width="80" height="55" rx="14" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
-            <text x="210" y="273" textAnchor="middle" fill="#374151" fontSize="9" fontWeight="600">Housing</text>
-            <text x="210" y="288" textAnchor="middle" fill="#059669" fontSize="9" fontWeight="700">€970M</text>
-
-            {/* Recipient nodes */}
-            <circle cx="340" cy="100" r="28" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
-            <text x="340" y="98" textAnchor="middle" fill="#374151" fontSize="7" fontWeight="600">1,523</text>
-            <text x="340" y="108" textAnchor="middle" fill="#9ca3af" fontSize="6">orgs</text>
-
-            <circle cx="355" cy="195" r="24" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
-            <text x="355" y="193" textAnchor="middle" fill="#374151" fontSize="7" fontWeight="600">272</text>
-            <text x="355" y="203" textAnchor="middle" fill="#9ca3af" fontSize="6">orgs</text>
-
-            <circle cx="340" cy="280" r="22" fill="white" stroke="#d1d5db" strokeWidth="1.5" />
-            <text x="340" y="278" textAnchor="middle" fill="#374151" fontSize="7" fontWeight="600">1,066</text>
-            <text x="340" y="288" textAnchor="middle" fill="#9ca3af" fontSize="6">orgs</text>
-
-            {/* Connection lines */}
-            <line x1="100" y1="190" x2="170" y2="107" stroke="#059669" strokeWidth="2" opacity="0.3" />
-            <line x1="100" y1="190" x2="170" y2="192" stroke="#059669" strokeWidth="2.5" opacity="0.4" />
-            <line x1="100" y1="190" x2="170" y2="277" stroke="#059669" strokeWidth="2" opacity="0.3" />
-            <line x1="250" y1="107" x2="312" y2="100" stroke="#d1d5db" strokeWidth="1.5" />
-            <line x1="250" y1="192" x2="331" y2="195" stroke="#d1d5db" strokeWidth="1.5" />
-            <line x1="250" y1="277" x2="318" y2="280" stroke="#d1d5db" strokeWidth="1.5" />
-
-            {/* Sparkle accents */}
-            <circle cx="135" cy="130" r="3" fill="#059669" opacity="0.4" />
-            <circle cx="295" cy="150" r="2.5" fill="#0d9488" opacity="0.3" />
-            <circle cx="380" cy="240" r="3" fill="#10b981" opacity="0.3" />
-            <circle cx="150" cy="310" r="2" fill="#059669" opacity="0.25" />
-          </svg>
         </div>
       </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
@@ -755,14 +737,18 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
       )}
 
       {/* CTA — narrative-driven */}
-      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 rounded-2xl p-8 sm:p-10 text-center text-white">
-        <p className="text-emerald-400 text-sm font-semibold uppercase tracking-wider mb-3">The money trail is back</p>
-        <h2 className="text-2xl sm:text-3xl font-bold mb-3">€14 billion deserves oversight.</h2>
-        <p className="text-gray-300 max-w-2xl mx-auto mb-6">Benefacts is gone. OpenBenefacts is here — with full financials, AI risk scores, funder mapping, and due diligence reports. Free to search. Pro plans for professionals who need the full picture.</p>
-        <div className="flex flex-wrap gap-3 justify-center">
-          <button onClick={() => setPage("pricing")} className="px-6 py-3 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-400 transition-colors">Start free trial</button>
-          <button onClick={() => setPage("orgs")} className="px-6 py-3 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/20 transition-colors border border-white/20">Browse {orgCount.toLocaleString()} organisations</button>
+      <div className="bg-[#0F4C5C] rounded-3xl p-8 sm:p-12 text-center text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#C4E86B]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="relative z-10">
+          <p className="text-[#C4E86B] text-xs font-bold uppercase tracking-[0.2em] mb-4">The money trail is back</p>
+          <h2 className="font-wordmark text-3xl sm:text-5xl text-white mb-4 leading-[1]">€14 billion deserves oversight.</h2>
+          <p className="text-white/80 max-w-2xl mx-auto mb-8 text-lg">Benefacts is gone. OpenBenefacts is here — with full financials, AI risk scores, funder mapping, and due diligence reports.</p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <button onClick={() => setPage("pricing")} className="px-8 py-4 bg-[#C4E86B] text-[#0F4C5C] rounded-full font-bold hover:bg-white transition-colors">Start free trial</button>
+            <button onClick={() => setPage("orgs")} className="px-8 py-4 bg-white/10 text-white rounded-full font-semibold hover:bg-white/20 transition-colors border border-white/30">Browse {orgCount.toLocaleString()} organisations</button>
+          </div>
         </div>
+      </div>
       </div>
     </div>
   );
@@ -1083,8 +1069,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
     return (
       <div className="p-5 bg-white min-h-0">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center"><span className="text-white font-extrabold text-[8px] tracking-tight">OB</span></div>
-          <span className="font-bold text-sm text-gray-900">OpenBenefacts</span>
+          <span className="font-wordmark text-[18px] text-[#0F4C5C]">OpenBenefacts</span>
           <span className="text-xs text-gray-400">· Nonprofit Transparency</span>
         </div>
         <h2 className="text-lg font-bold text-gray-900">{cleanName(org.name)}</h2>
@@ -2535,9 +2520,8 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
     return (
       <div className="p-4 bg-white min-h-screen">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center"><span className="text-white font-extrabold text-[8px] tracking-tight">OB</span></div>
-          <span className="font-bold text-sm text-gray-900">Follow the Money</span>
-          <span className="text-xs text-gray-400">· openbenefacts.vercel.app</span>
+          <span className="font-wordmark text-[16px] text-[#0F4C5C]">OpenBenefacts</span>
+          <span className="text-xs text-gray-400">· Follow the Money</span>
         </div>
         <h2 className="text-lg font-bold text-gray-900 mb-1">{funder.name}</h2>
         <p className="text-xs text-gray-500 mb-4">{fmt(funder.total)} distributed to {(funder.recipients || 0).toLocaleString()} organisations</p>
@@ -3497,72 +3481,69 @@ function InnerApp() {
   if (isEmbed) return <div className="min-h-screen bg-white">{renderPage()}</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#FAF6EE]">
       <Navbar page={page} setPage={handleSetPage} />
       {renderPage()}
       <DonationPopup />
-      <footer className="bg-white border-t border-gray-100 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <footer className="bg-[#0F4C5C] text-white mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
             {/* Brand column */}
             <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-extrabold text-xs tracking-tight">OB</span>
-                </div>
-                <span className="font-bold text-gray-900">Open</span><span className="font-bold text-emerald-600">Benefacts</span>
+              <div className="mb-4">
+                <span className="font-wordmark text-[28px] text-white leading-none">OpenBenefacts</span>
               </div>
-              <p className="text-sm text-gray-500 leading-relaxed mb-4">Ireland's nonprofit transparency platform. Independent, open, free to search.</p>
+              <p className="text-sm text-white/65 leading-relaxed mb-4">Ireland's nonprofit transparency platform. Independent, open, free to search.</p>
             </div>
 
             {/* Explore */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 mb-4">Explore</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#C4E86B] mb-4">Explore</h4>
               <ul className="space-y-3">
-                <li><button onClick={() => handleSetPage("orgs")} className="text-sm text-gray-500 hover:text-emerald-600">Organisations</button></li>
-                <li><button onClick={() => handleSetPage("funders")} className="text-sm text-gray-500 hover:text-emerald-600">Funders</button></li>
-                <li><button onClick={() => handleSetPage("money")} className="text-sm text-gray-500 hover:text-emerald-600">Follow the money</button></li>
-                <li><button onClick={() => handleSetPage("foundations")} className="text-sm text-gray-500 hover:text-emerald-600">Foundations</button></li>
-                <li><button onClick={() => handleSetPage("api")} className="text-sm text-gray-500 hover:text-emerald-600">API</button></li>
+                <li><button onClick={() => handleSetPage("orgs")} className="text-sm text-white/70 hover:text-white">Organisations</button></li>
+                <li><button onClick={() => handleSetPage("funders")} className="text-sm text-white/70 hover:text-white">Funders</button></li>
+                <li><button onClick={() => handleSetPage("money")} className="text-sm text-white/70 hover:text-white">Follow the money</button></li>
+                <li><button onClick={() => handleSetPage("foundations")} className="text-sm text-white/70 hover:text-white">Foundations</button></li>
+                <li><button onClick={() => handleSetPage("api")} className="text-sm text-white/70 hover:text-white">API</button></li>
               </ul>
             </div>
 
             {/* For nonprofits */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 mb-4">For nonprofits</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#C4E86B] mb-4">For nonprofits</h4>
               <ul className="space-y-3">
-                <li><button onClick={() => handleSetPage("claim")} className="text-sm text-gray-500 hover:text-emerald-600">Claim your listing</button></li>
-                <li><a href="mailto:corrections@openbenefacts.com" className="text-sm text-gray-500 hover:text-emerald-600">Request a correction</a></li>
-                <li><button onClick={() => handleSetPage("sources")} className="text-sm text-gray-500 hover:text-emerald-600">Data sources</button></li>
-                <li><button onClick={() => handleSetPage("api")} className="text-sm text-gray-500 hover:text-emerald-600">Developer API</button></li>
+                <li><button onClick={() => handleSetPage("claim")} className="text-sm text-white/70 hover:text-white">Claim your listing</button></li>
+                <li><a href="mailto:corrections@openbenefacts.com" className="text-sm text-white/70 hover:text-white">Request a correction</a></li>
+                <li><button onClick={() => handleSetPage("sources")} className="text-sm text-white/70 hover:text-white">Data sources</button></li>
+                <li><button onClick={() => handleSetPage("api")} className="text-sm text-white/70 hover:text-white">Developer API</button></li>
               </ul>
             </div>
 
             {/* Company */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 mb-4">Company</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#C4E86B] mb-4">Company</h4>
               <ul className="space-y-3">
-                <li><button onClick={() => handleSetPage("about")} className="text-sm text-gray-500 hover:text-emerald-600">About</button></li>
-                <li><button onClick={() => handleSetPage("media")} className="text-sm text-gray-500 hover:text-emerald-600">Media</button></li>
-                <li><button onClick={() => handleSetPage("pricing")} className="text-sm text-gray-500 hover:text-emerald-600">Pricing</button></li>
-                <li><a href="mailto:mark@openbenefacts.com" className="text-sm text-gray-500 hover:text-emerald-600">Contact</a></li>
+                <li><button onClick={() => handleSetPage("about")} className="text-sm text-white/70 hover:text-white">About</button></li>
+                <li><button onClick={() => handleSetPage("media")} className="text-sm text-white/70 hover:text-white">Media</button></li>
+                <li><button onClick={() => handleSetPage("pricing")} className="text-sm text-white/70 hover:text-white">Pricing</button></li>
+                <li><a href="mailto:mark@openbenefacts.com" className="text-sm text-white/70 hover:text-white">Contact</a></li>
               </ul>
             </div>
 
             {/* Legal */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 mb-4">Legal</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#C4E86B] mb-4">Legal</h4>
               <ul className="space-y-3">
-                <li><button onClick={() => handleSetPage("privacy")} className="text-sm text-gray-500 hover:text-emerald-600">Privacy policy</button></li>
-                <li><button onClick={() => handleSetPage("terms")} className="text-sm text-gray-500 hover:text-emerald-600">Terms of use</button></li>
-                <li><a href="mailto:privacy@openbenefacts.com" className="text-sm text-gray-500 hover:text-emerald-600">GDPR requests</a></li>
+                <li><button onClick={() => handleSetPage("privacy")} className="text-sm text-white/70 hover:text-white">Privacy policy</button></li>
+                <li><button onClick={() => handleSetPage("terms")} className="text-sm text-white/70 hover:text-white">Terms of use</button></li>
+                <li><a href="mailto:privacy@openbenefacts.com" className="text-sm text-white/70 hover:text-white">GDPR requests</a></li>
               </ul>
             </div>
           </div>
         </div>
 
         {/* Dark bottom bar */}
-        <div className="bg-gray-900 text-gray-400 py-6">
+        <div className="bg-[#0a3b47] text-white/60 py-6 border-t border-white/10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
               <p>&copy; 2026 OpenBenefacts. Independent nonprofit transparency for Ireland.</p>
