@@ -568,20 +568,111 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-16">
         {[
-          { label: "Organizations", value: orgCount.toLocaleString(), sub: "Charities, AHBs, schools, clubs", icon: Building2, color: "emerald" },
-          { label: "Financial Records", value: financialCount.toLocaleString(), sub: "Income, expenditure, assets", icon: FileText, color: "blue" },
-          { label: "Funding Links", value: fundingLinks.toLocaleString(), sub: "State → nonprofit relationships", icon: Zap, color: "purple" },
-          { label: "State Funders", value: funderData.length || 14, sub: `${totalRecipients.toLocaleString()} orgs funded`, icon: Landmark, color: "teal" },
+          { label: "Organizations", value: orgCount.toLocaleString(), sub: "Charities, AHBs, schools, clubs", icon: Building2 },
+          { label: "Financial Records", value: financialCount.toLocaleString(), sub: "Income, expenditure, assets", icon: FileText },
+          { label: "Funding Links", value: fundingLinks.toLocaleString(), sub: "State → nonprofit relationships", icon: Zap },
+          { label: "State Funders", value: funderData.length || 14, sub: `${totalRecipients.toLocaleString()} orgs funded`, icon: Landmark },
         ].map((s, i) => (
-          <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5">
-            <s.icon className={`w-7 h-7 text-${s.color}-500 mb-2`} />
-            <div className="text-2xl font-bold text-gray-900">{s.value}</div>
-            <div className="text-sm font-medium text-gray-700">{s.label}</div>
-            <div className="text-xs text-gray-400 mt-0.5">{s.sub}</div>
+          <div key={i} className="bg-white rounded-2xl border border-[#0F4C5C]/10 p-5">
+            <s.icon className="w-7 h-7 text-[#0F4C5C] mb-2" />
+            <div className="font-wordmark text-3xl text-[#0F2327]">{s.value}</div>
+            <div className="text-sm font-semibold text-[#0F4C5C]">{s.label}</div>
+            <div className="text-xs text-[#0F4C5C]/60 mt-0.5">{s.sub}</div>
           </div>
         ))}
+      </div>
+
+      {/* What OpenBenefacts Offers — services grid */}
+      <div className="mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#0F4C5C]">
+            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+            What we offer
+            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+          </div>
+          <h2 className="font-wordmark text-4xl sm:text-5xl text-[#0F2327] mb-4 leading-[1]">Everything you need to follow Irish nonprofit money.</h2>
+          <p className="text-lg text-[#0F4C5C]/70">Free tools for the public. Professional tools for journalists, funders, researchers, and nonprofits who need to go deeper.</p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[
+            { icon: Search, title: "Organisation Search", desc: `Search ${orgCount.toLocaleString()} Irish charities, housing bodies, schools, and sports clubs by name, sector, county, or income.`, cta: "Start searching", page: "orgs", tag: "Free" },
+            { icon: FileText, title: "Financial Records", desc: `${financialCount.toLocaleString()} filed accounts with income, expenditure, assets, reserves, and year-on-year trends for every organisation.`, cta: "Browse financials", page: "orgs", tag: "Free" },
+            { icon: Layers, title: "Follow the Money", desc: "Interactive Sankey diagrams showing exactly where every euro of state funding lands — from government department to recipient organisation.", cta: "See the flows", page: "money", tag: "Free" },
+            { icon: Shield, title: "Due Diligence Reports", desc: "Printable PDF reports with AI-generated risk scores, governance red flags, board analysis, and three-year financial trends.", cta: "Run a report", page: "orgs", tag: "Pro" },
+            { icon: Landmark, title: "Funder Intelligence", desc: `Profiles for ${funderData.length || 14} Irish state funders — HSE, Pobal, Tusla, Arts Council and more — with full recipient lists and grant histories.`, cta: "Browse funders", page: "funders", tag: "Free" },
+            { icon: Database, title: "API & Bulk Data", desc: "Programmatic access to every organisation, financial record, and funding relationship. CSV exports and JSON endpoints for developers and researchers.", cta: "View the API", page: "api", tag: "Pro" },
+          ].map((svc, i) => (
+            <button key={i} onClick={() => setPage(svc.page)} className="group text-left bg-white rounded-2xl border border-[#0F4C5C]/10 p-7 hover:border-[#0F4C5C] hover:shadow-xl hover:-translate-y-1 transition-all">
+              <div className="flex items-start justify-between mb-5">
+                <div className="w-12 h-12 bg-[#C4E86B] rounded-xl flex items-center justify-center group-hover:bg-[#0F4C5C] transition-colors">
+                  <svc.icon className="w-6 h-6 text-[#0F4C5C] group-hover:text-[#C4E86B] transition-colors" />
+                </div>
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${svc.tag === "Pro" ? "bg-[#0F4C5C] text-[#C4E86B]" : "bg-[#0F4C5C]/10 text-[#0F4C5C]"}`}>{svc.tag}</span>
+              </div>
+              <h3 className="font-wordmark text-2xl text-[#0F2327] mb-3 leading-tight">{svc.title}</h3>
+              <p className="text-sm text-[#0F4C5C]/70 leading-relaxed mb-5">{svc.desc}</p>
+              <div className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0F4C5C] group-hover:gap-3 transition-all">
+                {svc.cta} <ArrowRight className="w-4 h-4" />
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Who uses OpenBenefacts — audience ribbon */}
+      <div className="bg-white rounded-3xl border border-[#0F4C5C]/10 p-8 sm:p-12 mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-10">
+          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#0F4C5C]">
+            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+            Who uses it
+            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+          </div>
+          <h2 className="font-wordmark text-3xl sm:text-4xl text-[#0F2327] leading-[1]">Built for everyone who cares where the money goes.</h2>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { icon: FileText, title: "Journalists", desc: "Investigate state spending, find stories in the data, and source financial facts with citation-ready URLs." },
+            { icon: Heart, title: "Nonprofits", desc: "Benchmark against peers, find new funders, and claim your listing to keep your public profile accurate." },
+            { icon: Briefcase, title: "Funders & grantmakers", desc: "Due diligence on grantees, portfolio analytics, and context on existing state funding before you commit." },
+            { icon: GraduationCap, title: "Researchers", desc: "Academic access to bulk data, funding flows, and historical records for policy and civil society research." },
+          ].map((a, i) => (
+            <div key={i} className="text-center">
+              <div className="w-14 h-14 bg-[#0F4C5C] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <a.icon className="w-7 h-7 text-[#C4E86B]" />
+              </div>
+              <h3 className="font-wordmark text-xl text-[#0F2327] mb-2">{a.title}</h3>
+              <p className="text-sm text-[#0F4C5C]/70 leading-relaxed">{a.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How it works — 3-step process */}
+      <div className="mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#0F4C5C]">
+            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+            How it works
+            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+          </div>
+          <h2 className="font-wordmark text-3xl sm:text-4xl text-[#0F2327] leading-[1]">From question to answer in three steps.</h2>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-6">
+          {[
+            { n: "01", title: "Search", desc: "Start with a name, sector, county, or keyword. Narrow by income band, governing form, or year." },
+            { n: "02", title: "Explore", desc: "Open any organisation for the full financial history, governance data, state-funding trail, and risk flags." },
+            { n: "03", title: "Export or cite", desc: "Download a due diligence PDF, grab a shareable URL, pull data through the API, or embed a live widget." },
+          ].map((s, i) => (
+            <div key={i} className="bg-[#FAF6EE] rounded-2xl p-7 border border-[#0F4C5C]/10">
+              <div className="font-wordmark text-5xl text-[#C4E86B] mb-3 leading-none">{s.n}</div>
+              <h3 className="font-wordmark text-2xl text-[#0F2327] mb-2">{s.title}</h3>
+              <p className="text-sm text-[#0F4C5C]/70 leading-relaxed">{s.desc}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* The Story — DOGE for Ireland positioning */}
