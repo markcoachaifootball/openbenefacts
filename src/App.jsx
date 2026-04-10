@@ -3438,6 +3438,10 @@ function InnerApp() {
       case "media": return <MediaPage orgCount={orgCount} />;
       case "api": return <ApiPage />;
       case "about": return <AboutPage orgCount={orgCount} />;
+      case "privacy": return <PrivacyPage />;
+      case "terms": return <TermsPage />;
+      case "sources": return <DataSourcesPage />;
+      case "claim": return <ClaimListingPage />;
       default: return <HomePage setPage={handleSetPage} setInitialSearch={setInitialSearch} setInitialSector={setInitialSector} watchlist={wl} />;
     }
   };
@@ -3450,21 +3454,215 @@ function InnerApp() {
       <Navbar page={page} setPage={handleSetPage} />
       {renderPage()}
       <DonationPopup />
-      <footer className="bg-white border-t py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2"><div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center"><span className="text-white font-extrabold text-xs tracking-tight">OB</span></div><span className="font-bold text-gray-900">Open</span><span className="font-bold text-emerald-600">Benefacts</span></div>
-            <div className="flex items-center gap-6 text-sm text-gray-400">
-              <button onClick={() => handleSetPage("pricing")} className="hover:text-gray-600">Pricing</button>
-              <button onClick={() => handleSetPage("media")} className="hover:text-gray-600">Media</button>
-              <button onClick={() => handleSetPage("about")} className="hover:text-gray-600">About</button>
-              <a href="mailto:mark@openbenefacts.com" className="hover:text-gray-600">Contact</a>
+      <footer className="bg-white border-t border-gray-100 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+            {/* Brand column */}
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                  <span className="text-white font-extrabold text-xs tracking-tight">OB</span>
+                </div>
+                <span className="font-bold text-gray-900">Open</span><span className="font-bold text-emerald-600">Benefacts</span>
+              </div>
+              <p className="text-sm text-gray-500 leading-relaxed mb-4">Ireland's nonprofit transparency platform. Independent, open, free to search.</p>
+            </div>
+
+            {/* Explore */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 mb-4">Explore</h4>
+              <ul className="space-y-3">
+                <li><button onClick={() => handleSetPage("orgs")} className="text-sm text-gray-500 hover:text-emerald-600">Organisations</button></li>
+                <li><button onClick={() => handleSetPage("funders")} className="text-sm text-gray-500 hover:text-emerald-600">Funders</button></li>
+                <li><button onClick={() => handleSetPage("money")} className="text-sm text-gray-500 hover:text-emerald-600">Follow the money</button></li>
+                <li><button onClick={() => handleSetPage("foundations")} className="text-sm text-gray-500 hover:text-emerald-600">Foundations</button></li>
+                <li><button onClick={() => handleSetPage("api")} className="text-sm text-gray-500 hover:text-emerald-600">API</button></li>
+              </ul>
+            </div>
+
+            {/* For nonprofits */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 mb-4">For nonprofits</h4>
+              <ul className="space-y-3">
+                <li><button onClick={() => handleSetPage("claim")} className="text-sm text-gray-500 hover:text-emerald-600">Claim your listing</button></li>
+                <li><a href="mailto:corrections@openbenefacts.com" className="text-sm text-gray-500 hover:text-emerald-600">Request a correction</a></li>
+                <li><button onClick={() => handleSetPage("sources")} className="text-sm text-gray-500 hover:text-emerald-600">Data sources</button></li>
+                <li><button onClick={() => handleSetPage("api")} className="text-sm text-gray-500 hover:text-emerald-600">Developer API</button></li>
+              </ul>
+            </div>
+
+            {/* Company */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 mb-4">Company</h4>
+              <ul className="space-y-3">
+                <li><button onClick={() => handleSetPage("about")} className="text-sm text-gray-500 hover:text-emerald-600">About</button></li>
+                <li><button onClick={() => handleSetPage("media")} className="text-sm text-gray-500 hover:text-emerald-600">Media</button></li>
+                <li><button onClick={() => handleSetPage("pricing")} className="text-sm text-gray-500 hover:text-emerald-600">Pricing</button></li>
+                <li><a href="mailto:mark@openbenefacts.com" className="text-sm text-gray-500 hover:text-emerald-600">Contact</a></li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-900 mb-4">Legal</h4>
+              <ul className="space-y-3">
+                <li><button onClick={() => handleSetPage("privacy")} className="text-sm text-gray-500 hover:text-emerald-600">Privacy policy</button></li>
+                <li><button onClick={() => handleSetPage("terms")} className="text-sm text-gray-500 hover:text-emerald-600">Terms of use</button></li>
+                <li><a href="mailto:privacy@openbenefacts.com" className="text-sm text-gray-500 hover:text-emerald-600">GDPR requests</a></li>
+              </ul>
             </div>
           </div>
-          <p className="text-xs text-gray-300 mt-4 text-center">&copy; 2026 OpenBenefacts</p>
+        </div>
+
+        {/* Dark bottom bar */}
+        <div className="bg-gray-900 text-gray-400 py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
+              <p>&copy; 2026 OpenBenefacts. Independent nonprofit transparency for Ireland.</p>
+              <p>Data sourced from public Irish government and regulator datasets.</p>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
+  );
+}
+
+// ===========================================================
+// STATIC PAGES (Privacy, Terms, Data Sources, Claim Listing)
+// ===========================================================
+function StaticPageShell({ title, subtitle, children }) {
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <div className="mb-10">
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-3 tracking-tight">{title}</h1>
+        {subtitle && <p className="text-lg text-gray-500">{subtitle}</p>}
+      </div>
+      <div className="prose prose-lg max-w-none text-gray-600 leading-relaxed">{children}</div>
+    </div>
+  );
+}
+
+function PrivacyPage() {
+  return (
+    <StaticPageShell title="Privacy Policy" subtitle="Last updated: 10 April 2026">
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">What we collect</h2>
+      <p>OpenBenefacts is a public transparency platform. We do not require an account to browse organisations, funders, or financial data. When you sign up for a Professional or Enterprise plan, we collect your email address and billing information (processed securely by Stripe — we never store payment details).</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Analytics</h2>
+      <p>We use privacy-respecting analytics to understand which pages are popular and whether the service is working. We do not track you across other sites and we do not sell or share your data with advertisers.</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Public data</h2>
+      <p>All organisation, funder, and financial data on OpenBenefacts is sourced from publicly available government and regulator datasets (Charities Regulator, Revenue Commissioners, data.gov.ie, and others). Publishing this data is in the public interest and is lawful under GDPR Article 6(1)(e) and Article 6(1)(f).</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Your rights</h2>
+      <p>Under the GDPR, you have the right to access, correct, or delete any personal data we hold about you. To exercise these rights, email <a href="mailto:privacy@openbenefacts.com" className="text-emerald-600 hover:underline">privacy@openbenefacts.com</a>.</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Contact</h2>
+      <p>Questions about this policy? Email <a href="mailto:mark@openbenefacts.com" className="text-emerald-600 hover:underline">mark@openbenefacts.com</a>.</p>
+    </StaticPageShell>
+  );
+}
+
+function TermsPage() {
+  return (
+    <StaticPageShell title="Terms of Use" subtitle="Last updated: 10 April 2026">
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">About OpenBenefacts</h2>
+      <p>OpenBenefacts is an independent nonprofit transparency platform for Ireland. By using this site, you agree to these terms.</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Permitted use</h2>
+      <p>You are free to search, read, and link to data on OpenBenefacts for any lawful purpose — journalism, research, due diligence, academic work, or personal curiosity. Attribution is appreciated but not required.</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">API and bulk data</h2>
+      <p>Use of the OpenBenefacts API is subject to the rate limits of your tier (see the <a href="#api" className="text-emerald-600 hover:underline">API page</a>). You must not attempt to circumvent rate limits, scrape the web interface as a substitute for the API, or redistribute bulk data without permission.</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Accuracy</h2>
+      <p>We work hard to keep data accurate and up to date, but OpenBenefacts is provided <em>as is</em> with no warranty. Financial and governance data is derived from regulator filings and may contain errors, omissions, or outdated entries. Always verify important decisions against primary sources.</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Corrections</h2>
+      <p>If you spot an error on your organisation's listing, see the <button onClick={() => { window.location.hash = "claim"; }} className="text-emerald-600 hover:underline">Claim your listing</button> page or email <a href="mailto:corrections@openbenefacts.com" className="text-emerald-600 hover:underline">corrections@openbenefacts.com</a>.</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Limitation of liability</h2>
+      <p>OpenBenefacts shall not be liable for any indirect, incidental, or consequential damages arising from use of the platform or its data.</p>
+    </StaticPageShell>
+  );
+}
+
+function DataSourcesPage() {
+  const sources = [
+    { name: "Charities Regulator Ireland", desc: "Registered charities, trustees, financial returns", url: "https://www.charitiesregulator.ie", updated: "Monthly", count: "11,500+ charities" },
+    { name: "Revenue Commissioners (CHY)", desc: "Tax-exempt charitable bodies with CHY numbers", url: "https://www.revenue.ie", updated: "Quarterly", count: "8,700+ entries" },
+    { name: "Companies Registration Office (CRO)", desc: "Company filings, directors, annual returns", url: "https://www.cro.ie", updated: "Monthly", count: "15,000+ nonprofits" },
+    { name: "Department of Education", desc: "Primary and post-primary school registers", url: "https://www.gov.ie/en/organisation/department-of-education", updated: "Annually", count: "4,000+ schools" },
+    { name: "Department of Housing (AHBs)", desc: "Approved Housing Bodies register", url: "https://www.ahbregulator.ie", updated: "Quarterly", count: "450+ AHBs" },
+    { name: "National Lottery Good Causes", desc: "Grants awarded via Good Causes funds", url: "https://www.lottery.ie/about/good-causes", updated: "Annually", count: "1,200+ grants/year" },
+    { name: "HSE / Section 39", desc: "Health Service Executive grant recipients", url: "https://www.hse.ie", updated: "Annually", count: "1,523 recipients" },
+    { name: "Pobal", desc: "Government programme management data", url: "https://www.pobal.ie", updated: "Annually", count: "€1.4B tracked" },
+    { name: "Arts Council", desc: "Arts funding grants and programmes", url: "https://www.artscouncil.ie", updated: "Annually", count: "4,787 recipients" },
+    { name: "Sport Ireland", desc: "Sports club and governing body funding", url: "https://www.sportireland.ie", updated: "Annually", count: "675 recipients" },
+    { name: "data.gov.ie", desc: "Ireland's open data portal (CKAN API)", url: "https://data.gov.ie", updated: "Varies", count: "Multiple datasets" },
+    { name: "Tusla", desc: "Child and Family Agency funding", url: "https://www.tusla.ie", updated: "Annually", count: "675 recipients" },
+  ];
+
+  return (
+    <StaticPageShell title="Data Sources" subtitle="Everything on OpenBenefacts comes from public, primary sources.">
+      <p className="mb-8">We ingest, clean, normalise, and archive data from the following Irish government and regulator sources. Our monthly archival pipeline ensures that historical data is preserved even if the original source is taken offline — filling the gap left when Benefacts was defunded in 2022.</p>
+
+      <div className="not-prose grid md:grid-cols-2 gap-4 mb-10">
+        {sources.map((s, i) => (
+          <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 hover:border-emerald-200 hover:shadow-md transition-all">
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="font-bold text-gray-900">{s.name}</h3>
+              <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-medium">{s.updated}</span>
+            </div>
+            <p className="text-sm text-gray-500 mb-3">{s.desc}</p>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-400">{s.count}</span>
+              <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline font-medium">Source →</a>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">How we process data</h2>
+      <p>Each month, our scrapers pull the latest data from CKAN APIs, regulator websites, and open data portals. We normalise organisation names (e.g. "CHILDANDFAMILY AGENCY" → "Child And Family Agency"), cross-reference identifiers (charity numbers, CHY numbers, CRO numbers), and link financial records to the organisations they describe. All raw downloads are archived to cold storage with SHA-256 hashes so researchers can verify that data hasn't been altered.</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Missing a source?</h2>
+      <p>If you know of a public dataset we should be ingesting, email <a href="mailto:data@openbenefacts.com" className="text-emerald-600 hover:underline">data@openbenefacts.com</a>. We prioritise sources by coverage, update frequency, and public interest value.</p>
+    </StaticPageShell>
+  );
+}
+
+function ClaimListingPage() {
+  return (
+    <StaticPageShell title="Claim your listing" subtitle="Update or correct your organisation's profile on OpenBenefacts.">
+      <p>OpenBenefacts aggregates data from public Irish government sources. If you are a trustee, director, or authorised representative of a nonprofit listed here, you can request corrections, add missing information, or flag your listing as claimed.</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">How it works</h2>
+      <ol className="list-decimal pl-6 space-y-2">
+        <li>Find your organisation in the <button onClick={() => { window.location.hash = "orgs"; }} className="text-emerald-600 hover:underline">directory</button>.</li>
+        <li>Copy the URL of your profile page.</li>
+        <li>Email <a href="mailto:claims@openbenefacts.com" className="text-emerald-600 hover:underline">claims@openbenefacts.com</a> from an address matching your organisation's domain, with the URL and the correction you'd like to make.</li>
+        <li>We verify your authority and update the listing — usually within 5 working days.</li>
+      </ol>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">What you can update</h2>
+      <ul className="list-disc pl-6 space-y-1">
+        <li>Description, website, contact email, and social links</li>
+        <li>Mission statement and areas of activity</li>
+        <li>Corrections to board member data</li>
+        <li>Logo and hero image</li>
+      </ul>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">What we can't change</h2>
+      <p>We cannot alter financial data sourced from regulator filings (Charities Regulator, CRO). If those records contain errors, contact the source regulator directly — corrections will flow through on the next monthly sync.</p>
+
+      <div className="not-prose mt-10 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-8 text-center">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to claim?</h3>
+        <p className="text-gray-600 mb-5">Email us from your organisation's verified domain.</p>
+        <a href="mailto:claims@openbenefacts.com?subject=Claim%20listing%20request" className="inline-block px-6 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-colors">Email claims@openbenefacts.com</a>
+      </div>
+    </StaticPageShell>
   );
 }
 
