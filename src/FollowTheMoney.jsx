@@ -149,20 +149,22 @@ function FunderOverview({ funders, onSelectFunder }) {
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Funding Treemap — Size = Total Funding</h3>
           <ResponsiveContainer width="100%" height={480}>
             <Treemap data={treemapData} dataKey="size" ratio={4/3} stroke="#fff" strokeWidth={3}
-              content={({ x, y, width, height, index, name, size }) => {
-                const fill = COLORS[index % COLORS.length];
-                if (width < 8 || height < 8) return null;
+              content={(props) => {
+                const { x, y, width, height, index, name, size } = props || {};
+                if (!name || !width || !height || width < 8 || height < 8) return null;
+                const fill = COLORS[(index || 0) % COLORS.length];
                 const showName = width > 55 && height > 28;
                 const showAmount = width > 45 && height > 40;
                 const fontSize = Math.max(9, Math.min(14, width / 10, height / 4));
+                const maxChars = Math.floor(width / (fontSize * 0.55));
+                const displayName = name.length > maxChars ? name.substring(0, maxChars - 1) + "…" : name;
                 return (
                   <g>
                     <rect x={x} y={y} width={width} height={height} rx={8} style={{ fill, stroke: "#fff", strokeWidth: 3 }} />
-                    {/* Dark overlay for text contrast */}
                     <rect x={x} y={y} width={width} height={height} rx={8} style={{ fill: "rgba(0,0,0,0.15)" }} />
                     {showName && (
                       <text x={x + width/2} y={y + height/2 - (showAmount ? fontSize * 0.6 : 0)} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={fontSize} fontWeight="800" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
-                        {name.length > Math.floor(width / (fontSize * 0.55)) ? name.substring(0, Math.floor(width / (fontSize * 0.55)) - 1) + "…" : name}
+                        {displayName}
                       </text>
                     )}
                     {showAmount && (
