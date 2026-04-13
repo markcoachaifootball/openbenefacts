@@ -4,6 +4,7 @@ import { Search, Building2, Users, TrendingUp, DollarSign, ChevronRight, ArrowLe
 import { supabase, fetchStats, fetchFunders, fetchOrganisations, fetchOrganisation, searchOrganisations, fetchSectorCounts, fetchCountyCounts, fetchDirectorBoards, fetchFunderGrants, fetchFunderGrantsByName, fetchSectorBenchmark } from "./supabase.js";
 import { DATA } from "./data.js";
 import CouncilFinancesPage from "./CouncilFinances.jsx";
+import FollowTheMoneyPage from "./FollowTheMoney.jsx";
 
 // ===========================================================
 // ERROR BOUNDARY
@@ -3905,11 +3906,12 @@ function InnerApp() {
 
   const renderPage = () => {
     if (page.startsWith("org:")) return <OrgProfilePage orgId={page.split(":")[1]} setPage={handleSetPage} watchlist={wl} embed={isEmbed} />;
+    if (page.startsWith("funder:")) return <FollowTheMoneyPage setPage={handleSetPage} initialFunder={page.split("funder:")[1]} />;
     if (page.startsWith("follow/")) return <FlowPage funderSlug={page.split("follow/")[1]} setPage={handleSetPage} embed={isEmbed} />;
     if (page.startsWith("flow:")) return <FlowPage funderSlug={page.split(":")[1]} setPage={handleSetPage} embed={isEmbed} />;
     switch (page) {
       case "orgs": return <OrgsPage setPage={handleSetPage} initialSearch={initialSearch} setInitialSearch={setInitialSearch} initialSector={initialSector} setInitialSector={setInitialSector} watchlist={wl} />;
-      case "funders": return <FundersPage setPage={handleSetPage} setInitialSearch={setInitialSearch} />;
+      case "funders": return <FollowTheMoneyPage setPage={handleSetPage} />;
       case "councils": return <CouncilFinancesPage setPage={handleSetPage} />;
       case "pricing": return <PricingPage orgCount={orgCount} setPage={handleSetPage} />;
       case "money": return <MoneyPage setPage={handleSetPage} orgCount={orgCount} />;

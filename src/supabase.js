@@ -215,6 +215,42 @@ export async function fetchSectorBenchmark(sector) {
 }
 
 /**
+ * Fetch ALL grants for a funder (no pagination limit) — for deep analytics
+ */
+export async function fetchAllFunderGrants(funderId) {
+  const allGrants = [];
+  let from = 0;
+  const batchSize = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from('funding_grants')
+      .select('*, organisations(id, name, sector, county, charity_number, gross_income)')
+      .eq('funder_id', funderId)
+      .order('amount', { ascending: false })
+      .range(from, from + batchSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    allGrants.push(...data);
+    if (data.length < batchSize) break;
+    from += batchSize;
+  }
+  return allGrants;
+}
+
+/**
+ * Resolve a funder by name to get its ID
+ */
+export async function resolveFunderByName(name) {
+  const shortName = name.split("/")[0].split("(")[0].trim();
+  const { data } = await supabase
+    .from('funders')
+    .select('*')
+    .ilike('name', `%${shortName}%`)
+    .limit(1);
+  return data?.[0] || null;
+}
+
+/**
  * Search organisations (for autocomplete/search bar)
  */
 export async function searchOrganisations(query, limit = 10) {
