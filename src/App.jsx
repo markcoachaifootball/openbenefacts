@@ -2496,9 +2496,50 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
 // FUNDERS PAGE (with drill-down to grant recipients)
 // ===========================================================
 function FundersPage({ setPage, setInitialSearch }) {
-  const sorted = useMemo(() => [...funderData].sort((a, b) => (b.total || 0) - (a.total || 0)), []);
-  const totalFunding = funderData.reduce((s, f) => s + (f.total || 0), 0);
-  const totalProgs = funderData.reduce((s, f) => s + (f.programmes?.length || 0), 0);
+  // Load live funder stats from Supabase, merge with hardcoded data.js for fallback
+  const [liveFunders, setLiveFunders] = useState(null);
+  useEffect(() => {
+    fetchFunders().then(data => { if (data) setLiveFunders(data); }).catch(() => {});
+  }, []);
+
+  // Merge: live Supabase data overrides hardcoded totals
+  const mergedFunderData = useMemo(() => {
+    if (!liveFunders) return funderData;
+    const liveMap = {};
+    liveFunders.forEach(lf => { liveMap[lf.name] = lf; });
+    // Start with hardcoded list, overlay live stats
+    const merged = funderData.map(f => {
+      const live = liveMap[f.name];
+      if (live) {
+        return {
+          ...f,
+          id: live.id,
+          total: live.total_funding > 0 ? Number(live.total_funding) : (f.total || 0),
+          recipients: live.total_recipients > 0 ? Number(live.total_recipients) : (f.recipients || 0),
+          matched_recipients: live.matched_recipients || 0,
+          programmes: live.programmes?.length ? live.programmes : (f.programmes || []),
+        };
+      }
+      return f;
+    });
+    // Add any Supabase funders not in hardcoded list
+    liveFunders.forEach(lf => {
+      if (!funderData.find(f => f.name === lf.name)) {
+        merged.push({
+          id: lf.id, name: lf.name, type: lf.type || "Government",
+          total: Number(lf.total_funding) || 0,
+          recipients: Number(lf.total_recipients) || 0,
+          matched_recipients: lf.matched_recipients || 0,
+          programmes: lf.programmes || [],
+        });
+      }
+    });
+    return merged;
+  }, [liveFunders]);
+
+  const sorted = useMemo(() => [...mergedFunderData].sort((a, b) => (b.total || 0) - (a.total || 0)), [mergedFunderData]);
+  const totalFunding = mergedFunderData.reduce((s, f) => s + (f.total || 0), 0);
+  const totalProgs = mergedFunderData.reduce((s, f) => s + (f.programmes?.length || 0), 0);
   const [search, setSearch] = useState("");
   const [selectedFunder, setSelectedFunder] = useState(null);
   const [selectedProgramme, setSelectedProgramme] = useState(null); // programme filter
@@ -2560,7 +2601,7 @@ function FundersPage({ setPage, setInitialSearch }) {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-1">State Funders Directory</h1>
-        <p className="text-gray-500">{funderData.length} funders distributing {fmt(totalFunding)} across {totalProgs} programmes</p>
+        <p className="text-gray-500">{mergedFunderData.length} funders distributing {fmt(totalFunding)} across {totalProgs} programmes</p>
       </div>
 
       <div className="flex gap-3 mb-6">

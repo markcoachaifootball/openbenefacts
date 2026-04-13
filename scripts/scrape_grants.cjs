@@ -801,11 +801,11 @@ async function main() {
     // New 9 funders
     ['Dept of Education', scrapeDeptEducation],
     ['Dept of Housing', scrapeDeptHousing],
-    ['Dept of Further & Higher Education', scrapeDeptFurtherHigherEd],
-    ['DEASP', scrapeDEASP],
-    ['Local Authorities', scrapeLocalAuthorities],
+    ['Dept of Further & Higher Ed', scrapeDeptFurtherHigherEd],
+    ['DEASP / Social Protection', scrapeDEASP],
+    ['Local Authorities (31)', scrapeLocalAuthorities],
     ['EU Funding Bodies', scrapeEUFunding],
-    ['Dept of Rural & Community Development', scrapeDeptRuralCommunity],
+    ['Dept of Rural & Community Dev', scrapeDeptRuralCommunity],
     ['Dept of Justice', scrapeDeptJustice],
     ['Dept of Foreign Affairs', scrapeDeptForeignAffairs],
   ];
