@@ -21,7 +21,7 @@ const fmtFull = (n) => `€${Math.round(n || 0).toLocaleString()}`;
 const pct = (a, b) => b > 0 ? `${((a / b) * 100).toFixed(1)}%` : "—";
 const cleanName = (n) => (n || "").replace(/\s+(CLG|DAC|Ltd|Limited|Company|Teoranta)\s*$/i, "").trim();
 
-const COLORS = ["#059669","#0d9488","#0891b2","#2563eb","#7c3aed","#db2777","#ea580c","#ca8a04","#65a30d","#dc2626","#6366f1","#f97316"];
+const COLORS = ["#059669","#2563eb","#dc2626","#7c3aed","#ea580c","#0891b2","#db2777","#ca8a04","#4f46e5","#65a30d","#be185d","#0d9488","#9333ea","#f97316"];
 const SECTOR_ICONS = { "Social Services": "🤝", "Education": "🎓", "Health": "🏥", "Religion": "⛪", "Arts Culture": "🎭", "Sports": "⚽", "Community Development": "🏘️", "Environment": "🌿", "Housing": "🏠", "International": "🌍" };
 
 const Spinner = () => <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600" /></div>;
@@ -147,20 +147,35 @@ function FunderOverview({ funders, onSelectFunder }) {
       {view === "treemap" && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-6">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Funding Treemap — Size = Total Funding</h3>
-          <ResponsiveContainer width="100%" height={400}>
-            <Treemap data={treemapData} dataKey="size" ratio={4/3} stroke="#fff" strokeWidth={2}
-              content={({ x, y, width, height, name, size }) => {
-                if (width < 40 || height < 25) return null;
+          <ResponsiveContainer width="100%" height={480}>
+            <Treemap data={treemapData} dataKey="size" ratio={4/3} stroke="#fff" strokeWidth={3}
+              content={({ x, y, width, height, index, name, size }) => {
+                const fill = COLORS[index % COLORS.length];
+                if (width < 8 || height < 8) return null;
+                const showName = width > 55 && height > 28;
+                const showAmount = width > 45 && height > 40;
+                const fontSize = Math.max(9, Math.min(14, width / 10, height / 4));
                 return (
                   <g>
-                    <rect x={x} y={y} width={width} height={height} rx={6} style={{ fill: treemapData.find(d => d.name === name)?.fill || "#059669", opacity: 0.85, stroke: "#fff", strokeWidth: 2 }} />
-                    {width > 60 && <text x={x + width/2} y={y + height/2 - 6} textAnchor="middle" fill="white" fontSize={Math.min(11, width/8)} fontWeight="700">{name}</text>}
-                    {width > 50 && height > 35 && <text x={x + width/2} y={y + height/2 + 10} textAnchor="middle" fill="rgba(255,255,255,0.8)" fontSize={Math.min(10, width/9)}>{fmt(size)}</text>}
+                    <rect x={x} y={y} width={width} height={height} rx={8} style={{ fill, stroke: "#fff", strokeWidth: 3 }} />
+                    {/* Dark overlay for text contrast */}
+                    <rect x={x} y={y} width={width} height={height} rx={8} style={{ fill: "rgba(0,0,0,0.15)" }} />
+                    {showName && (
+                      <text x={x + width/2} y={y + height/2 - (showAmount ? fontSize * 0.6 : 0)} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={fontSize} fontWeight="800" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
+                        {name.length > Math.floor(width / (fontSize * 0.55)) ? name.substring(0, Math.floor(width / (fontSize * 0.55)) - 1) + "…" : name}
+                      </text>
+                    )}
+                    {showAmount && (
+                      <text x={x + width/2} y={y + height/2 + fontSize * 0.8} textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.9)" fontSize={fontSize * 0.8} fontWeight="700" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}>
+                        {fmt(size)}
+                      </text>
+                    )}
                   </g>
                 );
               }}
             />
           </ResponsiveContainer>
+          <p className="text-xs text-gray-400 mt-2 text-center">Click any block to see full funder breakdown</p>
         </div>
       )}
 
