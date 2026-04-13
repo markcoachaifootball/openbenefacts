@@ -489,9 +489,9 @@ function AuthProvider({ children }) {
             </div>
             <div className="space-y-3 mb-6">
               {[
-                { icon: Search, title: "Search & explore", desc: "Browse 36,803+ organizations by name, sector, or county" },
+                { icon: Search, title: "Search & explore", desc: "Browse 36,803+ organisations by name, sector, or county" },
                 { icon: BarChart3, title: "View full financials", desc: "Access multi-year trends, income breakdowns, and risk scores" },
-                { icon: Bookmark, title: "Build your watchlist", desc: "Save organizations you're tracking and monitor changes" },
+                { icon: Bookmark, title: "Build your watchlist", desc: "Save organisations you're tracking and monitor changes" },
                 { icon: Landmark, title: "Trace funding flows", desc: "See which government bodies fund which nonprofits" },
               ].map((step, i) => (
                 <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
@@ -558,7 +558,7 @@ function Navbar({ page, setPage }) {
   }, []);
 
   const nav = (p) => { setPage(p); setMobileOpen(false); };
-  const links = [["home","Dashboard"],["orgs","Organizations"],["funders","Funders"],["councils","Council Finances"],["pricing","Pricing"],["api","API"],["about","About"]];
+  const links = [["home","Dashboard"],["orgs","Organisations"],["funders","Funders"],["councils","Council Finances"],["pricing","Pricing"],["api","API"],["about","About"]];
 
   return (
     <nav className="bg-[#FAF6EE] border-b border-[#0F4C5C]/10 sticky top-0 z-40 backdrop-blur">
@@ -719,7 +719,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-16">
         {[
-          { label: "Organizations", value: orgCount.toLocaleString(), sub: "Charities, AHBs, schools, clubs", icon: Building2 },
+          { label: "Organisations", value: orgCount.toLocaleString(), sub: "Charities, AHBs, schools, clubs", icon: Building2 },
           { label: "Financial Records", value: financialCount.toLocaleString(), sub: "Income, expenditure, assets", icon: FileText },
           { label: "Funding Links", value: fundingLinks.toLocaleString(), sub: "State → nonprofit relationships", icon: Zap },
           { label: "State Funders", value: funderData.length || 14, sub: `${totalRecipients.toLocaleString()} orgs funded`, icon: Landmark },
@@ -873,10 +873,10 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
             </ResponsiveContainer>
           </div>
         )}
-        {/* Top Organizations by Income */}
+        {/* Top Organisations by Income */}
         {siteStats.topRecipients && siteStats.topRecipients.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Largest Organizations</h3>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Largest Organisations</h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={siteStats.topRecipients.slice(0, 6).map(r => ({ name: cleanName(r.name).substring(0, 24), income: r.totalIncome }))} layout="vertical" margin={{ left: 5, right: 20 }}>
                 <XAxis type="number" tickFormatter={v => v >= 1e9 ? `€${(v/1e9).toFixed(0)}B` : v >= 1e6 ? `€${(v/1e6).toFixed(0)}M` : `€${v}`} fontSize={10} />
@@ -893,7 +893,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
       {featured && (
         <div onClick={() => setPage(`org:${featured.id}`)} className="bg-white rounded-2xl border border-gray-100 p-6 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:border-emerald-200 hover:shadow-md transition-all">
           <div>
-            <div className="text-xs font-medium text-emerald-600 mb-1">Featured Organization</div>
+            <div className="text-xs font-medium text-emerald-600 mb-1">Featured Organisation</div>
             <h3 className="text-lg font-bold text-gray-900">{cleanName(featured.name)}</h3>
             <p className="text-sm text-gray-500">{featured.rcn ? `RCN ${featured.rcn}` : ""}</p>
           </div>
@@ -968,7 +968,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
                 <button key={i} onClick={() => { setInitialSearch(""); setInitialSector(sectorName); setPage("orgs"); }} className="bg-white rounded-xl border border-gray-100 p-4 text-left hover:border-emerald-200 hover:shadow-md transition-all group">
                   <Icon className="w-6 h-6 text-emerald-600 mb-2" />
                   <div className="font-medium text-gray-900 text-sm">{sectorName}</div>
-                  <div className="text-xs text-gray-400">{orgCount?.toLocaleString()} organizations</div>
+                  <div className="text-xs text-gray-400">{orgCount?.toLocaleString()} organisations</div>
                 </button>
               );
             })}
@@ -1097,7 +1097,7 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Organizations</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Organisations</h1>
           <p className="text-gray-500">Irish nonprofits with real government data</p>
         </div>
         <div className="flex items-center gap-3">
@@ -1139,7 +1139,7 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search organizations..." value={search} onChange={e => handleSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" />
+          <input type="text" placeholder="Search organisations..." value={search} onChange={e => handleSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" />
           {suggestions.length > 0 && search.trim().length >= 2 && (
             <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
               {suggestions.map(s => (
@@ -1198,7 +1198,7 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
       </div>
 
       {/* Results */}
-      {loading ? <Spinner /> : orgs.length === 0 ? <EmptyState icon={Building2} title="No organizations found" sub="Try adjusting your search or filters" /> : (
+      {loading ? <Spinner /> : orgs.length === 0 ? <EmptyState icon={Building2} title="No organisations found" sub="Try adjusting your search or filters" /> : (
         <>
           <div className="space-y-2">
             {orgs.map((org, i) => (
@@ -1299,7 +1299,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
   };
 
   if (loading) return <Spinner />;
-  if (!org) return <ErrorState message="Organization not found" />;
+  if (!org) return <ErrorState message="Organisation not found" />;
 
   // Embed mode: compact org snapshot for embedding in articles
   if (embed) {
@@ -1390,7 +1390,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     </div>` : ""}
                     ${org.grants?.length > 0 ? `<h2>State Funding</h2><table><tr><th>Funder</th><th>Programme</th><th>Year</th><th style="text-align:right">Amount</th></tr>${org.grants.slice(0,20).map(g => `<tr><td>${g.funders?.name||g.funder_name||"Government"}</td><td>${g.programme||"—"}</td><td>${g.year||"—"}</td><td style="text-align:right">${g.amount>0?fmt(g.amount):"—"}</td></tr>`).join("")}</table>` : ""}
                     ${org.boardMembers?.length > 0 ? `<h2>Board Members</h2><table><tr><th>Name</th><th>Role</th><th>Since</th></tr>${org.boardMembers.map(bm => `<tr><td>${bm.directors?.name||"—"}</td><td>${bm.role||"Trustee"}</td><td>${bm.start_date?.slice(0,4)||"—"}</td></tr>`).join("")}</table>` : ""}
-                    <h2>Organization Details</h2><table>${fields.map(f => `<tr><td style="color:#999;width:160px">${f.label}</td><td>${f.value}${f.sub?" — "+f.sub:""}</td></tr>`).join("")}</table>
+                    <h2>Organisation Details</h2><table>${fields.map(f => `<tr><td style="color:#999;width:160px">${f.label}</td><td>${f.value}${f.sub?" — "+f.sub:""}</td></tr>`).join("")}</table>
                     ${(clean(org.charity_number) || clean(org.cro_number)) ? `<h2>Source Documents</h2><table>
                       ${clean(org.charity_number) ? `<tr><td style="color:#999;width:160px">Charities Regulator</td><td><a href="https://www.charitiesregulator.ie/en/information-for-the-public/search-the-register-of-charities/charity-detail?regid=${org.charity_number}" style="color:#059669">Annual reports &amp; filings — RCN ${org.charity_number}</a></td></tr>` : ""}
                       ${clean(org.cro_number) ? `<tr><td style="color:#999;width:160px">CRO (CORE)</td><td><a href="https://core.cro.ie/search?q=${org.cro_number}&type=companies" style="color:#059669">Constitution &amp; annual returns — ${org.cro_number}</a></td></tr>` : ""}
@@ -1759,7 +1759,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                 );
               })()}
 
-              <h3 className="text-xs font-bold text-[#0F4C5C] uppercase tracking-[0.15em] mb-4">Organization Info</h3>
+              <h3 className="text-xs font-bold text-[#0F4C5C] uppercase tracking-[0.15em] mb-4">Organisation Info</h3>
               {fields.length > 0 ? (
                 <div className="grid sm:grid-cols-2 gap-4">
                   {fields.slice(0, 6).map((f, i) => (
@@ -3676,7 +3676,7 @@ function PricingPage({ orgCount = 36803, setPage }) {
   const formattedCount = orgCount.toLocaleString();
 
   const plans = [
-    { name: "Free", price: 0, desc: "Genuinely useful transparency", features: [`Browse ${formattedCount} organizations`,"5-year financial trend charts","Year-by-year comparison tables","Board member & cross-directorships","State funding received","AI risk score (summary)","Full search & filters"], cta: "Get Started" },
+    { name: "Free", price: 0, desc: "Genuinely useful transparency", features: [`Browse ${formattedCount} organisations`,"5-year financial trend charts","Year-by-year comparison tables","Board member & cross-directorships","State funding received","AI risk score (summary)","Full search & filters"], cta: "Get Started" },
     { name: "Pro", price: annual ? 299 : 29, period: annual ? "/year" : "/month", desc: "Know before you give", features: ["Everything in Free","Full AI risk assessment","Charity portfolio watchlist","Sector benchmarking","Income source breakdown","PDF profile downloads","ESG-ready compliance reports"], highlight: true, cta: "Start Free Trial", badge: annual ? "Save 15%" : null },
     { name: "Professional", price: annual ? 1499 : 149, period: annual ? "/year" : "/month", desc: "Grant due diligence in one click", features: ["Everything in Pro","One-click due diligence reports","Grant readiness assessment","White-label branded reports","Bulk CSV/Excel export","API access (1,000 calls/mo)","Priority support"], cta: "Start Free Trial" },
     { name: "Enterprise", price: null, desc: "Custom solutions", features: ["Everything in Professional","Unlimited API access","Custom dashboards","White-label reports","Dedicated account manager","Custom data integration","SLA guarantee"], cta: "Contact Sales" },
