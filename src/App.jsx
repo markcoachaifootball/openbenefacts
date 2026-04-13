@@ -2072,34 +2072,341 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
           {tab === "financials" && (
             <div>
               <p className="text-gray-500 text-sm mb-4">Financial data sourced from Charities Regulator and CRO filings.</p>
-              {org.financials && org.financials.length > 0 ? (
-                <div className="mb-6">
-                  <div className="bg-[#C4E86B]/25 border border-[#0F4C5C]/15 rounded-xl p-4 mb-4 flex items-center justify-between">
-                    <p className="text-sm text-[#0F4C5C] font-bold">Latest Annual Return ({org.financials[0].year || "Most Recent"})</p>
+              {org.financials && org.financials.length > 0 ? (() => {
+                const cur = org.financials[0];
+                const prev = org.financials.length >= 2 ? org.financials[1] : null;
+                const sorted = [...org.financials].reverse();
+                const yoyBadge = (curVal, prevVal) => {
+                  if (!prev || curVal == null || prevVal == null || prevVal === 0) return null;
+                  const pct = ((curVal - prevVal) / Math.abs(prevVal)) * 100;
+                  if (Math.abs(pct) < 0.5) return <span className="text-[10px] text-gray-400 ml-1">unchanged</span>;
+                  const up = pct > 0;
+                  return <span className={`text-[10px] ml-1 font-medium ${up ? "text-emerald-600" : "text-red-500"}`}>{up ? "▲" : "▼"} {Math.abs(pct).toFixed(0)}% vs {prev.year || "prior"}</span>;
+                };
+                const surplus = (cur.gross_income || 0) - (cur.gross_expenditure || 0);
+                const spendRatio = cur.gross_income > 0 ? ((cur.gross_expenditure || 0) / cur.gross_income * 100).toFixed(0) : 0;
+                const hasIncomeBreakdown = (cur.government_income > 0 || cur.donations_income > 0 || cur.trading_income > 0 || cur.other_income > 0);
+                const hasBalanceSheet = (cur.total_assets > 0 || cur.total_liabilities > 0 || cur.net_assets != null);
+                return (
+                <div className="space-y-6">
+                  {/* Header bar */}
+                  <div className="bg-[#C4E86B]/25 border border-[#0F4C5C]/15 rounded-xl p-4 flex items-center justify-between">
+                    <p className="text-sm text-[#0F4C5C] font-bold">Latest Annual Return ({cur.year || "Most Recent"})</p>
                     {org.financials.length > 1 && <span className="text-xs text-[#0F4C5C]/70 font-semibold">{org.financials.length} years on file</span>}
                   </div>
-                  {/* YoY helper for change indicators */}
-                  {(() => {
-                    const cur = org.financials[0];
-                    const prev = org.financials.length >= 2 ? org.financials[1] : null;
-                    const yoyBadge = (curVal, prevVal) => {
-                      if (!prev || curVal == null || prevVal == null || prevVal === 0) return null;
-                      const pct = ((curVal - prevVal) / Math.abs(prevVal)) * 100;
-                      if (Math.abs(pct) < 0.5) return <span className="text-[10px] text-gray-400 ml-1">unchanged</span>;
-                      const up = pct > 0;
-                      return <span className={`text-[10px] ml-1 font-medium ${up ? "text-emerald-600" : "text-red-500"}`}>{up ? "▲" : "▼"} {Math.abs(pct).toFixed(0)}% vs {prev.year || "prior"}</span>;
-                    };
+
+                  {/* ===== KEY METRICS GRID ===== */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    {cur.gross_income != null && <div className="p-3 bg-gray-50 rounded-xl"><div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Income</div><div className="text-lg font-bold text-gray-900 mt-0.5">{fmt(cur.gross_income)}</div><div>{yoyBadge(cur.gross_income, prev?.gross_income)}</div></div>}
+                    {cur.gross_expenditure != null && <div className="p-3 bg-gray-50 rounded-xl"><div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Expenditure</div><div className="text-lg font-bold text-gray-900 mt-0.5">{fmt(cur.gross_expenditure)}</div><div>{yoyBadge(cur.gross_expenditure, prev?.gross_expenditure)}</div></div>}
+                    <div className="p-3 bg-gray-50 rounded-xl"><div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Surplus / Deficit</div><div className={`text-lg font-bold mt-0.5 ${surplus >= 0 ? "text-emerald-600" : "text-red-500"}`}>{surplus >= 0 ? "+" : ""}{fmt(surplus)}</div><div className="text-[10px] text-gray-400">Spend ratio: {spendRatio}%</div></div>
+                    {cur.total_assets != null && cur.total_assets > 0 && <div className="p-3 bg-gray-50 rounded-xl"><div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Total Assets</div><div className="text-lg font-bold text-gray-900 mt-0.5">{fmt(cur.total_assets)}</div><div>{yoyBadge(cur.total_assets, prev?.total_assets)}</div></div>}
+                    {cur.net_assets != null && cur.net_assets !== 0 && <div className="p-3 bg-gray-50 rounded-xl"><div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Net Assets</div><div className={`text-lg font-bold mt-0.5 ${cur.net_assets >= 0 ? "text-gray-900" : "text-red-500"}`}>{fmt(cur.net_assets)}</div><div>{yoyBadge(cur.net_assets, prev?.net_assets)}</div></div>}
+                    {cur.employees > 0 && <div className="p-3 bg-gray-50 rounded-xl"><div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Employees</div><div className="text-lg font-bold text-gray-900 mt-0.5">{cur.employees.toLocaleString()}</div>{cur.volunteers > 0 && <div className="text-[10px] text-gray-400">+ {cur.volunteers.toLocaleString()} volunteers</div>}{!cur.volunteers && <div>{yoyBadge(cur.employees, prev?.employees)}</div>}</div>}
+                  </div>
+
+                  {/* ===== INCOME BREAKDOWN (if data exists) ===== */}
+                  {hasIncomeBreakdown && (() => {
+                    const sources = [
+                      { name: "Government", value: cur.government_income || 0, fill: "#059669" },
+                      { name: "Donations", value: cur.donations_income || 0, fill: "#7c3aed" },
+                      { name: "Trading", value: cur.trading_income || 0, fill: "#2563eb" },
+                      { name: "Public", value: cur.public_income || 0, fill: "#0891b2" },
+                      { name: "Other", value: cur.other_income || 0, fill: "#ca8a04" },
+                    ].filter(s => s.value > 0);
+                    const totalInc = sources.reduce((s, d) => s + d.value, 0);
                     return (
-                      <div className="grid sm:grid-cols-2 gap-4 mb-6">
-                        {cur.gross_income != null && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Gross Income</div><div className="text-xl font-bold text-gray-900 mt-1">{fmt(cur.gross_income)} {yoyBadge(cur.gross_income, prev?.gross_income)}</div></div>}
-                        {cur.gross_expenditure != null && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Gross Expenditure</div><div className="text-xl font-bold text-gray-900 mt-1">{fmt(cur.gross_expenditure)} {yoyBadge(cur.gross_expenditure, prev?.gross_expenditure)}</div></div>}
-                        {cur.total_assets != null && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Total Assets</div><div className="text-xl font-bold text-gray-900 mt-1">{fmt(cur.total_assets)} {yoyBadge(cur.total_assets, prev?.total_assets)}</div></div>}
-                        {cur.employees != null && cur.employees > 0 && <div className="p-4 bg-gray-50 rounded-xl"><div className="text-xs text-gray-400 font-medium">Employees</div><div className="text-xl font-bold text-gray-900 mt-1">{cur.employees.toLocaleString()} {yoyBadge(cur.employees, prev?.employees)}</div></div>}
+                      <div className="bg-gray-50 rounded-xl p-6">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-4">Income Breakdown ({cur.year})</h4>
+                        <div className="flex flex-col sm:flex-row items-start gap-6">
+                          <div className="w-40 h-40 flex-shrink-0">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie data={sources} dataKey="value" cx="50%" cy="50%" innerRadius={35} outerRadius={65} paddingAngle={2} label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                                  {sources.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                                </Pie>
+                                <Tooltip formatter={v => fmt(v)} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="flex-1 space-y-2 w-full">
+                            {sources.map(s => {
+                              const pctOfTotal = totalInc > 0 ? (s.value / totalInc * 100) : 0;
+                              return (
+                                <div key={s.name}>
+                                  <div className="flex items-center justify-between mb-0.5">
+                                    <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{ background: s.fill }} /><span className="text-sm font-medium text-gray-700">{s.name}</span></div>
+                                    <span className="text-sm font-bold text-gray-900">{fmt(s.value)} <span className="text-[10px] font-normal text-gray-400">({pctOfTotal.toFixed(0)}%)</span></span>
+                                  </div>
+                                  <div className="w-full h-1.5 bg-gray-200 rounded-full"><div className="h-full rounded-full transition-all" style={{ width: `${pctOfTotal}%`, background: s.fill }} /></div>
+                                </div>
+                              );
+                            })}
+                            {cur.state_funding_pct > 0 && <p className="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-200">State funding dependency: <strong className={cur.state_funding_pct > 70 ? "text-red-500" : cur.state_funding_pct > 40 ? "text-amber-600" : "text-emerald-600"}>{cur.state_funding_pct.toFixed(0)}%</strong> of total income</p>}
+                          </div>
+                        </div>
                       </div>
                     );
                   })()}
-                </div>
-              ) : (
+
+                  {/* ===== FALLBACK: Simple State vs Other (when no breakdown data) ===== */}
+                  {!hasIncomeBreakdown && org.financials[0] && cur.gross_income > 0 && (() => {
+                    const totalIncome = cur.gross_income;
+                    const grantTotal = org.grants ? org.grants.filter(g => g.year === cur.year || !g.year).reduce((s, g) => s + (g.amount || 0), 0) : 0;
+                    const statePct = Math.min(100, Math.round((grantTotal / totalIncome) * 100));
+                    const otherPct = 100 - statePct;
+                    if (grantTotal === 0) return null;
+                    return (
+                      <div className="bg-gray-50 rounded-xl p-6">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-4">Income Sources ({cur.year || "Latest"})</h4>
+                        <div className="flex items-center gap-8">
+                          <div className="w-32 h-32 flex-shrink-0">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie data={[{ name: "State", value: statePct, fill: "#059669" }, { name: "Other", value: otherPct, fill: "#6366f1" }]} dataKey="value" cx="50%" cy="50%" innerRadius={30} outerRadius={55} paddingAngle={2}>
+                                  <Cell fill="#059669" /><Cell fill="#6366f1" />
+                                </Pie>
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="space-y-3 flex-1">
+                            <div><div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 rounded bg-emerald-600" /><span className="text-sm font-medium text-gray-700">State Funding</span><span className="text-sm font-bold text-gray-900 ml-auto">{statePct}%</span></div><div className="w-full h-2 bg-gray-200 rounded-full"><div className="h-2 bg-emerald-600 rounded-full" style={{ width: `${statePct}%` }} /></div><p className="text-xs text-gray-400 mt-0.5">{fmt(grantTotal)} from {org.grants?.length || 0} grants</p></div>
+                            <div><div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 rounded bg-indigo-500" /><span className="text-sm font-medium text-gray-700">Other Income</span><span className="text-sm font-bold text-gray-900 ml-auto">{otherPct}%</span></div><div className="w-full h-2 bg-gray-200 rounded-full"><div className="h-2 bg-indigo-500 rounded-full" style={{ width: `${otherPct}%` }} /></div></div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ===== BALANCE SHEET ===== */}
+                  {hasBalanceSheet && (() => {
+                    const assets = cur.total_assets || 0;
+                    const liabilities = cur.total_liabilities || 0;
+                    const netAssets = cur.net_assets || (assets - liabilities);
+                    const solvencyRatio = assets > 0 ? ((netAssets / assets) * 100).toFixed(0) : 0;
+                    const leverageRatio = netAssets > 0 ? (liabilities / netAssets).toFixed(2) : "N/A";
+                    return (
+                      <div className="bg-gray-50 rounded-xl p-6">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-4">Balance Sheet ({cur.year})</h4>
+                        {/* Stacked bar: assets vs liabilities */}
+                        <div className="mb-4">
+                          <div className="flex justify-between text-xs text-gray-400 mb-1"><span>Assets</span><span>Liabilities</span></div>
+                          <div className="w-full h-6 bg-gray-200 rounded-full overflow-hidden flex">
+                            {assets > 0 && <div className="h-full bg-emerald-500 transition-all flex items-center justify-center" style={{ width: `${Math.max(5, assets / (assets + liabilities) * 100)}%` }}><span className="text-[9px] font-bold text-white">{fmt(assets)}</span></div>}
+                            {liabilities > 0 && <div className="h-full bg-red-400 transition-all flex items-center justify-center" style={{ width: `${Math.max(5, liabilities / (assets + liabilities) * 100)}%` }}><span className="text-[9px] font-bold text-white">{fmt(liabilities)}</span></div>}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="p-3 bg-white rounded-lg text-center"><div className="text-[10px] text-gray-400">Total Assets</div><div className="text-lg font-bold text-emerald-600">{fmt(assets)}</div></div>
+                          <div className="p-3 bg-white rounded-lg text-center"><div className="text-[10px] text-gray-400">Total Liabilities</div><div className="text-lg font-bold text-red-500">{fmt(liabilities)}</div></div>
+                          <div className="p-3 bg-white rounded-lg text-center"><div className="text-[10px] text-gray-400">Net Assets</div><div className={`text-lg font-bold ${netAssets >= 0 ? "text-gray-900" : "text-red-600"}`}>{fmt(netAssets)}</div></div>
+                          <div className="p-3 bg-white rounded-lg text-center"><div className="text-[10px] text-gray-400">Solvency Ratio</div><div className={`text-lg font-bold ${solvencyRatio > 50 ? "text-emerald-600" : solvencyRatio > 20 ? "text-amber-600" : "text-red-500"}`}>{solvencyRatio}%</div><div className="text-[9px] text-gray-400">{solvencyRatio > 50 ? "Strong" : solvencyRatio > 20 ? "Adequate" : "Weak"}</div></div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ===== FINANCIAL HEALTH RATIOS ===== */}
+                  {cur.gross_income > 0 && (() => {
+                    const income = cur.gross_income;
+                    const expend = cur.gross_expenditure || 0;
+                    const assets = cur.total_assets || 0;
+                    const liabilities = cur.total_liabilities || 0;
+                    const netAssets = cur.net_assets || (assets - liabilities);
+                    const reserveMonths = expend > 0 ? (netAssets / (expend / 12)) : 0;
+                    const surplusMargin = income > 0 ? ((income - expend) / income * 100) : 0;
+                    const costCoverageRatio = expend > 0 ? (income / expend) : 0;
+                    const govDependency = cur.government_income > 0 && income > 0 ? (cur.government_income / income * 100) : (cur.state_funding_pct || 0);
+                    return (
+                      <div className="bg-gray-50 rounded-xl p-6">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-4">Financial Health Indicators</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div className="p-3 bg-white rounded-lg">
+                            <div className="text-[10px] text-gray-400 mb-1">Surplus Margin</div>
+                            <div className={`text-xl font-bold ${surplusMargin >= 0 ? "text-emerald-600" : "text-red-500"}`}>{surplusMargin >= 0 ? "+" : ""}{surplusMargin.toFixed(1)}%</div>
+                            <div className="text-[9px] text-gray-400">{surplusMargin > 5 ? "Healthy surplus" : surplusMargin > 0 ? "Marginal surplus" : surplusMargin > -5 ? "Small deficit" : "Significant deficit"}</div>
+                          </div>
+                          <div className="p-3 bg-white rounded-lg">
+                            <div className="text-[10px] text-gray-400 mb-1">Cost Coverage</div>
+                            <div className={`text-xl font-bold ${costCoverageRatio >= 1 ? "text-emerald-600" : "text-red-500"}`}>{costCoverageRatio.toFixed(2)}x</div>
+                            <div className="text-[9px] text-gray-400">Income covers {costCoverageRatio >= 1 ? "all" : `${(costCoverageRatio * 100).toFixed(0)}% of`} costs</div>
+                          </div>
+                          {netAssets !== 0 && expend > 0 && <div className="p-3 bg-white rounded-lg">
+                            <div className="text-[10px] text-gray-400 mb-1">Reserve Months</div>
+                            <div className={`text-xl font-bold ${reserveMonths >= 3 ? "text-emerald-600" : reserveMonths >= 1 ? "text-amber-600" : "text-red-500"}`}>{reserveMonths.toFixed(1)}</div>
+                            <div className="text-[9px] text-gray-400">{reserveMonths >= 6 ? "Strong reserves" : reserveMonths >= 3 ? "Adequate" : reserveMonths >= 1 ? "Low reserves" : "Critical"}</div>
+                          </div>}
+                          {govDependency > 0 && <div className="p-3 bg-white rounded-lg">
+                            <div className="text-[10px] text-gray-400 mb-1">State Dependency</div>
+                            <div className={`text-xl font-bold ${govDependency > 70 ? "text-red-500" : govDependency > 40 ? "text-amber-600" : "text-emerald-600"}`}>{govDependency.toFixed(0)}%</div>
+                            <div className="text-[9px] text-gray-400">{govDependency > 70 ? "High dependency" : govDependency > 40 ? "Moderate" : "Diversified"}</div>
+                          </div>}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ===== MULTI-YEAR TREND CHART ===== */}
+                  {org.financials.length > 1 && (() => {
+                    const trendData = sorted.map(f => ({
+                      year: f.year || "—",
+                      Income: f.gross_income || 0,
+                      Expenditure: f.gross_expenditure || 0,
+                      Surplus: Math.max(0, (f.gross_income || 0) - (f.gross_expenditure || 0)),
+                      Deficit: Math.max(0, (f.gross_expenditure || 0) - (f.gross_income || 0)),
+                      Assets: f.total_assets || 0,
+                    }));
+                    const first = sorted[0]?.gross_income;
+                    const last = sorted[sorted.length - 1]?.gross_income;
+                    const nYears = sorted.length - 1;
+                    let cagrLabel = null;
+                    if (first > 0 && last > 0 && nYears >= 2) {
+                      const cagr = (Math.pow(last / first, 1 / nYears) - 1) * 100;
+                      cagrLabel = `${cagr >= 0 ? "+" : ""}${cagr.toFixed(1)}% CAGR`;
+                    }
+                    const hasAssets = trendData.some(d => d.Assets > 0);
+                    const surplusYears = sorted.filter(f => (f.gross_income || 0) >= (f.gross_expenditure || 0) && f.gross_income > 0).length;
+                    const deficitYears = sorted.filter(f => (f.gross_expenditure || 0) > (f.gross_income || 0) && f.gross_income > 0).length;
+                    return (
+                      <div className="bg-gray-50 rounded-xl p-6">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="text-sm font-semibold text-gray-700">Financial Trends ({trendData.length} years)</h4>
+                          <div className="flex gap-2">{cagrLabel && <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${last >= first ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>{cagrLabel}</span>}{surplusYears + deficitYears > 0 && <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">Surplus {surplusYears}/{surplusYears + deficitYears} yrs</span>}</div>
+                        </div>
+                        <ResponsiveContainer width="100%" height={280}>
+                          <AreaChart data={trendData}>
+                            <defs>
+                              <linearGradient id="surpGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#059669" stopOpacity={0.2}/><stop offset="95%" stopColor="#059669" stopOpacity={0}/></linearGradient>
+                              <linearGradient id="defGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#dc2626" stopOpacity={0.2}/><stop offset="95%" stopColor="#dc2626" stopOpacity={0}/></linearGradient>
+                            </defs>
+                            <XAxis dataKey="year" fontSize={11} />
+                            <YAxis tickFormatter={v => v >= 1e6 ? `€${(v/1e6).toFixed(0)}M` : v >= 1e3 ? `€${(v/1e3).toFixed(0)}K` : `€${v}`} fontSize={10} />
+                            <Tooltip formatter={v => fmt(v)} />
+                            <Area type="monotone" dataKey="Surplus" fill="url(#surpGrad)" stroke="none" />
+                            <Area type="monotone" dataKey="Deficit" fill="url(#defGrad)" stroke="none" />
+                            <Line type="monotone" dataKey="Income" stroke="#059669" strokeWidth={2.5} dot={{ r: 3, fill: "#059669" }} />
+                            <Line type="monotone" dataKey="Expenditure" stroke="#0891b2" strokeWidth={2.5} dot={{ r: 3, fill: "#0891b2" }} />
+                            {hasAssets && <Line type="monotone" dataKey="Assets" stroke="#7c3aed" strokeWidth={1.5} strokeDasharray="5 5" dot={{ r: 2, fill: "#7c3aed" }} />}
+                          </AreaChart>
+                        </ResponsiveContainer>
+                        <div className="flex items-center justify-center gap-4 mt-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-emerald-600" /> Income</div>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-cyan-600" /> Expenditure</div>
+                          {hasAssets && <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-1 rounded" style={{borderTop: "2px dashed #7c3aed"}} /> Assets</div>}
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-emerald-200" /> Surplus</div>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-red-200" /> Deficit</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ===== INCOME BREAKDOWN OVER TIME (stacked bars) ===== */}
+                  {org.financials.length > 1 && sorted.some(f => f.government_income > 0 || f.donations_income > 0) && (() => {
+                    const stackData = sorted.map(f => ({
+                      year: f.year || "—",
+                      Government: f.government_income || 0,
+                      Donations: f.donations_income || 0,
+                      Trading: f.trading_income || 0,
+                      Public: f.public_income || 0,
+                      Other: f.other_income || 0,
+                    }));
+                    return (
+                      <div className="bg-gray-50 rounded-xl p-6">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-4">Income Sources Over Time</h4>
+                        <ResponsiveContainer width="100%" height={240}>
+                          <BarChart data={stackData}>
+                            <XAxis dataKey="year" fontSize={11} />
+                            <YAxis tickFormatter={v => v >= 1e6 ? `€${(v/1e6).toFixed(0)}M` : `€${(v/1e3).toFixed(0)}K`} fontSize={10} />
+                            <Tooltip formatter={v => fmt(v)} />
+                            <Legend />
+                            <Bar dataKey="Government" stackId="a" fill="#059669" />
+                            <Bar dataKey="Donations" stackId="a" fill="#7c3aed" />
+                            <Bar dataKey="Trading" stackId="a" fill="#2563eb" />
+                            <Bar dataKey="Public" stackId="a" fill="#0891b2" />
+                            <Bar dataKey="Other" stackId="a" fill="#ca8a04" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ===== YEAR-BY-YEAR TABLE ===== */}
+                  {org.financials.length > 1 && (() => {
+                    const yoyPct = (curV, prevV) => {
+                      if (curV == null || prevV == null || prevV === 0) return null;
+                      return ((curV - prevV) / Math.abs(prevV)) * 100;
+                    };
+                    const yoyCell = (pct) => {
+                      if (pct == null) return <td className="py-2 px-1 text-right text-[10px] text-gray-300">—</td>;
+                      const up = pct >= 0;
+                      return <td className={`py-2 px-1 text-right text-[10px] font-medium ${up ? "text-emerald-600" : "text-red-500"}`}>{up ? "+" : ""}{pct.toFixed(0)}%</td>;
+                    };
+                    return (
+                      <div className="bg-gray-50 rounded-xl p-6">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">Year-by-Year Comparison</h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead><tr className="text-xs text-gray-400 border-b border-gray-200">
+                              <th className="text-left py-2 pr-2">Year</th><th className="text-right py-2 px-2">Income</th><th className="text-right py-2 px-1 text-[10px]">YoY</th><th className="text-right py-2 px-2">Expenditure</th><th className="text-right py-2 px-1 text-[10px]">YoY</th><th className="text-right py-2 px-2">Surplus</th><th className="text-right py-2 px-2">Assets</th><th className="text-right py-2 px-2">Net Assets</th><th className="text-right py-2 pl-2">Staff</th>
+                            </tr></thead>
+                            <tbody>
+                              {org.financials.map((f, i) => {
+                                const pv = org.financials[i + 1];
+                                const surp = (f.gross_income || 0) - (f.gross_expenditure || 0);
+                                return (
+                                <tr key={i} className={`border-b border-gray-100 ${i === 0 ? "font-semibold" : ""}`}>
+                                  <td className="py-2 pr-2 text-gray-700">{f.year || "—"}</td>
+                                  <td className="py-2 px-2 text-right text-gray-900">{f.gross_income != null ? fmt(f.gross_income) : "—"}</td>
+                                  {yoyCell(pv ? yoyPct(f.gross_income, pv.gross_income) : null)}
+                                  <td className="py-2 px-2 text-right text-gray-900">{f.gross_expenditure != null ? fmt(f.gross_expenditure) : "—"}</td>
+                                  {yoyCell(pv ? yoyPct(f.gross_expenditure, pv.gross_expenditure) : null)}
+                                  <td className={`py-2 px-2 text-right ${surp >= 0 ? "text-emerald-600" : "text-red-500"}`}>{f.gross_income > 0 ? fmt(surp) : "—"}</td>
+                                  <td className="py-2 px-2 text-right text-gray-900">{f.total_assets > 0 ? fmt(f.total_assets) : "—"}</td>
+                                  <td className="py-2 px-2 text-right text-gray-900">{f.net_assets != null && f.net_assets !== 0 ? fmt(f.net_assets) : "—"}</td>
+                                  <td className="py-2 pl-2 text-right text-gray-600">{f.employees > 0 ? f.employees.toLocaleString() : "—"}{f.volunteers > 0 ? ` + ${f.volunteers}v` : ""}</td>
+                                </tr>);
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ===== SECTOR BENCHMARKING ===== */}
+                  <div className="relative">
+                    {!isPro && (
+                      <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-10">
+                        <Lock className="w-8 h-8 text-gray-400 mb-2" />
+                        <p className="font-semibold text-gray-700">Sector benchmarking & ranking</p>
+                        <p className="text-sm text-gray-500 mb-3">See how this org compares — available on Pro</p>
+                        <button onClick={() => requirePro("Sector Benchmarking")} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700">Upgrade to Pro — €29/mo</button>
+                      </div>
+                    )}
+                    {benchmark && cur.gross_income > 0 && (
+                      <div className="bg-gray-50 rounded-xl p-6">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-1">Sector Benchmarking</h4>
+                        <p className="text-xs text-gray-400 mb-4">Compared to {benchmark.orgCount.toLocaleString()} organisations in {benchmark.sectorName}</p>
+                        {(() => {
+                          const income = cur.gross_income;
+                          const expend = cur.gross_expenditure || 0;
+                          const incomeRatio = benchmark.medianIncome > 0 ? income / benchmark.medianIncome : 0;
+                          const incomePctile = incomeRatio > 3 ? "top 5%" : incomeRatio > 1.5 ? "above median" : incomeRatio > 0.8 ? "near median" : "below median";
+                          const spendRatio = income > 0 ? ((expend / income) * 100).toFixed(0) : 0;
+                          const sectorSpendRatio = benchmark.avgIncome > 0 ? ((benchmark.avgExpenditure / benchmark.avgIncome) * 100).toFixed(0) : 0;
+                          return (
+                            <div className="grid sm:grid-cols-3 gap-4">
+                              <div className="text-center p-3 bg-white rounded-lg"><div className="text-xs text-gray-400 mb-1">Income vs Sector Median</div><div className={`text-lg font-bold ${incomeRatio >= 1 ? "text-emerald-600" : "text-amber-600"}`}>{incomeRatio >= 10 ? "10x+" : `${incomeRatio.toFixed(1)}x`}</div><div className="text-xs text-gray-500 capitalize">{incomePctile}</div><div className="text-[10px] text-gray-400 mt-1">Median: {fmt(benchmark.medianIncome)}</div></div>
+                              <div className="text-center p-3 bg-white rounded-lg"><div className="text-xs text-gray-400 mb-1">Spending Efficiency</div><div className="text-lg font-bold text-gray-900">{spendRatio}%</div><div className="text-xs text-gray-500">of income spent</div><div className="text-[10px] text-gray-400 mt-1">Sector avg: {sectorSpendRatio}%</div></div>
+                              <div className="text-center p-3 bg-white rounded-lg"><div className="text-xs text-gray-400 mb-1">Sector Rank</div><div className="text-lg font-bold text-gray-900">{incomePctile === "top 5%" ? "Top 5%" : incomePctile === "above median" ? "Top 25%" : incomePctile === "near median" ? "Middle 50%" : "Bottom 25%"}</div><div className="text-xs text-gray-500">by income</div><div className="text-[10px] text-gray-400 mt-1">{benchmark.orgCount} orgs in sector</div></div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                </div>);
+              })() : (
                 (() => {
                   const entity = classifyEntity(org);
                   const sources = getEntitySources(org, entity).slice(0, 3);
@@ -2120,21 +2427,12 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   return (
                     <div className="bg-[#FAF6EE] border border-[#0F4C5C]/10 rounded-xl p-6 mb-6">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-[#C4E86B] rounded-xl flex items-center justify-center flex-shrink-0">
-                          <FileText className="w-6 h-6 text-[#0F4C5C]" />
-                        </div>
+                        <div className="w-12 h-12 bg-[#C4E86B] rounded-xl flex items-center justify-center flex-shrink-0"><FileText className="w-6 h-6 text-[#0F4C5C]" /></div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h4 className="font-wordmark text-xl text-[#0F2327]">No financial filings on record yet</h4>
-                            {entity.type !== "unknown" && (
-                              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#C4E86B]/30 text-[#0F4C5C] px-2 py-1 rounded-full">{entity.label}</span>
-                            )}
-                          </div>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap"><h4 className="font-wordmark text-xl text-[#0F2327]">No financial filings on record yet</h4>{entity.type !== "unknown" && <span className="text-[10px] font-bold uppercase tracking-wider bg-[#C4E86B]/30 text-[#0F4C5C] px-2 py-1 rounded-full">{entity.label}</span>}</div>
                           <p className="text-sm text-[#0F4C5C]/70 mb-4 leading-relaxed">{contextBlurb}</p>
                           <div className="flex flex-wrap gap-2">
-                            {sources.map((src, i) => (
-                              <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#0F4C5C]/20 text-[#0F4C5C] text-xs font-semibold rounded-lg hover:bg-[#C4E86B]/20 hover:border-[#0F4C5C] transition-colors">{src.label} <ExternalLink className="w-3 h-3" /></a>
-                            ))}
+                            {sources.map((src, i) => <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#0F4C5C]/20 text-[#0F4C5C] text-xs font-semibold rounded-lg hover:bg-[#C4E86B]/20 hover:border-[#0F4C5C] transition-colors">{src.label} <ExternalLink className="w-3 h-3" /></a>)}
                             <button onClick={() => setPage("claim")} className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#0F4C5C] text-white text-xs font-semibold rounded-lg hover:bg-[#0a3b47] transition-colors">Upload financials</button>
                           </div>
                         </div>
@@ -2143,250 +2441,6 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   );
                 })()
               )}
-              {/* FREE: Multi-year trends + year-by-year table */}
-              <div className="space-y-6">
-                  {/* Multi-year trend chart with summary */}
-                  {org.financials && org.financials.length > 1 && (() => {
-                    const sorted = [...org.financials].reverse(); // oldest first
-                    const trendData = sorted.map(f => ({
-                      year: f.year || "—",
-                      Income: f.gross_income || 0,
-                      Expenditure: f.gross_expenditure || 0,
-                    }));
-                    // Compute overall CAGR (Compound Annual Growth Rate) for income
-                    const first = sorted[0]?.gross_income;
-                    const last = sorted[sorted.length - 1]?.gross_income;
-                    const nYears = sorted.length - 1;
-                    let cagrLabel = null;
-                    if (first > 0 && last > 0 && nYears >= 2) {
-                      const cagr = (Math.pow(last / first, 1 / nYears) - 1) * 100;
-                      const dir = cagr >= 0 ? "+" : "";
-                      cagrLabel = `${dir}${cagr.toFixed(1)}% CAGR over ${nYears + 1} years`;
-                    }
-                    // Compute surplus/deficit trend
-                    const surplusYears = sorted.filter(f => f.gross_income > 0 && f.gross_expenditure > 0 && f.gross_income >= f.gross_expenditure).length;
-                    const deficitYears = sorted.filter(f => f.gross_income > 0 && f.gross_expenditure > 0 && f.gross_expenditure > f.gross_income).length;
-                    return (
-                      <div className="bg-gray-50 rounded-xl p-6">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-sm font-semibold text-gray-700">Financial Trends ({trendData.length} years)</h4>
-                          {cagrLabel && <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${last >= first ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>{cagrLabel}</span>}
-                        </div>
-                        {(surplusYears > 0 || deficitYears > 0) && (
-                          <p className="text-[11px] text-gray-500 mb-4">Surplus in {surplusYears} of {surplusYears + deficitYears} years{deficitYears > 0 ? ` · deficit in ${deficitYears}` : ""}</p>
-                        )}
-                        <ResponsiveContainer width="100%" height={240}>
-                          <BarChart data={trendData}>
-                            <XAxis dataKey="year" fontSize={11} />
-                            <YAxis tickFormatter={v => v >= 1e6 ? `€${(v/1e6).toFixed(0)}M` : v >= 1e3 ? `€${(v/1e3).toFixed(0)}K` : `€${v}`} fontSize={10} />
-                            <Tooltip formatter={v => fmt(v)} />
-                            <Bar dataKey="Income" fill="#059669" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Expenditure" fill="#0891b2" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                        <div className="flex items-center justify-center gap-4 mt-2">
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-emerald-600" /> Income</div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-cyan-600" /> Expenditure</div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* PRO: Enhanced multi-year trend analysis with surplus/deficit area + asset line */}
-                  {isPro && org.financials && org.financials.length > 2 && (() => {
-                    const sorted = [...org.financials].reverse();
-                    const areaData = sorted.map(f => {
-                      const income = f.gross_income || 0;
-                      const expend = f.gross_expenditure || 0;
-                      return { year: f.year || "—", Income: income, Expenditure: expend, Surplus: Math.max(0, income - expend), Deficit: Math.max(0, expend - income), Assets: f.total_assets || 0 };
-                    });
-                    const hasAssets = areaData.some(d => d.Assets > 0);
-                    // Compute volatility (coefficient of variation of income)
-                    const incomes = sorted.map(f => f.gross_income).filter(v => v > 0);
-                    const avgInc = incomes.reduce((a,b) => a+b, 0) / incomes.length;
-                    const stdDev = Math.sqrt(incomes.reduce((s, v) => s + Math.pow(v - avgInc, 2), 0) / incomes.length);
-                    const volatility = avgInc > 0 ? ((stdDev / avgInc) * 100).toFixed(0) : 0;
-                    const volatilityLabel = volatility < 15 ? "Stable" : volatility < 30 ? "Moderate" : "Volatile";
-                    const volatilityColor = volatility < 15 ? "emerald" : volatility < 30 ? "amber" : "red";
-
-                    return (
-                      <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-6 border border-gray-100">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Crown className="w-4 h-4 text-emerald-600" /> Multi-Year Trend Analysis</h4>
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full bg-${volatilityColor}-100 text-${volatilityColor}-700`}>Income volatility: {volatilityLabel} ({volatility}% CV)</span>
-                        </div>
-                        <p className="text-[11px] text-gray-400 mb-4">{areaData.length} years · Surplus/deficit overlay with {hasAssets ? "asset position" : "trend lines"}</p>
-                        <ResponsiveContainer width="100%" height={280}>
-                          <AreaChart data={areaData}>
-                            <defs>
-                              <linearGradient id="surplusGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#059669" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#059669" stopOpacity={0} />
-                              </linearGradient>
-                              <linearGradient id="deficitGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#dc2626" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#dc2626" stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
-                            <XAxis dataKey="year" fontSize={11} />
-                            <YAxis tickFormatter={v => v >= 1e6 ? `€${(v/1e6).toFixed(0)}M` : v >= 1e3 ? `€${(v/1e3).toFixed(0)}K` : `€${v}`} fontSize={10} />
-                            <Tooltip formatter={v => fmt(v)} />
-                            <Area type="monotone" dataKey="Surplus" stroke="#059669" fill="url(#surplusGrad)" strokeWidth={0} />
-                            <Area type="monotone" dataKey="Deficit" stroke="#dc2626" fill="url(#deficitGrad)" strokeWidth={0} />
-                            <Line type="monotone" dataKey="Income" stroke="#059669" strokeWidth={2.5} dot={{ r: 3, fill: "#059669" }} />
-                            <Line type="monotone" dataKey="Expenditure" stroke="#0891b2" strokeWidth={2.5} dot={{ r: 3, fill: "#0891b2" }} />
-                            {hasAssets && <Line type="monotone" dataKey="Assets" stroke="#7c3aed" strokeWidth={1.5} strokeDasharray="5 5" dot={{ r: 2, fill: "#7c3aed" }} />}
-                          </AreaChart>
-                        </ResponsiveContainer>
-                        <div className="flex items-center justify-center gap-4 mt-2 flex-wrap">
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-emerald-600" /> Income</div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-cyan-600" /> Expenditure</div>
-                          {hasAssets && <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-1 rounded bg-purple-600" style={{borderTop: "2px dashed #7c3aed"}} /> Assets</div>}
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-emerald-200" /> Surplus</div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500"><div className="w-3 h-3 rounded bg-red-200" /> Deficit</div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Year-by-year table with YoY changes — FREE for everyone */}
-                  {org.financials && org.financials.length > 1 && (() => {
-                    const yoyPct = (cur, prev) => {
-                      if (cur == null || prev == null || prev === 0) return null;
-                      return ((cur - prev) / Math.abs(prev)) * 100;
-                    };
-                    const yoyCell = (pct) => {
-                      if (pct == null) return <td className="py-2 px-1 text-right text-[10px] text-gray-300">—</td>;
-                      const up = pct >= 0;
-                      return <td className={`py-2 px-1 text-right text-[10px] font-medium ${up ? "text-emerald-600" : "text-red-500"}`}>{up ? "+" : ""}{pct.toFixed(0)}%</td>;
-                    };
-                    return (
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Year-by-Year Comparison</h4>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead><tr className="text-xs text-gray-400 border-b border-gray-200">
-                            <th className="text-left py-2 pr-3">Year</th><th className="text-right py-2 px-2">Income</th><th className="text-right py-2 px-1 text-[10px]">YoY</th><th className="text-right py-2 px-2">Expenditure</th><th className="text-right py-2 px-1 text-[10px]">YoY</th><th className="text-right py-2 px-2">Assets</th><th className="text-right py-2 pl-2">Employees</th>
-                          </tr></thead>
-                          <tbody>
-                            {org.financials.map((f, i) => {
-                              const prev = org.financials[i + 1];
-                              return (
-                              <tr key={i} className={`border-b border-gray-100 ${i === 0 ? "font-semibold" : ""}`}>
-                                <td className="py-2 pr-3 text-gray-700">{f.year || "—"}</td>
-                                <td className="py-2 px-2 text-right text-gray-900">{f.gross_income != null ? fmt(f.gross_income) : "—"}</td>
-                                {yoyCell(prev ? yoyPct(f.gross_income, prev.gross_income) : null)}
-                                <td className="py-2 px-2 text-right text-gray-900">{f.gross_expenditure != null ? fmt(f.gross_expenditure) : "—"}</td>
-                                {yoyCell(prev ? yoyPct(f.gross_expenditure, prev.gross_expenditure) : null)}
-                                <td className="py-2 px-2 text-right text-gray-900">{f.total_assets != null ? fmt(f.total_assets) : "—"}</td>
-                                <td className="py-2 pl-2 text-right text-gray-900">{f.employees > 0 ? f.employees.toLocaleString() : "—"}</td>
-                              </tr>);
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>);
-                  })()}
-              </div>
-
-              {/* Income source breakdown — FREE for everyone */}
-              <div className="mt-6 space-y-6">
-
-                  {/* Income source breakdown */}
-                  {org.financials && org.financials[0] && (() => {
-                    const latest = org.financials[0];
-                    const totalIncome = latest.gross_income || 0;
-                    const grantTotal = org.grants ? org.grants.filter(g => g.year === latest.year || !g.year).reduce((s, g) => s + (g.amount || 0), 0) : 0;
-                    const statePct = totalIncome > 0 ? Math.min(100, Math.round((grantTotal / totalIncome) * 100)) : 0;
-                    const otherPct = 100 - statePct;
-                    if (totalIncome === 0) return null;
-                    const breakdownData = [
-                      { name: "State Funding", value: statePct, fill: "#059669" },
-                      { name: "Other Income", value: otherPct, fill: "#6366f1" },
-                    ];
-                    return (
-                      <div className="bg-gray-50 rounded-xl p-6">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-4">Income Sources ({latest.year || "Latest"})</h4>
-                        <div className="flex items-center gap-8">
-                          <div className="w-32 h-32 flex-shrink-0">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie data={breakdownData} dataKey="value" cx="50%" cy="50%" innerRadius={30} outerRadius={55} paddingAngle={2}>
-                                  {breakdownData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                                </Pie>
-                              </PieChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div className="space-y-3 flex-1">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 rounded bg-emerald-600" /><span className="text-sm font-medium text-gray-700">State Funding</span><span className="text-sm font-bold text-gray-900 ml-auto">{statePct}%</span></div>
-                              <div className="w-full h-2 bg-gray-200 rounded-full"><div className="h-2 bg-emerald-600 rounded-full" style={{ width: `${statePct}%` }} /></div>
-                              <p className="text-xs text-gray-400 mt-0.5">{fmt(grantTotal)} from {org.grants?.length || 0} grant records</p>
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 rounded bg-indigo-500" /><span className="text-sm font-medium text-gray-700">Other Income</span><span className="text-sm font-bold text-gray-900 ml-auto">{otherPct}%</span></div>
-                              <div className="w-full h-2 bg-gray-200 rounded-full"><div className="h-2 bg-indigo-500 rounded-full" style={{ width: `${otherPct}%` }} /></div>
-                              <p className="text-xs text-gray-400 mt-0.5">Donations, earned income, other sources</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-              </div>
-
-              {/* PRO: Sector benchmarking */}
-              <div className="relative mt-6">
-                {!isPro && (
-                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-10">
-                    <Lock className="w-8 h-8 text-gray-400 mb-2" />
-                    <p className="font-semibold text-gray-700">Sector benchmarking & ranking</p>
-                    <p className="text-sm text-gray-500 mb-3">See how this org compares — available on Pro</p>
-                    <button onClick={() => requirePro("Sector Benchmarking")} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700">Upgrade to Pro — €29/mo</button>
-                  </div>
-                )}
-                <div className="space-y-6">
-                  {/* Sector Benchmarking */}
-                  {benchmark && org.financials?.[0]?.gross_income > 0 && (
-                    <div className="bg-gray-50 rounded-xl p-6">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-1">Sector Benchmarking</h4>
-                      <p className="text-xs text-gray-400 mb-4">Compared to {benchmark.orgCount.toLocaleString()} organisations in {benchmark.sectorName}</p>
-                      {(() => {
-                        const income = org.financials[0].gross_income;
-                        const expend = org.financials[0].gross_expenditure || 0;
-                        const incomeRatio = benchmark.medianIncome > 0 ? income / benchmark.medianIncome : 0;
-                        const incomePctile = incomeRatio > 3 ? "top 5%" : incomeRatio > 1.5 ? "above median" : incomeRatio > 0.8 ? "near median" : "below median";
-                        const spendRatio = income > 0 ? ((expend / income) * 100).toFixed(0) : 0;
-                        const sectorSpendRatio = benchmark.avgIncome > 0 ? ((benchmark.avgExpenditure / benchmark.avgIncome) * 100).toFixed(0) : 0;
-                        return (
-                          <div className="grid sm:grid-cols-3 gap-4">
-                            <div className="text-center p-3 bg-white rounded-lg">
-                              <div className="text-xs text-gray-400 mb-1">Income vs Sector Median</div>
-                              <div className={`text-lg font-bold ${incomeRatio >= 1 ? "text-emerald-600" : "text-amber-600"}`}>{incomeRatio >= 10 ? "10x+" : `${incomeRatio.toFixed(1)}x`}</div>
-                              <div className="text-xs text-gray-500 capitalize">{incomePctile}</div>
-                              <div className="text-[10px] text-gray-400 mt-1">Median: {fmt(benchmark.medianIncome)}</div>
-                            </div>
-                            <div className="text-center p-3 bg-white rounded-lg">
-                              <div className="text-xs text-gray-400 mb-1">Spending Efficiency</div>
-                              <div className="text-lg font-bold text-gray-900">{spendRatio}%</div>
-                              <div className="text-xs text-gray-500">of income spent</div>
-                              <div className="text-[10px] text-gray-400 mt-1">Sector avg: {sectorSpendRatio}%</div>
-                            </div>
-                            <div className="text-center p-3 bg-white rounded-lg">
-                              <div className="text-xs text-gray-400 mb-1">Sector Rank</div>
-                              <div className="text-lg font-bold text-gray-900">{incomePctile === "top 5%" ? "Top 5%" : incomePctile === "above median" ? "Top 25%" : incomePctile === "near median" ? "Middle 50%" : "Bottom 25%"}</div>
-                              <div className="text-xs text-gray-500">by income</div>
-                              <div className="text-[10px] text-gray-400 mt-1">{benchmark.orgCount} orgs in sector</div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
-
-                </div>
-              </div>
             </div>
           )}
 
