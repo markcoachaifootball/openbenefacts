@@ -1,0 +1,707 @@
+{
+  "summary": {
+    "elapsed_seconds": 937.9,
+    "total_files": 50,
+    "ok": 29,
+    "read_blocked_edeadlk": 20,
+    "parser_error": 1,
+    "ocr_direct_tesseract_used": 15,
+    "ocr_mypdf_used": 0,
+    "image_only_unrecovered": 0,
+    "ie_population_rate": "207/232",
+    "bs_population_rate": "104/116"
+  },
+  "rows": [
+    {
+      "file": "lgas_clare_2016.pdf",
+      "council": "clare",
+      "year": 2016,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2043
+    },
+    {
+      "file": "lgas_clare_2017.pdf",
+      "council": "clare",
+      "year": 2017,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2044
+    },
+    {
+      "file": "lgas_clare_2018.pdf",
+      "council": "clare",
+      "year": 2018,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2040
+    },
+    {
+      "file": "lgas_clare_2019.pdf",
+      "council": "clare",
+      "year": 2019,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2038
+    },
+    {
+      "file": "lgas_clare_2020.pdf",
+      "council": "clare",
+      "year": 2020,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2030
+    },
+    {
+      "file": "lgas_clare_2021.pdf",
+      "council": "clare",
+      "year": 2021,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2042
+    },
+    {
+      "file": "lgas_clare_2022.pdf",
+      "council": "clare",
+      "year": 2022,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2036
+    },
+    {
+      "file": "lgas_clare_2023.pdf",
+      "council": "clare",
+      "year": 2023,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2036
+    },
+    {
+      "file": "lgas_clare_2024.pdf",
+      "council": "clare",
+      "year": 2024,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2045
+    },
+    {
+      "file": "lgas_cork_2022.pdf",
+      "council": "cork",
+      "year": 2022,
+      "status": "ok",
+      "read_ms": 5,
+      "parse_ms": 1557,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 393162546,
+        "rates": 119793658,
+        "overall_surplus_deficit": 61626,
+        "total_reserves": 7965502956
+      }
+    },
+    {
+      "file": "lgas_donegal_2023.pdf",
+      "council": "donegal",
+      "year": 2023,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2038
+    },
+    {
+      "file": "lgas_dublin_2023.pdf",
+      "council": "dublin",
+      "year": 2023,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2043
+    },
+    {
+      "file": "lgas_dun-laoghaire-rathdown_2022.pdf",
+      "council": "dun-laoghaire-rathdown",
+      "year": 2022,
+      "status": "ok",
+      "read_ms": 5,
+      "parse_ms": 1290,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 217396763,
+        "rates": 93497908,
+        "overall_surplus_deficit": 65493,
+        "total_reserves": 3719086057
+      }
+    },
+    {
+      "file": "lgas_galway_2022.pdf",
+      "council": "galway",
+      "year": 2022,
+      "status": "ok",
+      "read_ms": 2,
+      "parse_ms": 2237,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 150488115,
+        "rates": 31244499,
+        "overall_surplus_deficit": 15010,
+        "total_reserves": 3865703699
+      }
+    },
+    {
+      "file": "lgas_kildare_2018.pdf",
+      "council": "kildare",
+      "year": 2018,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2033
+    },
+    {
+      "file": "lgas_kildare_2019.pdf",
+      "council": "kildare",
+      "year": 2019,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2043
+    },
+    {
+      "file": "lgas_kildare_2020.pdf",
+      "council": "kildare",
+      "year": 2020,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2046
+    },
+    {
+      "file": "lgas_kildare_2021.pdf",
+      "council": "kildare",
+      "year": 2021,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2030
+    },
+    {
+      "file": "lgas_kildare_2022.pdf",
+      "council": "kildare",
+      "year": 2022,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2041
+    },
+    {
+      "file": "lgas_kildare_2023.pdf",
+      "council": "kildare",
+      "year": 2023,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2038
+    },
+    {
+      "file": "lgas_kildare_2024.pdf",
+      "council": "kildare",
+      "year": 2024,
+      "status": "ok",
+      "read_ms": 6,
+      "parse_ms": 1295,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 264461749,
+        "rates": 72381022,
+        "overall_surplus_deficit": 7204,
+        "total_reserves": 3711434278
+      }
+    },
+    {
+      "file": "lgas_kildare_2025.pdf",
+      "council": "kildare",
+      "year": 2025,
+      "status": "ok",
+      "read_ms": 2,
+      "parse_ms": 1090,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 263252645,
+        "rates": 75708843,
+        "overall_surplus_deficit": 14240,
+        "total_reserves": 3833650744
+      }
+    },
+    {
+      "file": "lgas_kilkenny_2015.pdf",
+      "council": "kilkenny",
+      "year": 2015,
+      "status": "ok",
+      "read_ms": 0,
+      "parse_ms": 473,
+      "ie_populated": "0/8",
+      "bs_populated": "0/4",
+      "parse_notes": [
+        "ie_totals_missing",
+        "ie_divisions_missing",
+        "bs_totals_missing"
+      ],
+      "key_values": {
+        "total_gross_expenditure": null,
+        "rates": null,
+        "overall_surplus_deficit": null,
+        "total_reserves": null
+      }
+    },
+    {
+      "file": "lgas_kilkenny_2016.pdf",
+      "council": "kilkenny",
+      "year": 2016,
+      "status": "ok",
+      "read_ms": 0,
+      "parse_ms": 41856,
+      "ie_populated": "5/8",
+      "bs_populated": "4/4",
+      "parse_notes": [
+        "ocr_applied:38/38_orig_empty:direct_tesseract",
+        "ie_totals_missing"
+      ],
+      "key_values": {
+        "total_gross_expenditure": null,
+        "rates": 18980383,
+        "overall_surplus_deficit": null,
+        "total_reserves": 318623
+      }
+    },
+    {
+      "file": "lgas_kilkenny_2017.pdf",
+      "council": "kilkenny",
+      "year": 2017,
+      "status": "ok",
+      "read_ms": 2,
+      "parse_ms": 57298,
+      "ie_populated": "7/8",
+      "bs_populated": "3/4",
+      "parse_notes": [
+        "ocr_applied:46/46_orig_empty:direct_tesseract",
+        "ocr_empty_pages:2/46"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 214,
+        "rates": 980,
+        "overall_surplus_deficit": null,
+        "total_reserves": null
+      }
+    },
+    {
+      "file": "lgas_kilkenny_2018.pdf",
+      "council": "kilkenny",
+      "year": 2018,
+      "status": "parser_error",
+      "error": "PdfminerException: No /Root object! - Is this really a PDF?",
+      "traceback": "Traceback (most recent call last):\n  File \"/usr/local/lib/python3.10/dist-packages/pdfplumber/pdf.py\", line 50, in __init__\n    self.doc = PDFDocument(PDFParser(stream), password=password or \"\")\n  File \"/usr/local/lib/python3.10/dist-packages/pdfminer/pdfdocument.py\", line 741, in __init__\n    raise PDFSyntaxError(\"No /Root object! - Is this really a PDF?\")\npdfminer.pdfparser.PDFSyntaxError: No /Root object! - Is this really a PDF?\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/tmp/run_full_rescrape.py\", line 114, in main\n    result = _acop_parser.parse_afs_pdf(pdf_bytes)\n  File \"/tmp/_acop_parser.py\", line 886, in parse_afs_pdf\n    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:\n  File \"/usr/local/lib/python3.10/dist-packages/pdfplumber/pdf.py\", line 107, in open\n    return cls(\n  File \"/usr/local/lib/python3.10/dist-packages/pdfplumber/pdf.py\", line 52, in __init__\n    raise PdfminerException(e)\npdfplumber.utils.exceptions.PdfminerException: No /Root object! - Is this really a PDF?\n"
+    },
+    {
+      "file": "lgas_kilkenny_2020.pdf",
+      "council": "kilkenny",
+      "year": 2020,
+      "status": "ok",
+      "read_ms": 1,
+      "parse_ms": 62183,
+      "ie_populated": "6/8",
+      "bs_populated": "3/4",
+      "parse_notes": [
+        "ocr_applied:44/44_orig_empty:direct_tesseract"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 88,
+        "rates": null,
+        "overall_surplus_deficit": 63,
+        "total_reserves": 76846739
+      }
+    },
+    {
+      "file": "lgas_kilkenny_2021.pdf",
+      "council": "kilkenny",
+      "year": 2021,
+      "status": "ok",
+      "read_ms": 2,
+      "parse_ms": 43624,
+      "ie_populated": "3/8",
+      "bs_populated": "4/4",
+      "parse_notes": [
+        "ocr_applied:40/40_orig_empty:direct_tesseract",
+        "ocr_empty_pages:1/40",
+        "ie_totals_missing",
+        "ie_divisions_partial:2/8"
+      ],
+      "key_values": {
+        "total_gross_expenditure": null,
+        "rates": 20821400,
+        "overall_surplus_deficit": null,
+        "total_reserves": 2819920425
+      }
+    },
+    {
+      "file": "lgas_kilkenny_2022.pdf",
+      "council": "kilkenny",
+      "year": 2022,
+      "status": "ok",
+      "read_ms": 2,
+      "parse_ms": 1749,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 97205581,
+        "rates": 20876017,
+        "overall_surplus_deficit": 18230,
+        "total_reserves": 2854289306
+      }
+    },
+    {
+      "file": "lgas_kilkenny_2023.pdf",
+      "council": "kilkenny",
+      "year": 2023,
+      "status": "ok",
+      "read_ms": 3,
+      "parse_ms": 51304,
+      "ie_populated": "7/8",
+      "bs_populated": "3/4",
+      "parse_notes": [
+        "ocr_applied:40/40_orig_empty:direct_tesseract"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 97205581,
+        "rates": 20876017,
+        "overall_surplus_deficit": 230,
+        "total_reserves": 2854289306
+      }
+    },
+    {
+      "file": "lgas_kilkenny_2024.pdf",
+      "council": "kilkenny",
+      "year": 2024,
+      "status": "ok",
+      "read_ms": 3,
+      "parse_ms": 47957,
+      "ie_populated": "5/8",
+      "bs_populated": "3/4",
+      "parse_notes": [
+        "ocr_applied:42/42_orig_empty:direct_tesseract",
+        "ie_totals_missing"
+      ],
+      "key_values": {
+        "total_gross_expenditure": null,
+        "rates": 21906819,
+        "overall_surplus_deficit": 75,
+        "total_reserves": 2901787
+      }
+    },
+    {
+      "file": "lgas_leitrim_2023.pdf",
+      "council": "leitrim",
+      "year": 2023,
+      "status": "ok",
+      "read_ms": 2,
+      "parse_ms": 2218,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 54242820,
+        "rates": 6817665,
+        "overall_surplus_deficit": -1385,
+        "total_reserves": 913111420
+      }
+    },
+    {
+      "file": "lgas_limerick-city-and_2023.pdf",
+      "council": "limerick-city-and",
+      "year": 2023,
+      "status": "ok",
+      "read_ms": 2,
+      "parse_ms": 2527,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 898623529,
+        "rates": 64107619,
+        "overall_surplus_deficit": 23716,
+        "total_reserves": 3648499207
+      }
+    },
+    {
+      "file": "lgas_meath_2023.pdf",
+      "council": "meath",
+      "year": 2023,
+      "status": "ok",
+      "read_ms": 4,
+      "parse_ms": 1563,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 181222561,
+        "rates": 50687556,
+        "overall_surplus_deficit": 125098,
+        "total_reserves": 3197854331
+      }
+    },
+    {
+      "file": "lgas_monaghan_2023.pdf",
+      "council": "monaghan",
+      "year": 2023,
+      "status": "ok",
+      "read_ms": 4,
+      "parse_ms": 1377,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 85076159,
+        "rates": 14651949,
+        "overall_surplus_deficit": 126327,
+        "total_reserves": 1536334953
+      }
+    },
+    {
+      "file": "lgas_offaly_2022.pdf",
+      "council": "offaly",
+      "year": 2022,
+      "status": "ok",
+      "read_ms": 1,
+      "parse_ms": 2138,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 81540654,
+        "rates": 16856641,
+        "overall_surplus_deficit": 425059,
+        "total_reserves": 1519495457
+      }
+    },
+    {
+      "file": "lgas_south-dublin_2020.pdf",
+      "council": "south-dublin",
+      "year": 2020,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2046
+    },
+    {
+      "file": "lgas_south-dublin_2021.pdf",
+      "council": "south-dublin",
+      "year": 2021,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2044
+    },
+    {
+      "file": "lgas_south-dublin_2022.pdf",
+      "council": "south-dublin",
+      "year": 2022,
+      "status": "read_blocked_edeadlk",
+      "read_ms": 2041
+    },
+    {
+      "file": "lgas_tipperary_2023.pdf",
+      "council": "tipperary",
+      "year": 2023,
+      "status": "ok",
+      "read_ms": 5,
+      "parse_ms": 2315,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 200022222,
+        "rates": 36494604,
+        "overall_surplus_deficit": 7402,
+        "total_reserves": 4005186504
+      }
+    },
+    {
+      "file": "lgas_waterford-city-and_2016.pdf",
+      "council": "waterford-city-and",
+      "year": 2016,
+      "status": "ok",
+      "read_ms": 9,
+      "parse_ms": 64566,
+      "ie_populated": "8/8",
+      "bs_populated": "2/4",
+      "parse_notes": [
+        "ocr_applied:48/48_orig_empty:direct_tesseract",
+        "ocr_empty_pages:8/48"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 122903152,
+        "rates": 32941343,
+        "overall_surplus_deficit": 374724,
+        "total_reserves": null
+      }
+    },
+    {
+      "file": "lgas_waterford-city-and_2017.pdf",
+      "council": "waterford-city-and",
+      "year": 2017,
+      "status": "ok",
+      "read_ms": 6,
+      "parse_ms": 65609,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [
+        "ocr_applied:48/48_orig_empty:direct_tesseract",
+        "ocr_empty_pages:8/48"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 116075257,
+        "rates": 28602282,
+        "overall_surplus_deficit": 505133,
+        "total_reserves": 2125355262
+      }
+    },
+    {
+      "file": "lgas_waterford-city-and_2018.pdf",
+      "council": "waterford-city-and",
+      "year": 2018,
+      "status": "ok",
+      "read_ms": 9,
+      "parse_ms": 63497,
+      "ie_populated": "7/8",
+      "bs_populated": "3/4",
+      "parse_notes": [
+        "ocr_applied:48/48_orig_empty:direct_tesseract",
+        "ocr_empty_pages:7/48"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 2008,
+        "rates": 29604412,
+        "overall_surplus_deficit": null,
+        "total_reserves": null
+      }
+    },
+    {
+      "file": "lgas_waterford-city-and_2019.pdf",
+      "council": "waterford-city-and",
+      "year": 2019,
+      "status": "ok",
+      "read_ms": 7,
+      "parse_ms": 61893,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [
+        "ocr_applied:48/48_orig_empty:direct_tesseract",
+        "ocr_empty_pages:9/48"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 134039919,
+        "rates": 31014258,
+        "overall_surplus_deficit": 891847,
+        "total_reserves": 2212915191
+      }
+    },
+    {
+      "file": "lgas_waterford-city-and_2020.pdf",
+      "council": "waterford-city-and",
+      "year": 2020,
+      "status": "ok",
+      "read_ms": 11,
+      "parse_ms": 62679,
+      "ie_populated": "8/8",
+      "bs_populated": "3/4",
+      "parse_notes": [
+        "ocr_applied:48/48_orig_empty:direct_tesseract",
+        "ocr_empty_pages:9/48"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 173554869,
+        "rates": 33602216,
+        "overall_surplus_deficit": 634529,
+        "total_reserves": null
+      }
+    },
+    {
+      "file": "lgas_waterford-city-and_2021.pdf",
+      "council": "waterford-city-and",
+      "year": 2021,
+      "status": "ok",
+      "read_ms": 9,
+      "parse_ms": 65744,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [
+        "ocr_applied:47/48_orig_empty:direct_tesseract",
+        "ocr_empty_pages:9/48"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 151037545,
+        "rates": 33439115,
+        "overall_surplus_deficit": 2440113,
+        "total_reserves": 2245367
+      }
+    },
+    {
+      "file": "lgas_waterford-city-and_2022.pdf",
+      "council": "waterford-city-and",
+      "year": 2022,
+      "status": "ok",
+      "read_ms": 3,
+      "parse_ms": 66555,
+      "ie_populated": "7/8",
+      "bs_populated": "4/4",
+      "parse_notes": [
+        "ocr_applied:48/48_orig_empty:direct_tesseract",
+        "ocr_empty_pages:7/48"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 552684,
+        "rates": 34967971,
+        "overall_surplus_deficit": 1444545,
+        "total_reserves": 2316215048
+      }
+    },
+    {
+      "file": "lgas_waterford-city-and_2023.pdf",
+      "council": "waterford-city-and",
+      "year": 2023,
+      "status": "ok",
+      "read_ms": 5,
+      "parse_ms": 57847,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [
+        "ocr_applied:46/46_orig_empty:direct_tesseract",
+        "ocr_empty_pages:8/46",
+        "bs_totals_missing"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 170270160,
+        "rates": 36035961,
+        "overall_surplus_deficit": 1430185,
+        "total_reserves": 2432476898
+      }
+    },
+    {
+      "file": "lgas_waterford-city-and_2024.pdf",
+      "council": "waterford-city-and",
+      "year": 2024,
+      "status": "ok",
+      "read_ms": 5,
+      "parse_ms": 61034,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [
+        "ocr_applied:48/48_orig_empty:direct_tesseract",
+        "ocr_empty_pages:9/48"
+      ],
+      "key_values": {
+        "total_gross_expenditure": 199210688,
+        "rates": 36847630,
+        "overall_surplus_deficit": 313303,
+        "total_reserves": 2543404690
+      }
+    },
+    {
+      "file": "lgas_wicklow_2023.pdf",
+      "council": "wicklow",
+      "year": 2023,
+      "status": "ok",
+      "read_ms": 3,
+      "parse_ms": 1509,
+      "ie_populated": "8/8",
+      "bs_populated": "4/4",
+      "parse_notes": [],
+      "key_values": {
+        "total_gross_expenditure": 143625751,
+        "rates": 31047298,
+        "overall_surplus_deficit": 340938,
+        "total_reserves": 2996528306
+      }
+    }
+  ]
+}

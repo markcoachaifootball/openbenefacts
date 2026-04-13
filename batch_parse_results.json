@@ -1,0 +1,413 @@
+{
+  "timestamp": "2026-04-12T11:01:28",
+  "summary": [
+    {
+      "council": "clare",
+      "year": 2016,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "clare",
+      "year": 2017,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "clare",
+      "year": 2018,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "clare",
+      "year": 2019,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "clare",
+      "year": 2020,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "clare",
+      "year": 2021,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "clare",
+      "year": 2022,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "clare",
+      "year": 2023,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "clare",
+      "year": 2024,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "cork",
+      "year": 2022,
+      "ie_populated": 17,
+      "bs_populated": 13,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "donegal",
+      "year": 2023,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "dublin",
+      "year": 2023,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "dun-laoghaire-rathdown",
+      "year": 2022,
+      "ie_populated": 17,
+      "bs_populated": 11,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "galway",
+      "year": 2022,
+      "ie_populated": 17,
+      "bs_populated": 11,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "kildare",
+      "year": 2018,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "kildare",
+      "year": 2019,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "kildare",
+      "year": 2020,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "kildare",
+      "year": 2021,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "kildare",
+      "year": 2022,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "kildare",
+      "year": 2023,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "kildare",
+      "year": 2024,
+      "ie_populated": 17,
+      "bs_populated": 11,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "kildare",
+      "year": 2025,
+      "ie_populated": 17,
+      "bs_populated": 11,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "kilkenny",
+      "year": 2015,
+      "ie_populated": 0,
+      "bs_populated": 0,
+      "is_ocr": false,
+      "status": "PARTIAL"
+    },
+    {
+      "council": "kilkenny",
+      "year": 2016,
+      "ie_populated": 10,
+      "bs_populated": 11,
+      "is_ocr": true,
+      "status": "PARTIAL"
+    },
+    {
+      "council": "kilkenny",
+      "year": 2017,
+      "ie_populated": 15,
+      "bs_populated": 10,
+      "is_ocr": true,
+      "status": "OK"
+    },
+    {
+      "council": "kilkenny",
+      "year": 2018,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "CORRUPT"
+    },
+    {
+      "council": "kilkenny",
+      "year": 2020,
+      "ie_populated": 11,
+      "bs_populated": 9,
+      "is_ocr": true,
+      "status": "PARTIAL"
+    },
+    {
+      "council": "kilkenny",
+      "year": 2021,
+      "ie_populated": 12,
+      "bs_populated": 9,
+      "is_ocr": true,
+      "status": "PARTIAL"
+    },
+    {
+      "council": "kilkenny",
+      "year": 2022,
+      "ie_populated": 17,
+      "bs_populated": 11,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "kilkenny",
+      "year": 2023,
+      "ie_populated": 13,
+      "bs_populated": 8,
+      "is_ocr": true,
+      "status": "OK"
+    },
+    {
+      "council": "kilkenny",
+      "year": 2024,
+      "ie_populated": 10,
+      "bs_populated": 9,
+      "is_ocr": true,
+      "status": "PARTIAL"
+    },
+    {
+      "council": "leitrim",
+      "year": 2023,
+      "ie_populated": 17,
+      "bs_populated": 11,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "limerick-city-and",
+      "year": 2023,
+      "ie_populated": 17,
+      "bs_populated": 13,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "meath",
+      "year": 2023,
+      "ie_populated": 17,
+      "bs_populated": 13,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "monaghan",
+      "year": 2023,
+      "ie_populated": 17,
+      "bs_populated": 11,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "offaly",
+      "year": 2022,
+      "ie_populated": 17,
+      "bs_populated": 13,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "south-dublin",
+      "year": 2020,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "south-dublin",
+      "year": 2021,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "south-dublin",
+      "year": 2022,
+      "ie_populated": null,
+      "bs_populated": null,
+      "is_ocr": false,
+      "status": "EDEADLK"
+    },
+    {
+      "council": "tipperary",
+      "year": 2023,
+      "ie_populated": 17,
+      "bs_populated": 13,
+      "is_ocr": false,
+      "status": "OK"
+    },
+    {
+      "council": "waterford-city-and",
+      "year": 2016,
+      "ie_populated": 15,
+      "bs_populated": 9,
+      "is_ocr": true,
+      "status": "OK"
+    },
+    {
+      "council": "waterford-city-and",
+      "year": 2017,
+      "ie_populated": 15,
+      "bs_populated": 11,
+      "is_ocr": true,
+      "status": "OK"
+    },
+    {
+      "council": "waterford-city-and",
+      "year": 2018,
+      "ie_populated": 13,
+      "bs_populated": 12,
+      "is_ocr": true,
+      "status": "OK"
+    },
+    {
+      "council": "waterford-city-and",
+      "year": 2019,
+      "ie_populated": 15,
+      "bs_populated": 11,
+      "is_ocr": true,
+      "status": "OK"
+    },
+    {
+      "council": "waterford-city-and",
+      "year": 2020,
+      "ie_populated": 17,
+      "bs_populated": 12,
+      "is_ocr": true,
+      "status": "OK"
+    },
+    {
+      "council": "waterford-city-and",
+      "year": 2021,
+      "ie_populated": 17,
+      "bs_populated": 10,
+      "is_ocr": true,
+      "status": "OK"
+    },
+    {
+      "council": "waterford-city-and",
+      "year": 2022,
+      "ie_populated": 13,
+      "bs_populated": 12,
+      "is_ocr": true,
+      "status": "OK"
+    },
+    {
+      "council": "waterford-city-and",
+      "year": 2023,
+      "ie_populated": 17,
+      "bs_populated": 13,
+      "is_ocr": true,
+      "status": "OK"
+    },
+    {
+      "council": "waterford-city-and",
+      "year": 2024,
+      "ie_populated": 17,
+      "bs_populated": 13,
+      "is_ocr": true,
+      "status": "OK"
+    },
+    {
+      "council": "wicklow",
+      "year": 2023,
+      "ie_populated": 17,
+      "bs_populated": 11,
+      "is_ocr": false,
+      "status": "OK"
+    }
+  ],
+  "totals": {
+    "total_pdfs": 50,
+    "parsed": 29,
+    "ok_ie_ge_13": 24,
+    "ocr_used": 15,
+    "edeadlk_skipped": 20,
+    "corrupt": 1
+  }
+}

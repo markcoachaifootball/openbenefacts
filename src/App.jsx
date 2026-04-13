@@ -3,6 +3,7 @@ import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip,
 import { Search, Building2, Users, TrendingUp, DollarSign, ChevronRight, ArrowLeft, Eye, Star, Shield, Menu, X, MapPin, Hash, Landmark, GraduationCap, Heart, Briefcase, Globe, Filter, ChevronDown, ExternalLink, Info, BarChart3, FileText, Award, Zap, Database, ArrowRight, Layers, Check, CreditCard, LogIn, UserPlus, Crown, Sparkles, LogOut, AlertTriangle, Lock, ArrowUpDown, Bookmark, Share2, Copy, Code, Download } from "lucide-react";
 import { supabase, fetchStats, fetchFunders, fetchOrganisations, fetchOrganisation, searchOrganisations, fetchSectorCounts, fetchCountyCounts, fetchDirectorBoards, fetchFunderGrants, fetchFunderGrantsByName, fetchSectorBenchmark } from "./supabase.js";
 import { DATA } from "./data.js";
+import CouncilFinancesPage from "./CouncilFinances.jsx";
 
 // ===========================================================
 // ERROR BOUNDARY
@@ -55,6 +56,154 @@ const fmt = (n) => {
   if (n >= 1e3) return `€${(n/1e3).toFixed(0)}K`;
   return `€${n.toLocaleString()}`;
 };
+// ===========================================================
+// ENTITY CLASSIFIER — routes orgs to the correct canonical sources
+// ===========================================================
+// An Irish "nonprofit" in our database can be one of many legal forms.
+// Each form files its accounts with a different authority, so pointing
+// every listing at the Charities Regulator is wrong for ~40% of records.
+// This classifier inspects name + sector + identifiers to work out the
+// most likely type, then we use it to surface the right source links.
+// Labels + descriptions for the fixed set of entity types. Keeping these in
+// a single map means both the heuristic classifier and data ingested from
+// the recipient-side scrapers (which set org.entity_type directly) render
+// consistently.
+const ENTITY_META = {
+  local_authority: { label: "Local authority", description: "Irish local authorities are audited by the Local Government Audit Service. Annual financial statements are published on the council's own website and on gov.ie." },
+  department: { label: "Government department", description: "Government departments publish annual reports and appropriation accounts through gov.ie, the C&AG, and the Oireachtas library." },
+  state_body: { label: "State agency", description: "State agencies file annual reports with their parent department and publish audited accounts through the C&AG and gov.ie." },
+  etb: { label: "Education & Training Board", description: "ETBs publish audited financial statements and governance reports through the Department of Education and the C&AG." },
+  higher_ed: { label: "Higher education institution", description: "Universities and ITs file audited statements with the Higher Education Authority (HEA) and the C&AG." },
+  school: { label: "School", description: "Schools file annual accounts with the Department of Education and, where relevant, their patron or ETB. The Financial Services Support Unit publishes sector-level data." },
+  ahb: { label: "Approved Housing Body", description: "AHBs are regulated by the Approved Housing Bodies Regulatory Authority (AHBRA). Annual financial statements are filed with AHBRA and the Housing Agency." },
+  sports_club: { label: "Sports club", description: "Sports clubs typically file through their national governing body (GAA, FAI, IRFU, Sport Ireland). Accounts may be published in club AGM minutes rather than a public regulator." },
+  religious: { label: "Religious body", description: "Religious bodies often file with the Charities Regulator where registered. Some are constituted as unincorporated associations and publish accounts via their denomination or trust." },
+  charity: { label: "Registered charity", description: "Registered charities file annual returns and financial statements with the Charities Regulator of Ireland." },
+  company: { label: "Company (CRO)", description: "Non-charity companies file annual returns, accounts, and director lists with the Companies Registration Office (CRO)." },
+  unknown: { label: "Irish organisation", description: "This organisation isn't in any of the regulators we've identified. Try a web search or help us classify it." },
+};
+
+function classifyEntity(org) {
+  if (!org) return { type: "unknown", ...ENTITY_META.unknown };
+  // Trust tags coming from the scraper pipeline
+  if (org.entity_type && ENTITY_META[org.entity_type]) {
+    return { type: org.entity_type, ...ENTITY_META[org.entity_type] };
+  }
+  const name = (cleanName(org.name) || "").toLowerCase();
+  const sector = (clean(org.sector) || "").toLowerCase();
+  const govForm = (clean(org.governing_form) || "").toLowerCase();
+  const hasCharity = !!clean(org.charity_number);
+  const hasCro = !!clean(org.cro_number);
+
+  const pick = (type) => ({ type, ...ENTITY_META[type] });
+  // Local authorities — county, city, borough councils
+  if (/\b(county council|city council|borough council|town council|city and county council)\b/.test(name)) return pick("local_authority");
+  // Central government departments
+  if (/^(department of|office of the|office of public works)|\bminister for\b/.test(name)) return pick("department");
+  // State agencies and NCAs
+  if (/\b(hse|tusla|pobal|údarás|uisce éireann|irish water|fáilte ireland|an garda|revenue commissioners|ordnance survey|enterprise ireland|ida ireland|sfi|science foundation|coimisiún|údarás na gaeltachta)\b/.test(name)) return pick("state_body");
+  // Schools — ETBs, primary, secondary, community, gaelscoil
+  if (/\b(school|national school|n\.s\.|community college|vocational|etb|education and training board|gaelscoil|gaelcholáiste|coláiste|secondary|primary)\b/.test(name) || sector.includes("education")) {
+    if (/\b(etb|education and training board)\b/.test(name)) return pick("etb");
+    if (/\buniversity|institute of technology|college|tu dublin|mtu|atu|tus\b/.test(name)) return pick("higher_ed");
+    return pick("school");
+  }
+  // Approved Housing Bodies
+  if (/\b(approved housing body|ahb|housing association|co[- ]?operative housing|respond|tuath|clúid|cluid|oaklee|peter mcverry|focus ireland)\b/.test(name) || (sector.includes("housing") && govForm.includes("approved"))) return pick("ahb");
+  // Sports clubs
+  if (sector.includes("sport") || sector.includes("recreation") || /\b(gaa|club chlg|rfc|afc|fc|hurling|camogie|soccer|rugby|athletic)\b/.test(name)) return pick("sports_club");
+  // Religious bodies
+  if (sector.includes("religion") || /\b(parish|diocese|archdiocese|church of|catholic|presbyterian|methodist|synod)\b/.test(name)) return pick("religious");
+  // Registered charity
+  if (hasCharity) return pick("charity");
+  // CRO company (non-charity)
+  if (hasCro) return pick("company");
+  // Fallback
+  return pick("unknown");
+}
+
+// Returns an array of { label, href, note } source links tailored to the entity type
+function getEntitySources(org, entity) {
+  const name = cleanName(org.name) || "";
+  const encName = encodeURIComponent(name);
+  const sources = [];
+  const gov = (q) => `https://www.gov.ie/en/search/?q=${encodeURIComponent(q)}`;
+  const google = (q) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+
+  switch (entity.type) {
+    case "local_authority":
+      sources.push({ label: "Local Government Audit Service", note: "Audited annual financial statements for all 31 local authorities", href: "https://www.gov.ie/en/organisation/local-government-audit-service/" });
+      sources.push({ label: "Council's own website", note: "Most councils publish annual reports and budgets", href: google(`${name} annual report financial statements site:ie`) });
+      sources.push({ label: "gov.ie — local authority data", note: "Sector-wide reports and published budgets", href: gov(`${name} annual report`) });
+      sources.push({ label: "Oireachtas library", note: "Parliamentary reports referencing the council", href: `https://www.oireachtas.ie/en/search/?q=${encName}` });
+      break;
+    case "department":
+      sources.push({ label: "gov.ie department page", note: "Annual reports, appropriation accounts, strategy statements", href: gov(name) });
+      sources.push({ label: "Comptroller & Auditor General", note: "Audited accounts for all votes and departments", href: "https://www.audit.gov.ie/en/find-report/publications/" });
+      sources.push({ label: "Oireachtas library", note: "Estimates, PQs, and committee reports", href: `https://www.oireachtas.ie/en/search/?q=${encName}` });
+      sources.push({ label: "Revised Estimates Volume", note: "Published annually by DPER", href: "https://www.gov.ie/en/publication/revised-estimates-volume/" });
+      break;
+    case "state_body":
+      sources.push({ label: "gov.ie organisation page", note: "Annual reports, governance, and board information", href: gov(name) });
+      sources.push({ label: "Comptroller & Auditor General", note: "Audited accounts for state bodies", href: "https://www.audit.gov.ie/en/find-report/publications/" });
+      sources.push({ label: "Oireachtas library", note: "Committee reports and parliamentary scrutiny", href: `https://www.oireachtas.ie/en/search/?q=${encName}` });
+      sources.push({ label: "Organisation's own website", note: "Most state bodies publish their own annual reports", href: google(`${name} annual report site:ie`) });
+      break;
+    case "etb":
+      sources.push({ label: "ETBI — Education and Training Boards Ireland", note: "Sector body with governance and financial reporting", href: "https://www.etbi.ie/" });
+      sources.push({ label: "Department of Education", note: "ETB annual accounts and inspections", href: gov(`${name} annual accounts`) });
+      sources.push({ label: "Comptroller & Auditor General", note: "Audited statements for each ETB", href: "https://www.audit.gov.ie/en/find-report/publications/" });
+      sources.push({ label: "ETB's own website", note: "Annual reports and corporate plans", href: google(`${name} annual report`) });
+      break;
+    case "higher_ed":
+      sources.push({ label: "Higher Education Authority (HEA)", note: "Financial statements and governance returns", href: "https://hea.ie/statistics/" });
+      sources.push({ label: "Institution's own website", note: "Published annual reports and accounts", href: google(`${name} annual report financial statements`) });
+      sources.push({ label: "Comptroller & Auditor General", note: "Audited accounts for publicly funded HEIs", href: "https://www.audit.gov.ie/en/find-report/publications/" });
+      sources.push({ label: "Oireachtas library", note: "Parliamentary references and funding debates", href: `https://www.oireachtas.ie/en/search/?q=${encName}` });
+      break;
+    case "school":
+      sources.push({ label: "Department of Education", note: "School rolls, FSSU financial reporting, and inspection reports", href: gov(`${name} school`) });
+      sources.push({ label: "Financial Services Support Unit (FSSU)", note: "Financial reporting standards for voluntary secondary schools", href: "https://www.fssu.ie/" });
+      sources.push({ label: "Department of Education school search", note: "Official school register", href: "https://www.gov.ie/en/service/find-a-school/" });
+      sources.push({ label: "School's own website or parents association", note: "Annual reports and board notices", href: google(`${name} annual report`) });
+      break;
+    case "ahb":
+      sources.push({ label: "AHBRA — Approved Housing Bodies Regulatory Authority", note: "Statutory regulator for all AHBs since 2021", href: "https://www.ahbregulator.ie/" });
+      sources.push({ label: "Housing Agency", note: "Sector data, stock transfers, and performance reporting", href: "https://www.housingagency.ie/" });
+      sources.push({ label: "ICSH — Irish Council for Social Housing", note: "Representative body with sector statistics", href: "https://icsh.ie/" });
+      sources.push({ label: "AHB's own website", note: "Published accounts and tenant reports", href: google(`${name} annual report`) });
+      break;
+    case "sports_club":
+      sources.push({ label: "Sport Ireland", note: "Grants, governance code and national funding data", href: "https://www.sportireland.ie/" });
+      sources.push({ label: "National governing body", note: "GAA, FAI, IRFU, or relevant NGB holds affiliation records", href: google(`${name} governing body`) });
+      sources.push({ label: "Club's own channels", note: "AGM minutes, newsletters, and club website", href: google(`${name} AGM accounts`) });
+      sources.push({ label: "Charities Regulator", note: "Some larger clubs are also registered charities", href: `https://www.charitiesregulator.ie/en/information-for-the-public/search-the-register-of-charities?q=${encName}` });
+      break;
+    case "religious":
+      sources.push({ label: "Charities Regulator", note: "Many religious bodies are registered charities", href: clean(org.charity_number) ? `https://www.charitiesregulator.ie/en/information-for-the-public/search-the-register-of-charities/charity-detail?regid=${org.charity_number}` : `https://www.charitiesregulator.ie/en/information-for-the-public/search-the-register-of-charities?q=${encName}` });
+      sources.push({ label: "Diocesan or denominational website", note: "Annual reports and trust accounts", href: google(`${name} diocese annual report`) });
+      sources.push({ label: "CRO", note: "If constituted as a company limited by guarantee", href: clean(org.cro_number) ? `https://core.cro.ie/search?q=${org.cro_number}&type=companies` : `https://core.cro.ie/search?q=${encName}&type=companies` });
+      break;
+    case "charity":
+      sources.push({ label: "Charities Regulator of Ireland", note: `Annual reports & filings — RCN ${org.charity_number}`, href: `https://www.charitiesregulator.ie/en/information-for-the-public/search-the-register-of-charities/charity-detail?regid=${org.charity_number}` });
+      if (clean(org.cro_number)) sources.push({ label: "CRO — Companies Registration Office", note: `Constitution & annual returns — ${org.cro_number}`, href: `https://core.cro.ie/search?q=${org.cro_number}&type=companies` });
+      if (clean(org.revenue_chy)) sources.push({ label: "Revenue Commissioners", note: `Tax-exempt charity register — CHY ${org.revenue_chy}`, href: "https://www.revenue.ie/en/corporate/information-about-revenue/statistics/other-datasets/charities/resident-charities.aspx" });
+      sources.push({ label: "Find published accounts", note: "Annual reports, press releases and web mentions", href: google(`${name} Ireland annual report`) });
+      break;
+    case "company":
+      sources.push({ label: "CRO (CORE)", note: `Accounts and director returns — CRO ${org.cro_number}`, href: `https://core.cro.ie/search?q=${org.cro_number}&type=companies` });
+      sources.push({ label: "Charities Regulator — check by name", note: "Some non-profit companies are also registered charities", href: `https://www.charitiesregulator.ie/en/information-for-the-public/search-the-register-of-charities?q=${encName}` });
+      sources.push({ label: "Find published accounts", note: "Filed returns or voluntary reports on the web", href: google(`${name} accounts CRO`) });
+      break;
+    default:
+      sources.push({ label: "Charities Regulator — search by name", note: "Not currently matched to a registered charity", href: `https://www.charitiesregulator.ie/en/information-for-the-public/search-the-register-of-charities?q=${encName}` });
+      sources.push({ label: "CRO (CORE) — search by name", note: "Check Ireland's company register", href: `https://core.cro.ie/search?q=${encName}&type=companies` });
+      sources.push({ label: "gov.ie", note: "Search Irish government publications", href: gov(name) });
+      sources.push({ label: "Find published accounts", note: "Annual reports, press releases and web mentions", href: google(`${name} Ireland annual report`) });
+  }
+  return sources;
+}
+
 // CSV download utility — free tier, no auth required
 const downloadCSV = (rows, headers, filename) => {
   const escape = (v) => { const s = String(v ?? ""); return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s; };
@@ -409,7 +558,7 @@ function Navbar({ page, setPage }) {
   }, []);
 
   const nav = (p) => { setPage(p); setMobileOpen(false); };
-  const links = [["home","Dashboard"],["orgs","Organizations"],["funders","Funders"],["pricing","Pricing"],["api","API"],["about","About"]];
+  const links = [["home","Dashboard"],["orgs","Organizations"],["funders","Funders"],["councils","Council Finances"],["pricing","Pricing"],["api","API"],["about","About"]];
 
   return (
     <nav className="bg-[#FAF6EE] border-b border-[#0F4C5C]/10 sticky top-0 z-40 backdrop-blur">
@@ -1200,15 +1349,17 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <button onClick={() => setPage("orgs")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6"><ArrowLeft className="w-4 h-4" /> Back to directory</button>
 
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-6">
-          <div className="flex items-start justify-between">
+      <div className="bg-white rounded-2xl border border-[#0F4C5C]/10 overflow-hidden">
+        <div className="bg-[#0F4C5C] px-6 py-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-72 h-72 bg-[#C4E86B]/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="relative z-10 flex items-start justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white">{cleanName(org.name)}</h1>
-              <p className="text-emerald-100 mt-1">{[clean(org.county), clean(org.sector)].filter(Boolean).join(" · ")}</p>
-              <div className="flex flex-wrap gap-3 mt-3">
-                {clean(org.charity_number) && <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded">RCN {org.charity_number}</span>}
-                {clean(org.governing_form) && <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded">{org.governing_form}</span>}
+              <h1 className="font-wordmark text-3xl sm:text-4xl text-white leading-[1.05]">{cleanName(org.name)}</h1>
+              <p className="text-[#C4E86B] mt-2 font-semibold">{[clean(org.county), clean(org.sector)].filter(Boolean).join(" · ")}</p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {clean(org.charity_number) && <span className="text-xs bg-white/15 text-white px-2.5 py-1 rounded-full font-medium">RCN {org.charity_number}</span>}
+                {clean(org.cro_number) && <span className="text-xs bg-white/15 text-white px-2.5 py-1 rounded-full font-medium">CRO {org.cro_number}</span>}
+                {clean(org.governing_form) && <span className="text-xs bg-white/15 text-white px-2.5 py-1 rounded-full font-medium">{org.governing_form}</span>}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -1546,10 +1697,10 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
         })()}
 
         {/* Tabs */}
-        <div className="border-b border-gray-100">
+        <div className="border-b border-[#0F4C5C]/10">
           <div className="flex gap-0">
             {["overview","governance","financials","details"].map(t => (
-              <button key={t} onClick={() => setTab(t)} className={`px-6 py-3 text-sm font-medium capitalize border-b-2 transition-colors ${tab === t ? "border-emerald-600 text-emerald-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}>{t}</button>
+              <button key={t} onClick={() => setTab(t)} className={`px-6 py-3.5 text-sm font-semibold capitalize border-b-2 transition-colors ${tab === t ? "border-[#0F4C5C] text-[#0F4C5C]" : "border-transparent text-[#0F4C5C]/50 hover:text-[#0F4C5C]"}`}>{t}</button>
             ))}
           </div>
         </div>
@@ -1557,15 +1708,105 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
         <div className="p-6">
           {tab === "overview" && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Organization Info</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {fields.slice(0, 6).map((f, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-gray-50">
-                    <div className="text-xs text-gray-400 font-medium">{f.label}</div>
-                    <div className="text-sm text-gray-900 mt-0.5">{f.value}{f.sub ? ` — ${f.sub}` : ""}</div>
+              {/* At-a-glance summary — always shows something useful */}
+              {(() => {
+                const latest = org.financials?.[0];
+                const grantTotal = org.grants ? org.grants.reduce((s, g) => s + (g.amount || 0), 0) : 0;
+                const boardCount = org.boardMembers?.length || 0;
+                const filingCount = org.financials?.length || 0;
+                const entity = classifyEntity(org);
+                const statements = [];
+                // Prefer the classified entity label when we have one; fall back to sector
+                if (entity.label && entity.type !== "unknown") {
+                  const article = /^[aeiou]/i.test(entity.label) ? "an" : "a";
+                  statements.push(`${article} ${entity.label.toLowerCase()}`);
+                } else if (clean(org.sector)) {
+                  statements.push(`a ${String(org.sector).toLowerCase()} organisation`);
+                }
+                if (clean(org.county)) statements.push(`based in ${org.county}`);
+                if (clean(org.governing_form)) statements.push(`constituted as ${String(org.governing_form).toLowerCase()}`);
+                if (clean(org.date_incorporated)) statements.push(`incorporated ${String(org.date_incorporated).slice(0, 4)}`);
+                const summarySentence = statements.length ? `${cleanName(org.name)} is ${statements.join(", ")}.` : `${cleanName(org.name)} is listed in the Irish nonprofit sector.`;
+                return (
+                  <div className="bg-[#FAF6EE] border border-[#0F4C5C]/10 rounded-xl p-5 mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#0F4C5C]">At a glance</div>
+                      {entity.type !== "unknown" && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-[#C4E86B]/30 text-[#0F4C5C] px-2 py-1 rounded-full">{entity.label}</span>
+                      )}
+                    </div>
+                    <p className={`text-[15px] text-[#0F2327] leading-relaxed ${entity.description ? "mb-2" : "mb-4"}`}>{summarySentence}</p>
+                    {entity.description && <p className="text-[12px] text-[#0F4C5C]/65 leading-relaxed mb-4">{entity.description}</p>}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div>
+                        <div className="font-wordmark text-2xl text-[#0F4C5C] leading-none">{filingCount}</div>
+                        <div className="text-[11px] text-[#0F4C5C]/60 mt-1 font-medium uppercase tracking-wider">Filings on record</div>
+                      </div>
+                      <div>
+                        <div className="font-wordmark text-2xl text-[#0F4C5C] leading-none">{boardCount}</div>
+                        <div className="text-[11px] text-[#0F4C5C]/60 mt-1 font-medium uppercase tracking-wider">Board members</div>
+                      </div>
+                      <div>
+                        <div className="font-wordmark text-2xl text-[#0F4C5C] leading-none">{latest?.gross_income > 0 ? fmt(latest.gross_income) : "—"}</div>
+                        <div className="text-[11px] text-[#0F4C5C]/60 mt-1 font-medium uppercase tracking-wider">Latest income</div>
+                      </div>
+                      <div>
+                        <div className="font-wordmark text-2xl text-[#0F4C5C] leading-none">{grantTotal > 0 ? fmt(grantTotal) : "—"}</div>
+                        <div className="text-[11px] text-[#0F4C5C]/60 mt-1 font-medium uppercase tracking-wider">State funding tracked</div>
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })()}
+
+              <h3 className="text-xs font-bold text-[#0F4C5C] uppercase tracking-[0.15em] mb-4">Organization Info</h3>
+              {fields.length > 0 ? (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {fields.slice(0, 6).map((f, i) => (
+                    <div key={i} className="p-3 rounded-lg bg-[#FAF6EE] border border-[#0F4C5C]/5">
+                      <div className="text-[10px] text-[#0F4C5C]/60 font-bold uppercase tracking-wider">{f.label}</div>
+                      <div className="text-sm text-[#0F2327] mt-1 font-medium">{f.value}{f.sub ? ` — ${f.sub}` : ""}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 rounded-lg bg-[#FAF6EE] border border-[#0F4C5C]/10 text-sm text-[#0F4C5C]/70">
+                  We don't have structured identifiers for this organisation yet. Check the source links below or help us improve the listing.
+                </div>
+              )}
+
+              {/* Official source links — tailored to entity type */}
+              {(() => {
+                const entity = classifyEntity(org);
+                const sources = getEntitySources(org, entity);
+                return (
+                  <div className="mt-6 p-5 rounded-xl border border-[#0F4C5C]/10 bg-white">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ExternalLink className="w-4 h-4 text-[#0F4C5C]" />
+                      <h3 className="text-xs font-bold text-[#0F4C5C] uppercase tracking-[0.15em]">Verify with the source</h3>
+                    </div>
+                    <p className="text-xs text-[#0F4C5C]/60 mb-4">OpenBenefacts mirrors public regulator data. For the canonical record, go to the source.</p>
+                    <div className="space-y-2">
+                      {sources.map((src, i) => (
+                        <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-lg bg-[#FAF6EE] hover:bg-[#C4E86B]/20 border border-[#0F4C5C]/10 hover:border-[#0F4C5C]/30 transition-colors group">
+                          <div>
+                            <div className="text-sm font-semibold text-[#0F2327]">{src.label}</div>
+                            <div className="text-xs text-[#0F4C5C]/60">{src.note}</div>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-[#0F4C5C] group-hover:translate-x-1 transition-transform" />
+                        </a>
+                      ))}
+                      <button onClick={() => setPage("claim")} className="w-full flex items-center justify-between p-3 rounded-lg bg-[#0F4C5C]/5 hover:bg-[#0F4C5C]/10 border border-dashed border-[#0F4C5C]/30 transition-colors group text-left">
+                        <div>
+                          <div className="text-sm font-semibold text-[#0F4C5C]">Something missing? Claim or correct this listing</div>
+                          <div className="text-xs text-[#0F4C5C]/60">Verified orgs can add descriptions, contact details, and upload reports</div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-[#0F4C5C] group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* AI Risk Score */}
               {(() => {
@@ -1782,11 +2023,47 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   })()}
                 </div>
               ) : (
-                <div className="bg-gray-50 rounded-xl p-6 text-center">
-                  <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500">No board member data available for this organization.</p>
-                  <p className="text-xs text-gray-400 mt-1">Governance data is sourced from the Charities Regulator and CRO.</p>
-                </div>
+                (() => {
+                  const entity = classifyEntity(org);
+                  const sources = getEntitySources(org, entity).slice(0, 3);
+                  const contextBlurb = {
+                    local_authority: "Local authorities don't have boards in the charity sense — elected councillors and senior executive staff are the governance layer, documented in annual reports and gov.ie records.",
+                    department: "Government departments are governed by a Minister and Management Board. Details sit with gov.ie and the Oireachtas, not the charity regulator.",
+                    state_body: "State agencies publish their board composition in their annual reports on gov.ie or their own site — not in the charity register.",
+                    etb: "ETB boards of management are appointed under the Education and Training Boards Act. Members are listed in the ETB's own annual report.",
+                    higher_ed: "Universities and ITs publish their governing authority membership on the institution's website and in annual reports filed with the HEA.",
+                    school: "School boards of management are appointed under the Education Act. Membership is published by the school itself or its patron body.",
+                    ahb: "AHB boards of directors file with AHBRA and the CRO. We haven't ingested this one yet — use the sources below.",
+                    sports_club: "Sports clubs publish committee lists in AGM minutes or on their own site. Some larger clubs also file with the Charities Regulator.",
+                    religious: "Religious bodies often publish trustees through their denomination or diocese rather than a central regulator.",
+                    charity: "This charity is registered but we haven't ingested its board records yet. The Charities Regulator holds the authoritative list.",
+                    company: "This entity is on the CRO but not the charity register. Director records live on CORE.",
+                    unknown: "We haven't classified this organisation yet. Try the sources below or help us improve the listing.",
+                  }[entity.type] || "";
+                  return (
+                    <div className="bg-[#FAF6EE] border border-[#0F4C5C]/10 rounded-xl p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-[#C4E86B] rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Users className="w-6 h-6 text-[#0F4C5C]" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h4 className="font-wordmark text-xl text-[#0F2327]">No board data on file yet</h4>
+                            {entity.type !== "unknown" && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#C4E86B]/30 text-[#0F4C5C] px-2 py-1 rounded-full">{entity.label}</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-[#0F4C5C]/70 mb-4 leading-relaxed">{contextBlurb}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {sources.map((src, i) => (
+                              <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#0F4C5C]/20 text-[#0F4C5C] text-xs font-semibold rounded-lg hover:bg-[#C4E86B]/20 hover:border-[#0F4C5C] transition-colors">{src.label} <ExternalLink className="w-3 h-3" /></a>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
               )}
             </div>
           )}
@@ -1796,9 +2073,9 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
               <p className="text-gray-500 text-sm mb-4">Financial data sourced from Charities Regulator and CRO filings.</p>
               {org.financials && org.financials.length > 0 ? (
                 <div className="mb-6">
-                  <div className="bg-emerald-50 rounded-xl p-4 mb-4 flex items-center justify-between">
-                    <p className="text-sm text-emerald-700 font-medium">Latest Annual Return ({org.financials[0].year || "Most Recent"})</p>
-                    {org.financials.length > 1 && <span className="text-xs text-emerald-600">{org.financials.length} years on file</span>}
+                  <div className="bg-[#C4E86B]/25 border border-[#0F4C5C]/15 rounded-xl p-4 mb-4 flex items-center justify-between">
+                    <p className="text-sm text-[#0F4C5C] font-bold">Latest Annual Return ({org.financials[0].year || "Most Recent"})</p>
+                    {org.financials.length > 1 && <span className="text-xs text-[#0F4C5C]/70 font-semibold">{org.financials.length} years on file</span>}
                   </div>
                   {/* YoY helper for change indicators */}
                   {(() => {
@@ -1822,9 +2099,48 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   })()}
                 </div>
               ) : (
-                <div className="bg-gray-50 rounded-xl p-6 text-center mb-6">
-                  <p className="text-gray-500">No financial records filed yet for this organization.</p>
-                </div>
+                (() => {
+                  const entity = classifyEntity(org);
+                  const sources = getEntitySources(org, entity).slice(0, 3);
+                  const contextBlurb = {
+                    local_authority: "Local authority finances aren't on the charity register. Annual financial statements are audited by the Local Government Audit Service and published on the council's own site and gov.ie.",
+                    department: "Government departments publish appropriation accounts through the C&AG and annual reports on gov.ie — not in any charity or company register.",
+                    state_body: "State agencies publish audited accounts through the C&AG and their parent department. We link to those below.",
+                    etb: "ETB annual financial statements are audited by the C&AG and published by ETBI and the Department of Education.",
+                    higher_ed: "Universities and ITs file audited statements with the HEA and the C&AG. Published annual reports are usually on the institution's own site.",
+                    school: "School finances are reported through the FSSU (for voluntary secondary schools) and the Department of Education. Public detail varies by school.",
+                    ahb: "AHB financial statements are filed with AHBRA. We haven't ingested this AHB's returns yet — the regulator has the full record.",
+                    sports_club: "Club accounts are usually published in AGM minutes, not a public regulator. Grant recipients are listed on Sport Ireland.",
+                    religious: "Religious bodies' accounts are often published through their diocese or denomination. Registered charities also file with the Charities Regulator.",
+                    charity: "This charity is registered but we haven't ingested annual return data yet. Check the Charities Regulator for the authoritative record.",
+                    company: "This entity is on the CRO. Accounts are filed with CORE but may not include the detailed breakdowns shown for registered charities.",
+                    unknown: "We haven't classified this organisation. Audited accounts are often published on its own website or in an annual report.",
+                  }[entity.type] || "";
+                  return (
+                    <div className="bg-[#FAF6EE] border border-[#0F4C5C]/10 rounded-xl p-6 mb-6">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-[#C4E86B] rounded-xl flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-6 h-6 text-[#0F4C5C]" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h4 className="font-wordmark text-xl text-[#0F2327]">No financial filings on record yet</h4>
+                            {entity.type !== "unknown" && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#C4E86B]/30 text-[#0F4C5C] px-2 py-1 rounded-full">{entity.label}</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-[#0F4C5C]/70 mb-4 leading-relaxed">{contextBlurb}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {sources.map((src, i) => (
+                              <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#0F4C5C]/20 text-[#0F4C5C] text-xs font-semibold rounded-lg hover:bg-[#C4E86B]/20 hover:border-[#0F4C5C] transition-colors">{src.label} <ExternalLink className="w-3 h-3" /></a>
+                            ))}
+                            <button onClick={() => setPage("claim")} className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#0F4C5C] text-white text-xs font-semibold rounded-lg hover:bg-[#0a3b47] transition-colors">Upload financials</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
               )}
               {/* FREE: Multi-year trends + year-by-year table */}
               <div className="space-y-6">
@@ -3553,6 +3869,7 @@ function InnerApp() {
     switch (page) {
       case "orgs": return <OrgsPage setPage={handleSetPage} initialSearch={initialSearch} setInitialSearch={setInitialSearch} initialSector={initialSector} setInitialSector={setInitialSector} watchlist={wl} />;
       case "funders": return <FundersPage setPage={handleSetPage} setInitialSearch={setInitialSearch} />;
+      case "councils": return <CouncilFinancesPage setPage={handleSetPage} />;
       case "pricing": return <PricingPage orgCount={orgCount} setPage={handleSetPage} />;
       case "money": return <MoneyPage setPage={handleSetPage} orgCount={orgCount} />;
       case "foundations": return <FoundationsPage orgCount={orgCount} />;
