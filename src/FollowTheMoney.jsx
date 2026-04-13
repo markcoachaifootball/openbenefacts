@@ -247,7 +247,7 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
     filteredGrants.forEach(g => {
       const name = cleanName(g.organisations?.name || g.recipient_name_raw) || "Unknown";
       const id = g.organisations?.id || name;
-      if (!map[id]) map[id] = { id, name, total: 0, count: 0, programmes: new Set(), county: g.organisations?.county || "", sector: g.organisations?.sector || "", charityNumber: g.organisations?.charity_number || "", orgId: g.organisations?.id || null, grossIncome: g.organisations?.gross_income || 0, grants: [] };
+      if (!map[id]) map[id] = { id, name, total: 0, count: 0, programmes: new Set(), county: g.organisations?.county || "", sector: g.organisations?.sector || "", charityNumber: g.organisations?.charity_number || "", orgId: g.organisations?.id || null, grants: [] };
       map[id].total += (g.amount || 0);
       map[id].count++;
       map[id].programmes.add(g.programme || "General");
@@ -568,13 +568,10 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
                         <div className="text-[10px] text-gray-400">Avg per Grant</div>
                         <div className="text-lg font-bold text-gray-900">{fmt(r.total / r.count)}</div>
                       </div>
-                      {r.grossIncome > 0 && (
-                        <div className="bg-white rounded-lg p-2.5">
-                          <div className="text-[10px] text-gray-400">Org Gross Income</div>
-                          <div className="text-lg font-bold text-gray-900">{fmt(r.grossIncome)}</div>
-                          <div className="text-[10px] text-amber-600">Funding = {pct(r.total, r.grossIncome)} of income</div>
-                        </div>
-                      )}
+                      <div className="bg-white rounded-lg p-2.5">
+                        <div className="text-[10px] text-gray-400">Share of Funder Total</div>
+                        <div className="text-lg font-bold text-amber-600">{pct(r.total, totalFunding)}</div>
+                      </div>
                     </div>
 
                     {/* Individual grants */}

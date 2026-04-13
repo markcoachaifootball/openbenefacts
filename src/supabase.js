@@ -224,7 +224,7 @@ export async function fetchAllFunderGrants(funderId) {
   while (true) {
     const { data, error } = await supabase
       .from('funding_grants')
-      .select('*, organisations(id, name, sector, county, charity_number, gross_income)')
+      .select('*, organisations(id, name, sector, county, charity_number)')
       .eq('funder_id', funderId)
       .order('amount', { ascending: false })
       .range(from, from + batchSize - 1);
