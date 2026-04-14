@@ -3027,7 +3027,7 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
           <span className="text-xs text-gray-400">· Follow the Money</span>
         </div>
         <h2 className="text-lg font-bold text-gray-900 mb-1">{funder.name}</h2>
-        <p className="text-xs text-gray-500 mb-4">{fmt(funder.total)} distributed to {(funder.recipients || 0).toLocaleString()} organisations</p>
+        <p className="text-xs text-gray-500 mb-4">{fmt(grants.length > 0 ? grants.reduce((s, g) => s + (g.amount || 0), 0) : funder.total)} distributed to {grants.length > 0 ? new Set(grants.map(g => g.recipient_name_raw || g.org_id).filter(Boolean)).size : (funder.recipients || 0)} organisations</p>
         {loading ? <Spinner /> : <FundingFlowWidget funder={funder} grants={grants} compact />}
         <p className="text-[10px] text-gray-400 mt-3 text-center">Data: Charities Regulator, CRO, Government Estimates · <a href={shareUrl} target="_blank" rel="noopener" className="text-emerald-600 hover:underline">View full analysis</a></p>
       </div>
@@ -3042,7 +3042,7 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
       <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 rounded-2xl p-6 sm:p-8 mb-8 text-white">
         <p className="text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">Follow the Money</p>
         <h1 className="text-2xl sm:text-3xl font-extrabold mb-2">{funder.name}</h1>
-        <p className="text-gray-300 text-sm">Distributing <span className="text-emerald-400 font-bold">{fmt(funder.total)}</span> to <span className="font-bold">{(funder.recipients || 0).toLocaleString()}</span> organisations across <span className="font-bold">{(funder.programmes?.length || 0)}</span> programmes</p>
+        <p className="text-gray-300 text-sm">Distributing <span className="text-emerald-400 font-bold">{fmt(grants.length > 0 ? grants.reduce((s, g) => s + (g.amount || 0), 0) : funder.total)}</span> to <span className="font-bold">{grants.length > 0 ? new Set(grants.map(g => g.recipient_name_raw || g.org_id).filter(Boolean)).size : (funder.recipients || 0)}</span> organisations across <span className="font-bold">{grants.length > 0 ? new Set(grants.map(g => g.programme).filter(Boolean)).size : (funder.programmes?.length || 0)}</span> programmes</p>
       </div>
 
       {/* Share / Embed / Download bar */}
