@@ -1911,21 +1911,33 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     const isExpanded = expandedDirector === director.id;
                     const otherBoards = directorBoards[director.id] || [];
                     const hasFee = bm.annual_fee > 0;
+                    const hasRemunerationData = bm.source && bm.source.startsWith('state_board_') || hasFee || bm.is_paid === true;
                     return (
                       <div key={i} className="rounded-lg border border-gray-100 overflow-hidden">
                         <button onClick={() => handleExpandDirector(director.id)} className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors text-left">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">{director.name.charAt(0)}</div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold flex-shrink-0">{director.name.charAt(0)}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-900 flex items-center gap-2 flex-wrap">
                                 {director.name}
-                                {bm.is_paid === true && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">PAID</span>}
-                                {bm.is_paid === false && bm.annual_fee != null && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">VOLUNTARY</span>}
+                                {hasRemunerationData && bm.is_paid === true && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">PAID</span>}
+                                {hasRemunerationData && !bm.is_paid && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">VOLUNTARY</span>}
                               </div>
-                              <div className="text-xs text-gray-400">{bm.role || "Trustee"}{bm.start_date ? ` · Since ${bm.start_date.slice(0, 4)}` : ""}{hasFee ? ` · ${fmt(bm.annual_fee)}/yr` : ""}{bm.remuneration_note ? ` · ${bm.remuneration_note}` : ""}</div>
+                              <div className="text-xs text-gray-400">{bm.role || "Trustee"}{bm.start_date ? ` · Since ${bm.start_date.slice(0, 4)}` : ""}{bm.remuneration_note ? ` · ${bm.remuneration_note}` : ""}</div>
                             </div>
                           </div>
-                          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                          {hasFee ? (
+                            <div className="text-right flex-shrink-0 mr-2">
+                              <div className="text-sm font-bold text-amber-700">{fmt(bm.annual_fee)}</div>
+                              <div className="text-[9px] text-amber-600/60">per year</div>
+                            </div>
+                          ) : hasRemunerationData && !bm.is_paid ? (
+                            <div className="text-right flex-shrink-0 mr-2">
+                              <div className="text-sm font-bold text-emerald-600">€0</div>
+                              <div className="text-[9px] text-emerald-600/60">no fee</div>
+                            </div>
+                          ) : null}
+                          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? "rotate-180" : ""}`} />
                         </button>
                         {isExpanded && (
                           <div className="px-3 pb-3 border-t border-gray-50">
