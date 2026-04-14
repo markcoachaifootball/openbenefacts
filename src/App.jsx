@@ -1881,20 +1881,48 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
             <div>
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Board Members & Trustees</h3>
               {org.boardMembers && org.boardMembers.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-4">
+                  {/* ===== REMUNERATION SUMMARY (if any paid members) ===== */}
+                  {(() => {
+                    const paidMembers = org.boardMembers.filter(bm => bm.is_paid);
+                    const unpaidMembers = org.boardMembers.filter(bm => bm.is_paid === false);
+                    const totalFees = org.boardMembers.reduce((s, bm) => s + (Number(bm.annual_fee) || 0), 0);
+                    const hasFeeData = paidMembers.length > 0 || totalFees > 0;
+                    if (!hasFeeData) return null;
+                    return (
+                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/50 rounded-xl p-5 mb-2">
+                        <h4 className="text-sm font-semibold text-amber-900 mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4" /> Board Remuneration</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="bg-white/70 rounded-lg p-3 text-center"><div className="text-[10px] text-amber-700/60 font-medium uppercase">Total Board Fees</div><div className="text-lg font-bold text-amber-900">{fmt(totalFees)}</div><div className="text-[10px] text-amber-700/50">per annum</div></div>
+                          <div className="bg-white/70 rounded-lg p-3 text-center"><div className="text-[10px] text-amber-700/60 font-medium uppercase">Paid Members</div><div className="text-lg font-bold text-amber-900">{paidMembers.length}</div><div className="text-[10px] text-amber-700/50">of {org.boardMembers.length} total</div></div>
+                          <div className="bg-white/70 rounded-lg p-3 text-center"><div className="text-[10px] text-amber-700/60 font-medium uppercase">Unpaid / Voluntary</div><div className="text-lg font-bold text-emerald-700">{unpaidMembers.length}</div><div className="text-[10px] text-amber-700/50">{org.boardMembers.length > 0 ? Math.round(unpaidMembers.length / org.boardMembers.length * 100) : 0}% voluntary</div></div>
+                          {paidMembers.length > 0 && <div className="bg-white/70 rounded-lg p-3 text-center"><div className="text-[10px] text-amber-700/60 font-medium uppercase">Avg Fee</div><div className="text-lg font-bold text-amber-900">{fmt(Math.round(totalFees / paidMembers.length))}</div><div className="text-[10px] text-amber-700/50">per paid member</div></div>}
+                        </div>
+                        <p className="text-[10px] text-amber-700/50 mt-3">Source: State Bodies Database / Annual Reports. Fees set by the Minister under the One Person One Salary (OPOS) policy.</p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ===== BOARD MEMBER LIST ===== */}
+                  <div className="space-y-2">
                   {org.boardMembers.map((bm, i) => {
                     const director = bm.directors;
                     if (!director) return null;
                     const isExpanded = expandedDirector === director.id;
                     const otherBoards = directorBoards[director.id] || [];
+                    const hasFee = bm.annual_fee > 0;
                     return (
                       <div key={i} className="rounded-lg border border-gray-100 overflow-hidden">
                         <button onClick={() => handleExpandDirector(director.id)} className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors text-left">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">{director.name.charAt(0)}</div>
                             <div>
-                              <div className="text-sm font-medium text-gray-900">{director.name}</div>
-                              <div className="text-xs text-gray-400">{bm.role || "Trustee"}{bm.start_date ? ` · Since ${bm.start_date.slice(0, 4)}` : ""}</div>
+                              <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                                {director.name}
+                                {bm.is_paid === true && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">PAID</span>}
+                                {bm.is_paid === false && bm.annual_fee != null && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">VOLUNTARY</span>}
+                              </div>
+                              <div className="text-xs text-gray-400">{bm.role || "Trustee"}{bm.start_date ? ` · Since ${bm.start_date.slice(0, 4)}` : ""}{hasFee ? ` · ${fmt(bm.annual_fee)}/yr` : ""}{bm.remuneration_note ? ` · ${bm.remuneration_note}` : ""}</div>
                             </div>
                           </div>
                           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
@@ -1924,7 +1952,8 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                       </div>
                     );
                   })}
-                  <p className="text-xs text-gray-400 mt-3">Source: Charities Regulator public register. Click a name to see cross-directorships.</p>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-3">Source: Charities Regulator & State Bodies Database. Click a name to see cross-directorships.</p>
 
                   {/* Board Network Graph — visual cross-directorship map */}
                   {(() => {
