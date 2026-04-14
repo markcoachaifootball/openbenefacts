@@ -37,6 +37,66 @@ export async function fetchFunders() {
  * Fetch organisations with pagination and search
  * @param {Object} opts - { page, pageSize, search, sector, county, funderName, sortBy, sortDir }
  */
+// Common Irish abbreviation → full name map for search expansion
+const ABBREVIATIONS = {
+  'hse': 'Health Service Executive',
+  'ihrec': 'Irish Human Rights and Equality Commission',
+  'gaa': 'Gaelic Athletic Association',
+  'fai': 'Football Association of Ireland',
+  'irfu': 'Irish Rugby Football Union',
+  'ucd': 'University College Dublin',
+  'ucc': 'University College Cork',
+  'tcd': 'Trinity College Dublin',
+  'dcu': 'Dublin City University',
+  'nuig': 'University of Galway',
+  'ul': 'University of Limerick',
+  'tud': 'Technological University Dublin',
+  'atu': 'Atlantic Technological University',
+  'setu': 'South East Technological University',
+  'mtu': 'Munster Technological University',
+  'hfa': 'Housing Finance Agency',
+  'svp': 'Society of St. Vincent de Paul',
+  'ispcc': 'Irish Society for the Prevention of Cruelty to Children',
+  'rnli': 'Royal National Lifeboat Institution',
+  'goal': 'GOAL',
+  'nama': 'National Asset Management Agency',
+  'hiqa': 'Health Information and Quality Authority',
+  'mhi': 'Mental Health Ireland',
+  'nda': 'National Disability Authority',
+  'ncse': 'National Council for Special Education',
+  'sfi': 'Science Foundation Ireland',
+  'eirgrid': 'EirGrid',
+  'etbi': 'Education and Training Boards Ireland',
+  'cdetb': 'City of Dublin Education and Training Board',
+  'ddletb': 'Dublin and Dun Laoghaire Education and Training Board',
+  'nui': 'National University of Ireland',
+  'rcsi': 'Royal College of Surgeons in Ireland',
+  'ipa': 'Institute of Public Administration',
+  'ida': 'Industrial Development Agency',
+  'enterprise ireland': 'Enterprise Ireland',
+  'bord bia': 'An Bord Bia',
+  'teagasc': 'Teagasc',
+  'tusla': 'Child and Family Agency',
+  'pobal': 'Pobal',
+  'solas': 'SOLAS',
+  'cif': 'Construction Industry Federation',
+  'ibec': 'Irish Business and Employers Confederation',
+  'ictu': 'Irish Congress of Trade Unions',
+  'asti': 'Association of Secondary Teachers Ireland',
+  'into': 'Irish National Teachers Organisation',
+  'tui': 'Teachers Union of Ireland',
+  'garda': 'An Garda Síochána',
+  'opc': 'Office of the Planning Regulator',
+  'cro': 'Companies Registration Office',
+  'rte': 'Raidió Teilifís Éireann',
+};
+
+function expandSearch(term) {
+  const lower = term.toLowerCase().trim();
+  const expanded = ABBREVIATIONS[lower];
+  return expanded || null;
+}
+
 export async function fetchOrganisations({
   page = 1,
   pageSize = 50,
@@ -58,7 +118,14 @@ export async function fetchOrganisations({
   if (search) {
     const s = search.replace(/[%_(),]/g, ' ').trim();
     if (s.length >= 2) {
-      query = query.or(`name.ilike.%${s}%,charity_number.eq.${s},cro_number.eq.${s}`);
+      // Expand abbreviations (e.g. "HSE" → "Health Service Executive")
+      const expanded = expandSearch(s);
+      if (expanded) {
+        const e = expanded.replace(/[%_(),]/g, ' ').trim();
+        query = query.or(`name.ilike.%${s}%,name.ilike.%${e}%,charity_number.eq.${s},cro_number.eq.${s}`);
+      } else {
+        query = query.or(`name.ilike.%${s}%,charity_number.eq.${s},cro_number.eq.${s}`);
+      }
     }
   }
 
@@ -259,10 +326,17 @@ export async function searchOrganisations(query, limit = 10) {
   const q = query.replace(/[%_(),]/g, ' ').trim();
   if (q.length < 2) return [];
 
+  // Expand abbreviations
+  const expanded = expandSearch(q);
+  const orFilter = expanded
+    ? `name.ilike.%${q}%,name.ilike.%${expanded.replace(/[%_(),]/g, ' ').trim()}%,charity_number.eq.${q}`
+    : `name.ilike.%${q}%,charity_number.eq.${q}`;
+
   const { data, error } = await supabase
     .from('organisations')
     .select('id, name, sector, county, charity_number')
-    .or(`name.ilike.%${q}%,charity_number.eq.${q}`)
+    .or(orFilter)
+    .order('name', { ascending: true })
     .limit(limit);
 
   if (error) throw error;
