@@ -1904,24 +1904,33 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   })()}
 
                   {/* ===== BOARD MEMBER LIST ===== */}
-                  <div className="space-y-2">
-                  {org.boardMembers.map((bm, i) => {
+                  {(() => {
+                    // Check if ANY member on this board has remuneration data
+                    const orgHasFeeData = org.boardMembers.some(bm => bm.annual_fee > 0 || bm.is_paid === true || (bm.source && bm.source.startsWith('state_board_')));
+                    // Sort: paid members first (by fee desc), then voluntary/unknown
+                    const sorted = [...org.boardMembers].sort((a, b) => {
+                      if (a.is_paid && !b.is_paid) return -1;
+                      if (!a.is_paid && b.is_paid) return 1;
+                      return (Number(b.annual_fee) || 0) - (Number(a.annual_fee) || 0);
+                    });
+                    return (<div className="space-y-2">
+                  {sorted.map((bm, i) => {
                     const director = bm.directors;
                     if (!director) return null;
                     const isExpanded = expandedDirector === director.id;
                     const otherBoards = directorBoards[director.id] || [];
                     const hasFee = bm.annual_fee > 0;
-                    const hasRemunerationData = bm.source && bm.source.startsWith('state_board_') || hasFee || bm.is_paid === true;
+                    const memberHasData = bm.source && bm.source.startsWith('state_board_') || hasFee || bm.is_paid === true;
                     return (
                       <div key={i} className="rounded-lg border border-gray-100 overflow-hidden">
                         <button onClick={() => handleExpandDirector(director.id)} className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors text-left">
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold flex-shrink-0">{director.name.charAt(0)}</div>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${hasFee ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>{director.name.charAt(0)}</div>
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium text-gray-900 flex items-center gap-2 flex-wrap">
                                 {director.name}
-                                {hasRemunerationData && bm.is_paid === true && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">PAID</span>}
-                                {hasRemunerationData && !bm.is_paid && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">VOLUNTARY</span>}
+                                {orgHasFeeData && bm.is_paid === true && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">PAID</span>}
+                                {orgHasFeeData && memberHasData && !bm.is_paid && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">VOLUNTARY</span>}
                               </div>
                               <div className="text-xs text-gray-400">{bm.role || "Trustee"}{bm.start_date ? ` · Since ${bm.start_date.slice(0, 4)}` : ""}{bm.remuneration_note ? ` · ${bm.remuneration_note}` : ""}</div>
                             </div>
@@ -1931,7 +1940,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                               <div className="text-sm font-bold text-amber-700">{fmt(bm.annual_fee)}</div>
                               <div className="text-[9px] text-amber-600/60">per year</div>
                             </div>
-                          ) : hasRemunerationData && !bm.is_paid ? (
+                          ) : orgHasFeeData && memberHasData && !bm.is_paid ? (
                             <div className="text-right flex-shrink-0 mr-2">
                               <div className="text-sm font-bold text-emerald-600">€0</div>
                               <div className="text-[9px] text-emerald-600/60">no fee</div>
@@ -1964,7 +1973,8 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                       </div>
                     );
                   })}
-                  </div>
+                  </div>);
+                  })()}
                   <p className="text-xs text-gray-400 mt-3">Source: Charities Regulator & State Bodies Database. Click a name to see cross-directorships.</p>
 
                   {/* Board Network Graph — visual cross-directorship map */}
