@@ -5,6 +5,7 @@ import { supabase, fetchStats, fetchFunders, fetchOrganisations, fetchOrganisati
 import { DATA } from "./data.js";
 import CouncilFinancesPage from "./CouncilFinances.jsx";
 import FollowTheMoneyPage from "./FollowTheMoney.jsx";
+import EmergencyAccommodationPage from "./EmergencyAccommodation.jsx";
 
 // ===========================================================
 // ERROR BOUNDARY
@@ -559,7 +560,7 @@ function Navbar({ page, setPage }) {
   }, []);
 
   const nav = (p) => { setPage(p); setMobileOpen(false); };
-  const links = [["home","Dashboard"],["orgs","Organisations"],["funders","Funders"],["councils","Council Finances"],["pricing","Pricing"],["api","API"],["about","About"]];
+  const links = [["home","Dashboard"],["orgs","Organisations"],["funders","Funders"],["councils","Council Finances"],["trackers/emergency-accommodation","Housing Tracker"],["pricing","Pricing"],["api","API"],["about","About"]];
 
   return (
     <nav className="bg-[#FAF6EE] border-b border-[#0F4C5C]/10 sticky top-0 z-40 backdrop-blur">
@@ -754,6 +755,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
             { icon: Shield, title: "Due Diligence Reports", desc: "Printable PDF reports with AI-generated risk scores, governance red flags, board analysis, and three-year financial trends.", cta: "Run a report", page: "orgs", tag: "Pro" },
             { icon: Landmark, title: "Funder Intelligence", desc: `Profiles for ${funderData.length || 14} Irish state funders — HSE, Pobal, Tusla, Arts Council and more — with full recipient lists and grant histories.`, cta: "Browse funders", page: "funders", tag: "Free" },
             { icon: Database, title: "API & Bulk Data", desc: "Programmatic access to every organisation, financial record, and funding relationship. CSV exports and JSON endpoints for developers and researchers.", cta: "View the API", page: "api", tag: "Pro" },
+            { icon: Home, title: "Housing Tracker", desc: "Live LA-by-LA breakdown of emergency accommodation usage and estimated spend across all 31 Irish local authorities. Data from DHLGH monthly reports.", cta: "View tracker", page: "trackers/emergency-accommodation", tag: "Free" },
           ].map((svc, i) => (
             <button key={i} onClick={() => setPage(svc.page)} className="group text-left bg-white rounded-2xl border border-[#0F4C5C]/10 p-7 hover:border-[#0F4C5C] hover:shadow-xl hover:-translate-y-1 transition-all">
               <div className="flex items-start justify-between mb-5">
@@ -3968,6 +3970,7 @@ function InnerApp() {
     if (p.startsWith("org:")) return `/org/${p.slice(4)}`;
     if (p.startsWith("follow/")) return `/follow/${p.slice(7)}`;
     if (p.startsWith("flow:")) return `/follow/${p.slice(5)}`; // normalise legacy flow: to follow/
+    if (p.startsWith("trackers/")) return `/${p}`;
     return `/${p}`;
   };
 
@@ -3978,6 +3981,7 @@ function InnerApp() {
     if (parts[0] === "org" && parts[1]) return `org:${parts[1]}`;
     if (parts[0] === "follow" && parts[1]) return `follow/${parts[1]}`;
     if (parts[0] === "flow" && parts[1]) return `follow/${parts[1]}`;
+    if (parts[0] === "trackers" && parts[1]) return `trackers/${parts[1]}`;
     return parts[0];
   };
 
@@ -4029,6 +4033,7 @@ function InnerApp() {
     if (page.startsWith("funder:")) return <FollowTheMoneyPage setPage={handleSetPage} initialFunder={page.split("funder:")[1]} />;
     if (page.startsWith("follow/")) return <FlowPage funderSlug={page.split("follow/")[1]} setPage={handleSetPage} embed={isEmbed} />;
     if (page.startsWith("flow:")) return <FlowPage funderSlug={page.split(":")[1]} setPage={handleSetPage} embed={isEmbed} />;
+    if (page === "trackers/emergency-accommodation") return <EmergencyAccommodationPage setPage={handleSetPage} embed={isEmbed} />;
     switch (page) {
       case "orgs": return <OrgsPage setPage={handleSetPage} initialSearch={initialSearch} setInitialSearch={setInitialSearch} initialSector={initialSector} setInitialSector={setInitialSector} watchlist={wl} />;
       case "funders": return <FollowTheMoneyPage setPage={handleSetPage} />;
@@ -4075,6 +4080,7 @@ function InnerApp() {
                 <li><button onClick={() => handleSetPage("funders")} className="text-sm text-white/70 hover:text-white">Funders</button></li>
                 <li><button onClick={() => handleSetPage("money")} className="text-sm text-white/70 hover:text-white">Follow the money</button></li>
                 <li><button onClick={() => handleSetPage("foundations")} className="text-sm text-white/70 hover:text-white">Foundations</button></li>
+                <li><button onClick={() => handleSetPage("trackers/emergency-accommodation")} className="text-sm text-white/70 hover:text-white">Housing Tracker</button></li>
                 <li><button onClick={() => handleSetPage("api")} className="text-sm text-white/70 hover:text-white">API</button></li>
               </ul>
             </div>
