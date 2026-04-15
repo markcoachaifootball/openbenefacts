@@ -227,8 +227,30 @@ async function main() {
   const startDate = "2023-01-01";
   const endDate = new Date().toISOString().slice(0, 10);
 
-  console.log(`\n1) Fetching all Dáil questions ${startDate} → ${endDate}`);
-  const all = await fetchQuestions(startDate, endDate);
+  // Oireachtas API caps at skip=10000 per query. Window by calendar quarter.
+  console.log(`\n1) Fetching Dáil questions ${startDate} → ${endDate}  (quarterly windows)`);
+  const windows = [];
+  {
+    const s = new Date(startDate);
+    const e = new Date(endDate);
+    let cur = new Date(s.getFullYear(), s.getMonth(), 1);
+    while (cur <= e) {
+      const next = new Date(cur.getFullYear(), cur.getMonth() + 3, 0); // end of quarter
+      const wStart = cur.toISOString().slice(0, 10);
+      const wEnd   = (next > e ? e : next).toISOString().slice(0, 10);
+      windows.push([wStart, wEnd]);
+      cur = new Date(cur.getFullYear(), cur.getMonth() + 3, 1);
+    }
+  }
+  console.log(`   ${windows.length} quarterly windows`);
+
+  const all = [];
+  for (const [ws, we] of windows) {
+    process.stdout.write(`   window ${ws} → ${we}:  `);
+    const chunk = await fetchQuestions(ws, we);
+    console.log(`${chunk.length} questions`);
+    all.push(...chunk);
+  }
   console.log(`   Total: ${all.length} questions`);
 
   // Filter: showAs contains any keyword
