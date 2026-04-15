@@ -237,16 +237,29 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
   const [expandedRecipient, setExpandedRecipient] = useState(null);
   const [searchRecipients, setSearchRecipients] = useState("");
   const [recipientSort, setRecipientSort] = useState("total"); // total | name | count
+  const [selectedYear, setSelectedYear] = useState("all"); // global year filter
 
-  // ---- Derived analytics ----
-  const totalFunding = grants.reduce((s, g) => s + (g.amount || 0), 0);
-  const matchedGrants = grants.filter(g => g.org_id || g.organisations?.id);
-  const unmatchedGrants = grants.filter(g => !g.org_id && !g.organisations?.id);
+  // ---- Available years (sorted) ----
+  const availableYears = useMemo(() => {
+    const years = [...new Set(grants.map(g => g.year).filter(Boolean))].sort();
+    return years;
+  }, [grants]);
 
-  // By programme
+  // ---- Year-filtered grants (used for ALL analytics) ----
+  const filteredGrants = useMemo(() => {
+    if (selectedYear === "all") return grants;
+    return grants.filter(g => g.year === selectedYear || String(g.year) === String(selectedYear));
+  }, [grants, selectedYear]);
+
+  // ---- Derived analytics (now all use filteredGrants) ----
+  const totalFunding = filteredGrants.reduce((s, g) => s + (g.amount || 0), 0);
+  const matchedGrants = filteredGrants.filter(g => g.org_id || g.organisations?.id);
+  const unmatchedGrants = filteredGrants.filter(g => !g.org_id && !g.organisations?.id);
+
+  // By programme (uses filteredGrants)
   const byProgramme = useMemo(() => {
     const map = {};
-    grants.forEach(g => {
+    filteredGrants.forEach(g => {
       const p = g.programme || "General";
       if (!map[p]) map[p] = { name: p, total: 0, count: 0, recipients: new Set(), matched: 0 };
       map[p].total += (g.amount || 0);
@@ -255,13 +268,13 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
       if (g.org_id || g.organisations?.id) map[p].matched++;
     });
     return Object.values(map).map(p => ({ ...p, recipients: p.recipients.size })).sort((a, b) => b.total - a.total);
-  }, [grants]);
+  }, [filteredGrants]);
 
-  // By recipient (aggregated)
+  // By recipient (aggregated, uses filteredGrants + progFilter)
   const byRecipient = useMemo(() => {
     const map = {};
-    const filteredGrants = progFilter ? grants.filter(g => (g.programme || "General") === progFilter) : grants;
-    filteredGrants.forEach(g => {
+    const base = progFilter ? filteredGrants.filter(g => (g.programme || "General") === progFilter) : filteredGrants;
+    base.forEach(g => {
       const name = cleanName(g.organisations?.name || g.recipient_name_raw) || "Unknown";
       const id = g.organisations?.id || name;
       if (!map[id]) map[id] = { id, name, total: 0, count: 0, programmes: new Set(), county: g.organisations?.county || "", sector: g.organisations?.sector || "", charityNumber: g.organisations?.charity_number || "", orgId: g.organisations?.id || null, grants: [] };
@@ -280,12 +293,12 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
       if (recipientSort === "count") return b.count - a.count;
       return b.total - a.total;
     });
-  }, [grants, progFilter, searchRecipients, recipientSort]);
+  }, [filteredGrants, progFilter, searchRecipients, recipientSort]);
 
-  // By county
+  // By county (uses filteredGrants)
   const byCounty = useMemo(() => {
     const map = {};
-    grants.forEach(g => {
+    filteredGrants.forEach(g => {
       const county = g.organisations?.county || "Unknown";
       if (!map[county]) map[county] = { name: county, total: 0, count: 0, orgs: new Set() };
       map[county].total += (g.amount || 0);
@@ -293,12 +306,12 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
       map[county].orgs.add(g.recipient_name_raw);
     });
     return Object.values(map).map(c => ({ ...c, orgs: c.orgs.size })).sort((a, b) => b.total - a.total);
-  }, [grants]);
+  }, [filteredGrants]);
 
-  // By sector
+  // By sector (uses filteredGrants)
   const bySector = useMemo(() => {
     const map = {};
-    grants.forEach(g => {
+    filteredGrants.forEach(g => {
       const sector = g.organisations?.sector || "Unclassified";
       if (!map[sector]) map[sector] = { name: sector, total: 0, count: 0, orgs: new Set() };
       map[sector].total += (g.amount || 0);
@@ -306,9 +319,9 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
       map[sector].orgs.add(g.recipient_name_raw);
     });
     return Object.values(map).map(s => ({ ...s, orgs: s.orgs.size })).sort((a, b) => b.total - a.total);
-  }, [grants]);
+  }, [filteredGrants]);
 
-  // By year
+  // By year — always use ALL grants (this drives the year trend chart, not filtered)
   const byYear = useMemo(() => {
     const map = {};
     grants.forEach(g => {
@@ -320,17 +333,17 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
     return Object.values(map).sort((a, b) => (a.year === "Unknown" ? 9999 : a.year) - (b.year === "Unknown" ? 9999 : b.year));
   }, [grants]);
 
-  // Key stats
-  const avgGrantSize = grants.length > 0 ? totalFunding / grants.length : 0;
+  // Key stats (use filteredGrants)
+  const avgGrantSize = filteredGrants.length > 0 ? totalFunding / filteredGrants.length : 0;
   const medianGrant = useMemo(() => {
-    const amounts = grants.map(g => g.amount || 0).sort((a, b) => a - b);
+    const amounts = filteredGrants.map(g => g.amount || 0).sort((a, b) => a - b);
     if (amounts.length === 0) return 0;
     const mid = Math.floor(amounts.length / 2);
     return amounts.length % 2 ? amounts[mid] : (amounts[mid - 1] + amounts[mid]) / 2;
-  }, [grants]);
-  const largestGrant = grants.length > 0 ? grants.reduce((max, g) => (g.amount || 0) > (max.amount || 0) ? g : max, grants[0]) : null;
-  const smallestGrant = grants.length > 0 ? grants.reduce((min, g) => (g.amount || 0) < (min.amount || 0) ? g : min, grants[0]) : null;
-  const matchRate = grants.length > 0 ? (matchedGrants.length / grants.length * 100).toFixed(0) : 0;
+  }, [filteredGrants]);
+  const largestGrant = filteredGrants.length > 0 ? filteredGrants.reduce((max, g) => (g.amount || 0) > (max.amount || 0) ? g : max, filteredGrants[0]) : null;
+  const smallestGrant = filteredGrants.length > 0 ? filteredGrants.reduce((min, g) => (g.amount || 0) < (min.amount || 0) ? g : min, filteredGrants[0]) : null;
+  const matchRate = filteredGrants.length > 0 ? (matchedGrants.length / filteredGrants.length * 100).toFixed(0) : 0;
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -359,15 +372,38 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
               <span className="text-emerald-400 font-bold">{fmt(totalFunding)}</span> distributed across{" "}
               <span className="font-bold">{byRecipient.length.toLocaleString()}</span> recipients via{" "}
               <span className="font-bold">{byProgramme.length}</span> programmes
+              {selectedYear !== "all" && <span className="ml-1 text-amber-300 font-semibold">· {selectedYear} only</span>}
             </p>
           </div>
           <span className={`text-[10px] px-3 py-1 rounded-full font-medium ${funder.type === "Government" ? "bg-blue-500/20 text-blue-300" : funder.type === "State Agency" ? "bg-emerald-500/20 text-emerald-300" : "bg-gray-500/20 text-gray-300"}`}>{funder.type}</span>
         </div>
 
+        {/* Year filter — only show if multiple years available */}
+        {availableYears.length > 1 && (
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Year:</span>
+            <button
+              onClick={() => setSelectedYear("all")}
+              className={`text-xs px-4 py-1.5 rounded-full font-semibold transition-all ${selectedYear === "all" ? "bg-white text-gray-900 shadow" : "bg-white/10 text-gray-300 hover:bg-white/20"}`}
+            >
+              All years
+            </button>
+            {availableYears.map(y => (
+              <button
+                key={y}
+                onClick={() => setSelectedYear(y === selectedYear ? "all" : y)}
+                className={`text-xs px-4 py-1.5 rounded-full font-semibold transition-all ${selectedYear === y ? "bg-emerald-400 text-gray-900 shadow" : "bg-white/10 text-gray-300 hover:bg-white/20"}`}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Key metrics row */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-5">
           {[
-            { label: "Total Grants", value: grants.length.toLocaleString() },
+            { label: "Total Grants", value: filteredGrants.length.toLocaleString() },
             { label: "Avg Grant", value: fmt(avgGrantSize) },
             { label: "Median Grant", value: fmt(medianGrant) },
             { label: "Match Rate", value: `${matchRate}%` },
@@ -384,13 +420,13 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
       {/* Download + Share bar */}
       <div className="flex flex-wrap gap-2 mb-5">
         <button onClick={() => {
-          const rows = grants.map(g => [
+          const rows = filteredGrants.map(g => [
             funder.name, g.programme || "", cleanName(g.organisations?.name || g.recipient_name_raw), g.organisations?.county || "", g.organisations?.sector || "", g.year || "", g.amount || 0, g.organisations?.charity_number || "",
           ]);
-          downloadCSV(rows, ["Funder","Programme","Recipient","County","Sector","Year","Amount","RCN"], `${funder.name.replace(/\s+/g, "-").toLowerCase()}-grants.csv`);
+          downloadCSV(rows, ["Funder","Programme","Recipient","County","Sector","Year","Amount","RCN"], `${funder.name.replace(/\s+/g, "-").toLowerCase()}-${selectedYear === "all" ? "all-years" : selectedYear}-grants.csv`);
         }} className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          Download All Grants CSV
+          {selectedYear === "all" ? "Download All Grants CSV" : `Download ${selectedYear} Grants CSV`}
         </button>
         <button onClick={() => { navigator.clipboard.writeText(window.location.href); }} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
@@ -759,15 +795,27 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
       {activeTab === "data" && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">All Grant Records ({grants.length})</h3>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                Grant Records
+                <span className="ml-2 text-gray-400 font-normal normal-case">
+                  {selectedYear === "all" ? `${filteredGrants.length} across all years` : `${filteredGrants.length} in ${selectedYear}`}
+                </span>
+              </h3>
+              {selectedYear === "all" && availableYears.length > 1 && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Tip: use the year filter above to drill into a specific year
+                </p>
+              )}
+            </div>
             <button onClick={() => {
-              const rows = grants.map(g => [
+              const rows = filteredGrants.map(g => [
                 funder.name, g.programme || "", cleanName(g.organisations?.name || g.recipient_name_raw), g.organisations?.county || "", g.organisations?.sector || "", g.year || "", g.amount || 0, g.organisations?.charity_number || "",
               ]);
-              downloadCSV(rows, ["Funder","Programme","Recipient","County","Sector","Year","Amount","RCN"], `${funder.name.replace(/\s+/g, "-").toLowerCase()}-grants.csv`);
+              downloadCSV(rows, ["Funder","Programme","Recipient","County","Sector","Year","Amount","RCN"], `${funder.name.replace(/\s+/g, "-").toLowerCase()}-${selectedYear === "all" ? "all-years" : selectedYear}-grants.csv`);
             }} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium hover:bg-emerald-100">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              CSV
+              Download CSV
             </button>
           </div>
           <div className="overflow-x-auto">
@@ -782,20 +830,24 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
                 <th className="text-right py-2">Amount</th>
               </tr></thead>
               <tbody>
-                {grants.slice(0, 200).map((g, i) => (
+                {filteredGrants.slice(0, 300).map((g, i) => (
                   <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => g.organisations?.id && setPage(`org:${g.organisations.id}`)}>
                     <td className="py-2 pr-3 text-gray-400 text-xs">{i + 1}</td>
                     <td className="py-2 pr-3 font-medium text-gray-900 max-w-[200px] truncate">{cleanName(g.organisations?.name || g.recipient_name_raw)}</td>
                     <td className="py-2 pr-3 text-gray-500 text-xs max-w-[150px] truncate">{g.programme || "—"}</td>
                     <td className="py-2 pr-3 text-gray-500 text-xs">{g.organisations?.county || "—"}</td>
                     <td className="py-2 pr-3 text-gray-500 text-xs">{g.organisations?.sector || "—"}</td>
-                    <td className="py-2 pr-3 text-center text-gray-500 text-xs">{g.year || "—"}</td>
+                    <td className="py-2 pr-3 text-center">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${g.year === 2026 ? "bg-emerald-100 text-emerald-700" : g.year === 2025 ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"}`}>
+                        {g.year || "—"}
+                      </span>
+                    </td>
                     <td className="py-2 text-right font-semibold text-emerald-600">{fmtFull(g.amount)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {grants.length > 200 && <p className="text-xs text-gray-400 text-center mt-3">Showing 200 of {grants.length} grants. Download CSV for full dataset.</p>}
+            {filteredGrants.length > 300 && <p className="text-xs text-gray-400 text-center mt-3">Showing 300 of {filteredGrants.length} grants. Download CSV for full dataset.</p>}
           </div>
         </div>
       )}
