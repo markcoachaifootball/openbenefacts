@@ -2122,11 +2122,20 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
 
           {tab === "financials" && (
             <div>
-              <p className="text-gray-500 text-sm mb-4">Financial data sourced from Charities Regulator and CRO filings.</p>
+              {/* Data source + filing lag notice */}
+              <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4">
+                <svg className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                <div>
+                  <p className="text-xs text-blue-700 font-medium">About this data</p>
+                  <p className="text-xs text-blue-600 mt-0.5">Financial figures are sourced directly from <strong>Charities Regulator</strong> and <strong>CRO</strong> annual return filings. Organisations typically file 9–12 months after their financial year ends, so the most recent year shown here is usually one year behind the current date. 2025 accounts will appear once filed later this year.</p>
+                </div>
+              </div>
               {org.financials && org.financials.length > 0 ? (() => {
                 const cur = org.financials[0];
                 const prev = org.financials.length >= 2 ? org.financials[1] : null;
                 const sorted = [...org.financials].reverse();
+                const currentCalendarYear = new Date().getFullYear();
+                const filingLag = cur.year && cur.year < currentCalendarYear - 1;
                 const yoyBadge = (curVal, prevVal) => {
                   if (!prev || curVal == null || prevVal == null || prevVal === 0) return null;
                   const pct = ((curVal - prevVal) / Math.abs(prevVal)) * 100;
@@ -2142,7 +2151,10 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                 <div className="space-y-6">
                   {/* Header bar */}
                   <div className="bg-[#C4E86B]/25 border border-[#0F4C5C]/15 rounded-xl p-4 flex items-center justify-between">
-                    <p className="text-sm text-[#0F4C5C] font-bold">Latest Annual Return ({cur.year || "Most Recent"})</p>
+                    <div>
+                      <p className="text-sm text-[#0F4C5C] font-bold">Latest Annual Return ({cur.year || "Most Recent"})</p>
+                      {filingLag && <p className="text-[10px] text-amber-600 mt-0.5">⚠ This organisation's filing may be overdue — newer data may not yet be available</p>}
+                    </div>
                     {org.financials.length > 1 && <span className="text-xs text-[#0F4C5C]/70 font-semibold">{org.financials.length} years on file</span>}
                   </div>
 
