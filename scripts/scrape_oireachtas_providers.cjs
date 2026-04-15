@@ -109,13 +109,22 @@ const BLACKLIST = new Set([
 // First-word blacklist: reject capture groups that START with a generic
 // category word — these are keyword phrases, not providers.
 const GENERIC_PREFIXES = new Set([
+  // Category / policy words
   "Emergency", "Shared", "Homeless", "Homelessness", "International",
   "Ipas", "IPAS", "Pathway", "Temporary", "Supported", "Private", "Family",
   "Social", "Transitional", "Community", "Public", "Local", "Suitable",
   "Own-Door", "Refuge", "Refugee", "Ukrainian", "State", "Non-Commercial",
   "Standard", "Direct", "Housing", "Tenant", "Modular", "Prefabricated",
   "Core", "General", "Dedicated", "Additional", "New", "Existing",
-  "Congregated", "Domestic", "Mixed",
+  "Congregated", "Domestic", "Mixed", "Centre", "Bed", "Availability",
+  "Type", "Number", "Total",
+  // Irish county / city names — reject "{County} Hotel" style generic matches
+  "Dublin", "Cork", "Galway", "Limerick", "Waterford", "Kilkenny",
+  "Wexford", "Carlow", "Kildare", "Meath", "Wicklow", "Louth", "Cavan",
+  "Monaghan", "Donegal", "Sligo", "Leitrim", "Mayo", "Roscommon",
+  "Clare", "Tipperary", "Kerry", "Laois", "Offaly", "Longford",
+  "Westmeath", "Fingal", "South", "North", "East", "West",
+  "Dún", "Dun",
 ]);
 
 // Whole-name reject list for post-capture cleanup.
@@ -141,14 +150,19 @@ function extractProviders(text) {
     const rx = new RegExp(re.source, "g");
     let m;
     while ((m = rx.exec(text)) !== null) {
-      const firstWord = m[1].split(/\s+/)[0];
+      const words = m[1].split(/\s+/);
+      const firstWord = words[0];
+      // Reject keyword-phrase matches ("Emergency ...", "Homeless ...")
       if (GENERIC_PREFIXES.has(firstWord)) continue;
+      // Reject single-word captures like "Dublin Hotel" / "Donegal Apartments"
+      // (the standalone county name isn't a business). Keep multi-word
+      // captures like "Dublin Castle Hotel".
+      if (words.length < 2) continue;
       const name = `${m[1]} ${m[2]}`.replace(/\s+/g, " ").trim();
       if (REJECT_EXACT.has(name)) continue;
       if (BLACKLIST.has(name) || BLACKLIST.has(m[1])) continue;
-      if (name.length < 8 || name.length > 80) continue;
+      if (name.length < 10 || name.length > 80) continue;
       // Must contain at least one word >=4 chars that isn't a generic
-      const words = m[1].split(/\s+/);
       const hasProper = words.some(w => w.length >= 4 && !GENERIC_PREFIXES.has(w));
       if (!hasProper) continue;
       if (!found.has(name)) found.set(name, m.index);
