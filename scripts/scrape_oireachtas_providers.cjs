@@ -106,8 +106,32 @@ const BLACKLIST = new Set([
   "European Union", "Housing Agency", "The Executive",
 ]);
 
+// First-word blacklist: reject capture groups that START with a generic
+// category word — these are keyword phrases, not providers.
+const GENERIC_PREFIXES = new Set([
+  "Emergency", "Shared", "Homeless", "Homelessness", "International",
+  "Ipas", "IPAS", "Pathway", "Temporary", "Supported", "Private", "Family",
+  "Social", "Transitional", "Community", "Public", "Local", "Suitable",
+  "Own-Door", "Refuge", "Refugee", "Ukrainian", "State", "Non-Commercial",
+  "Standard", "Direct", "Housing", "Tenant", "Modular", "Prefabricated",
+  "Core", "General", "Dedicated", "Additional", "New", "Existing",
+  "Congregated", "Domestic", "Mixed",
+]);
+
+// Whole-name reject list for post-capture cleanup.
+const REJECT_EXACT = new Set([
+  "Emergency Accommodation", "Homeless Accommodation",
+  "Homelessness Accommodation", "Shared Accommodation",
+  "Ipas Accommodation", "IPAS Accommodation",
+  "International Protection Accommodation", "Pathway Accommodation",
+  "Temporary Accommodation", "Supported Temporary Accommodation",
+  "Private Emergency Accommodation", "Family Hub",
+  "Community House", "Public House", "Social House", "Safe House",
+  "Direct Provision Accommodation",
+]);
+
 const PROVIDER_PATTERNS = [
-  /\b([A-Z][A-Za-z'&\-]+(?:\s+[A-Z][A-Za-z'&\-]+){0,4})\s+(Hotel|Hotels|B&B|Bed\s*&\s*Breakfast|Hostel|Apartments|Apart-Hotel|Lodge|Inn|House|Suites|Residence|Accommodation)\b/g,
+  /\b([A-Z][A-Za-z'&\-]+(?:\s+[A-Z][A-Za-z'&\-]+){0,4})\s+(Hotel|Hotels|B&B|Bed\s*&\s*Breakfast|Hostel|Apartments|Apart-Hotel|Lodge|Inn|Suites|Residence)\b/g,
   /\b([A-Z][A-Za-z'&\-]+(?:\s+[A-Z][A-Za-z'&\-]+){0,4})\s+(Ltd\.?|Limited|CLG|DAC|Plc\.?|Unlimited\s+Company)\b/g,
 ];
 
@@ -117,9 +141,16 @@ function extractProviders(text) {
     const rx = new RegExp(re.source, "g");
     let m;
     while ((m = rx.exec(text)) !== null) {
+      const firstWord = m[1].split(/\s+/)[0];
+      if (GENERIC_PREFIXES.has(firstWord)) continue;
       const name = `${m[1]} ${m[2]}`.replace(/\s+/g, " ").trim();
+      if (REJECT_EXACT.has(name)) continue;
       if (BLACKLIST.has(name) || BLACKLIST.has(m[1])) continue;
-      if (name.length < 6 || name.length > 80) continue;
+      if (name.length < 8 || name.length > 80) continue;
+      // Must contain at least one word >=4 chars that isn't a generic
+      const words = m[1].split(/\s+/);
+      const hasProper = words.some(w => w.length >= 4 && !GENERIC_PREFIXES.has(w));
+      if (!hasProper) continue;
       if (!found.has(name)) found.set(name, m.index);
     }
   }
