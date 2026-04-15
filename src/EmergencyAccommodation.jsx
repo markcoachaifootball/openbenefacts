@@ -493,9 +493,14 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
   const [sankeyHighlight, setSankeyHighlight] = useState(null);
-  const [activeTab, setActiveTab] = useState("sankey"); // sankey | leaderboard | trend | embed
+  const [activeTab, setActiveTab] = useState("sankey"); // sankey | leaderboard | trend | providers | embed
   const [selectedLA, setSelectedLA] = useState(null);
   const [reportDate, setReportDate] = useState(null);
+  const [providers, setProviders]   = useState([]);
+  const [providerContracts, setProviderContracts] = useState([]);
+  const [providerFilter, setProviderFilter] = useState("");
+  const [providerSort, setProviderSort]     = useState("revenue");
+  const [selectedProvider, setSelectedProvider] = useState(null);
 
   // Fetch latest snapshot from Supabase
   useEffect(() => {
@@ -531,6 +536,32 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
       }
     }
     load();
+  }, []);
+
+  // Fetch providers (deep-dive layer — eTenders + Oireachtas PQ)
+  useEffect(() => {
+    async function loadProviders() {
+      try {
+        const { data: provs } = await supabase
+          .from("emergency_providers")
+          .select("*")
+          .order("total_known_revenue_eur", { ascending: false, nullsFirst: false })
+          .limit(500);
+        setProviders(provs || []);
+
+        const { data: contracts } = await supabase
+          .from("provider_contracts")
+          .select("*")
+          .order("value_eur", { ascending: false, nullsFirst: false })
+          .limit(1000);
+        setProviderContracts(contracts || []);
+      } catch (e) {
+        // Table may not exist yet — silent fall-back
+        setProviders([]);
+        setProviderContracts([]);
+      }
+    }
+    loadProviders();
   }, []);
 
   // ── Headline metrics ──
@@ -570,7 +601,7 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
 
   const TABS = embed
     ? [["leaderboard", "All LAs"]]
-    : [["sankey", "Money Flow"], ["leaderboard", "All LAs"], ["trend", "Trend"], ["embed", "Embed"]];
+    : [["sankey", "Money Flow"], ["leaderboard", "All LAs"], ["trend", "Trend"], ["providers", "Providers"], ["embed", "Embed"]];
 
   if (loading) {
     return (
@@ -831,6 +862,202 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════
+          TAB: Providers (deep-dive — hotels, B&Bs, hostels)
+      ══════════════════════════════════════════════════════════ */}
+      {activeTab === "providers" && (
+        <div className="space-y-6">
+          {/* Context banner */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
+            <strong>Deep-dive:</strong> individual providers (hotels, B&Bs, hostels, and companies) receiving State payments for emergency accommodation.
+            Sources: eTenders.gov.ie contract awards, Oireachtas parliamentary question responses, public FOI disclosures.
+            Coverage is partial — many placements are arranged under spot-purchase or framework agreements that are not centrally published.
+          </div>
+
+          {!providers.length ? (
+            <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center">
+              <div className="text-gray-900 font-semibold mb-2">No provider data loaded yet</div>
+              <div className="text-sm text-gray-500 max-w-md mx-auto">
+                Run the scrapers to populate this tab: <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">scrape_etenders_emergency.cjs</code> and <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">scrape_oireachtas_providers.cjs</code>.
+              </div>
+            </div>
+          ) : selectedProvider ? (
+            /* Provider detail view */
+            (() => {
+              const p = providers.find(x => x.id === selectedProvider);
+              if (!p) return null;
+              const pContracts = providerContracts.filter(c => c.provider_id === p.id);
+              const totalValue = pContracts.reduce((s, c) => s + (c.value_eur || 0), 0);
+              return (
+                <div className="space-y-4">
+                  <button
+                    onClick={() => setSelectedProvider(null)}
+                    className="text-sm text-emerald-700 hover:text-emerald-900 font-semibold flex items-center gap-1"
+                  >← Back to providers</button>
+
+                  <div className="bg-white border border-gray-100 rounded-2xl p-6">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">{p.provider_type || "Provider"}</div>
+                        <h2 className="text-2xl font-extrabold text-gray-900">{p.name}</h2>
+                        {p.trading_name && p.trading_name !== p.name && (
+                          <div className="text-sm text-gray-500 mt-1">Trading as {p.trading_name}</div>
+                        )}
+                        <div className="text-sm text-gray-600 mt-2">
+                          {[p.local_authority, p.region].filter(Boolean).join(" · ")}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-gray-500">Known contract value</div>
+                        <div className="text-2xl font-extrabold text-gray-900">
+                          €{(totalValue || p.total_known_revenue_eur || 0).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="text-xs text-gray-500">Contracts on record</div>
+                        <div className="text-lg font-bold">{pContracts.length}</div>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="text-xs text-gray-500">Public sources</div>
+                        <div className="text-lg font-bold">{p.source_count || 0}</div>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="text-xs text-gray-500">Est. bed capacity</div>
+                        <div className="text-lg font-bold">{p.est_bed_capacity || "—"}</div>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="text-xs text-gray-500">CRO number</div>
+                        <div className="text-lg font-bold">
+                          {p.cro_number ? (
+                            <button
+                              onClick={() => setPage && setPage(`organisations/${p.cro_number}`)}
+                              className="text-emerald-700 hover:text-emerald-900 underline"
+                            >{p.cro_number}</button>
+                          ) : "—"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contract list */}
+                  <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                      <h3 className="font-bold text-gray-900">Contracts on record</h3>
+                      <span className="text-xs text-gray-500">{pContracts.length} records</span>
+                    </div>
+                    {pContracts.length ? (
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-xs font-bold uppercase text-gray-500">
+                          <tr>
+                            <th className="px-6 py-3 text-left">Awarding body</th>
+                            <th className="px-6 py-3 text-left">Title</th>
+                            <th className="px-6 py-3 text-right">Value (€)</th>
+                            <th className="px-6 py-3 text-left">Date</th>
+                            <th className="px-6 py-3 text-left">Source</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pContracts.map(c => (
+                            <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50">
+                              <td className="px-6 py-3 text-gray-700">{c.awarding_body || c.local_authority || "—"}</td>
+                              <td className="px-6 py-3 text-gray-900 font-medium">{c.contract_title || "—"}</td>
+                              <td className="px-6 py-3 text-right font-mono text-gray-900">{c.value_eur?.toLocaleString() || "—"}</td>
+                              <td className="px-6 py-3 text-gray-600">{c.award_date || "—"}</td>
+                              <td className="px-6 py-3">
+                                {c.source_url ? (
+                                  <a href={c.source_url} target="_blank" rel="noopener noreferrer"
+                                     className="text-emerald-700 hover:text-emerald-900 text-xs font-semibold uppercase">
+                                    {c.source_type} ↗
+                                  </a>
+                                ) : <span className="text-xs text-gray-400 uppercase">{c.source_type}</span>}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="px-6 py-12 text-center text-sm text-gray-500">No individual contract records yet — this provider was identified from narrative sources only.</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()
+          ) : (
+            /* Provider leaderboard */
+            <>
+              <div className="flex items-center gap-3 flex-wrap">
+                <input
+                  type="text"
+                  placeholder="Search providers…"
+                  value={providerFilter}
+                  onChange={e => setProviderFilter(e.target.value)}
+                  className="flex-1 min-w-[200px] px-4 py-2 border border-gray-200 rounded-lg text-sm"
+                />
+                <select
+                  value={providerSort}
+                  onChange={e => setProviderSort(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+                >
+                  <option value="revenue">Sort: revenue (high → low)</option>
+                  <option value="name">Sort: name (A → Z)</option>
+                  <option value="contracts">Sort: contract count</option>
+                  <option value="recent">Sort: most recent</option>
+                </select>
+                <div className="text-sm text-gray-500">{providers.length} providers</div>
+              </div>
+
+              <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-xs font-bold uppercase text-gray-500">
+                    <tr>
+                      <th className="px-6 py-3 text-left">#</th>
+                      <th className="px-6 py-3 text-left">Provider</th>
+                      <th className="px-6 py-3 text-left">Type</th>
+                      <th className="px-6 py-3 text-left">Local authority</th>
+                      <th className="px-6 py-3 text-right">Known revenue (€)</th>
+                      <th className="px-6 py-3 text-right">Contracts</th>
+                      <th className="px-6 py-3 text-right">Sources</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {providers
+                      .filter(p => !providerFilter || p.name.toLowerCase().includes(providerFilter.toLowerCase()))
+                      .sort((a, b) => {
+                        if (providerSort === "name")      return (a.name || "").localeCompare(b.name || "");
+                        if (providerSort === "contracts") return (providerContracts.filter(c => c.provider_id === b.id).length) - (providerContracts.filter(c => c.provider_id === a.id).length);
+                        if (providerSort === "recent")    return new Date(b.last_seen_date || 0) - new Date(a.last_seen_date || 0);
+                        return (b.total_known_revenue_eur || 0) - (a.total_known_revenue_eur || 0);
+                      })
+                      .slice(0, 200)
+                      .map((p, i) => {
+                        const cCount = providerContracts.filter(c => c.provider_id === p.id).length;
+                        return (
+                          <tr key={p.id}
+                              onClick={() => setSelectedProvider(p.id)}
+                              className="border-t border-gray-100 hover:bg-emerald-50 cursor-pointer">
+                            <td className="px-6 py-3 text-gray-400 font-mono">{i + 1}</td>
+                            <td className="px-6 py-3 font-semibold text-gray-900">{p.name}</td>
+                            <td className="px-6 py-3">
+                              <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 bg-gray-100 text-gray-700 rounded">{p.provider_type || "Unknown"}</span>
+                            </td>
+                            <td className="px-6 py-3 text-gray-600">{p.local_authority || "—"}</td>
+                            <td className="px-6 py-3 text-right font-mono text-gray-900">{(p.total_known_revenue_eur || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-right text-gray-700">{cCount}</td>
+                            <td className="px-6 py-3 text-right text-gray-500">{p.source_count || 0}</td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       )}
 
