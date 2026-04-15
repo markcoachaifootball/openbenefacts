@@ -603,8 +603,8 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
               Emergency Accommodation Tracker
             </h1>
             <p className="text-sm text-white/70 max-w-2xl leading-relaxed">
-              Live LA-by-LA breakdown of emergency accommodation usage across Ireland's 31 local authorities.
-              Data sourced monthly from the Department of Housing via <a href="https://data.gov.ie" target="_blank" rel="noopener noreferrer" className="underline hover:text-white">data.gov.ie</a>.
+              Monthly regional totals from the Department of Housing, apportioned across Ireland's 31 local authorities.
+              Regional figures are official; LA-level numbers are proportional estimates. Source: <a href="https://data.gov.ie" target="_blank" rel="noopener noreferrer" className="underline hover:text-white">data.gov.ie</a>.
             </p>
             <p className="text-xs text-white/50 mt-2">Latest report: {formattedDate} · Updated monthly</p>
           </div>
