@@ -566,9 +566,18 @@ function Navbar({ page, setPage }) {
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="w-full px-6 lg:px-10">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-3 cursor-pointer flex-shrink-0" onClick={() => nav("home")}>
-            <span className="font-wordmark text-[24px] text-[#1B3A4B] leading-none">open</span>
-            <span className="font-wordmark text-[24px] text-[#1B3A4B] leading-none -ml-2.5">benefacts</span>
+          <div className="flex items-center cursor-pointer flex-shrink-0" onClick={() => nav("home")}>
+            <div className="leading-none">
+              <span className="font-wordmark text-[28px] text-emerald-700">open</span>
+              <span className="font-wordmark text-[28px] text-[#1a1a2e]">benefacts</span>
+              <div className="flex gap-1 mt-0.5 justify-end">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              </div>
+            </div>
           </div>
           <div className="hidden md:flex items-center gap-0.5">
             {links.map(([key, label]) => (
@@ -650,16 +659,33 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
   return (
     <div className="bg-white">
       {/* Hero — full-width, OpenCorporates-style with geometric background */}
-      <div className="relative w-full overflow-hidden" style={{ background: "linear-gradient(135deg, #1B3A4B 0%, #2d5f73 50%, #1B3A4B 100%)" }}>
-        {/* Geometric pattern overlay */}
-        <div className="absolute inset-0 opacity-10">
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <div className="relative w-full overflow-hidden" style={{ background: "#1B3A4B" }}>
+        {/* Sharp geometric 3D panels — architectural glass effect */}
+        <div className="absolute inset-0">
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" viewBox="0 0 1200 600">
             <defs>
-              <pattern id="hero-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-                <path d="M0 30 L30 0 L60 30 L30 60Z" fill="none" stroke="white" strokeWidth="0.5" />
-              </pattern>
+              <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#2d5f73" /><stop offset="100%" stopColor="#1B3A4B" /></linearGradient>
+              <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3a7d8c" /><stop offset="100%" stopColor="#1B3A4B" /></linearGradient>
+              <linearGradient id="g3" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#234e5c" /><stop offset="100%" stopColor="#152d3a" /></linearGradient>
             </defs>
-            <rect width="100%" height="100%" fill="url(#hero-pattern)" />
+            {/* Large angled panels like glass building facade */}
+            <polygon points="0,0 200,0 150,600 0,600" fill="url(#g1)" opacity="0.6" />
+            <polygon points="200,0 400,0 320,600 150,600" fill="url(#g2)" opacity="0.4" />
+            <polygon points="400,0 550,0 500,600 320,600" fill="url(#g3)" opacity="0.5" />
+            <polygon points="550,0 750,0 680,600 500,600" fill="url(#g1)" opacity="0.3" />
+            <polygon points="750,0 900,0 870,600 680,600" fill="url(#g2)" opacity="0.5" />
+            <polygon points="900,0 1050,0 1020,600 870,600" fill="url(#g3)" opacity="0.4" />
+            <polygon points="1050,0 1200,0 1200,600 1020,600" fill="url(#g1)" opacity="0.6" />
+            {/* Highlight lines between panels */}
+            <line x1="150" y1="0" x2="150" y2="600" stroke="white" strokeWidth="1" opacity="0.08" transform="rotate(2 150 300)" />
+            <line x1="320" y1="0" x2="320" y2="600" stroke="white" strokeWidth="1" opacity="0.06" transform="rotate(1.5 320 300)" />
+            <line x1="500" y1="0" x2="500" y2="600" stroke="white" strokeWidth="1.5" opacity="0.1" transform="rotate(1 500 300)" />
+            <line x1="680" y1="0" x2="680" y2="600" stroke="white" strokeWidth="1" opacity="0.07" transform="rotate(-1 680 300)" />
+            <line x1="870" y1="0" x2="870" y2="600" stroke="white" strokeWidth="1" opacity="0.08" transform="rotate(-1.5 870 300)" />
+            <line x1="1020" y1="0" x2="1020" y2="600" stroke="white" strokeWidth="1" opacity="0.06" transform="rotate(-2 1020 300)" />
+            {/* Subtle horizontal reflections */}
+            <rect x="0" y="180" width="1200" height="1" fill="white" opacity="0.04" />
+            <rect x="0" y="350" width="1200" height="1" fill="white" opacity="0.03" />
           </svg>
         </div>
 
