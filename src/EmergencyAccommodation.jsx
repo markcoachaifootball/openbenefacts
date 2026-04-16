@@ -870,268 +870,282 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
       ══════════════════════════════════════════════════════════ */}
       {activeTab === "providers" && (
         <div className="space-y-6">
-          {/* Context banner */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
-            <strong>Deep-dive:</strong> individual providers (hotels, B&Bs, hostels, and companies) receiving State payments for emergency accommodation.
-            Sources: eTenders.gov.ie contract awards, Oireachtas parliamentary question responses, public FOI disclosures.
-            Coverage is partial — many placements are arranged under spot-purchase or framework agreements that are not centrally published.
-          </div>
+          {/* ─── OpenCorporates-style search hero ─── */}
+          {!selectedProvider && (
+            <div className="bg-emerald-800 rounded-2xl p-8 text-center">
+              <h2 className="text-2xl font-bold text-white mb-2">Search {providers.length.toLocaleString()} Providers</h2>
+              <p className="text-emerald-200 text-sm mb-5">Hotels, B&Bs, hostels, and companies receiving State payments for emergency accommodation</p>
+              <div className="max-w-xl mx-auto flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Search by company name, hotel, or keyword..."
+                  value={providerFilter}
+                  onChange={e => setProviderFilter(e.target.value)}
+                  className="flex-1 px-5 py-3 rounded-lg text-base border-0 shadow-lg focus:ring-2 focus:ring-emerald-400 outline-none"
+                />
+                <select
+                  value={providerSort}
+                  onChange={e => setProviderSort(e.target.value)}
+                  className="px-3 py-3 rounded-lg text-sm bg-white border-0 shadow-lg"
+                >
+                  <option value="revenue">By revenue</option>
+                  <option value="name">A → Z</option>
+                  <option value="contracts">By contracts</option>
+                  <option value="recent">Most recent</option>
+                </select>
+              </div>
+              <p className="text-emerald-300 text-xs mt-3">
+                Sources: Irish Government OGP procurement data, Oireachtas PQ responses. Coverage is partial.
+              </p>
+            </div>
+          )}
 
           {!providers.length ? (
             <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center">
               <div className="text-gray-900 font-semibold mb-2">No provider data loaded yet</div>
               <div className="text-sm text-gray-500 max-w-md mx-auto">
-                Run the scrapers to populate this tab: <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">scrape_etenders_emergency.cjs</code> and <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">scrape_oireachtas_providers.cjs</code>.
+                Run the scrapers to populate this tab.
               </div>
             </div>
           ) : selectedProvider ? (
-            /* Provider detail view */
+            /* ─── OpenCorporates-style entity detail ─── */
             (() => {
               const p = providers.find(x => x.id === selectedProvider);
               if (!p) return null;
               const pContracts = providerContracts.filter(c => c.provider_id === p.id);
               const totalValue = pContracts.reduce((s, c) => s + (c.value_eur || 0), 0);
+              const dirs = (() => { try { return JSON.parse(p.directors || "[]"); } catch { return []; } })();
               return (
-                <div className="space-y-4">
+                <div className="max-w-4xl mx-auto space-y-6">
                   <button
                     onClick={() => setSelectedProvider(null)}
-                    className="text-sm text-emerald-700 hover:text-emerald-900 font-semibold flex items-center gap-1"
-                  >← Back to providers</button>
+                    className="text-sm text-emerald-700 hover:text-emerald-900 font-semibold"
+                  >← Back to search results</button>
 
-                  <div className="bg-white border border-gray-100 rounded-2xl p-6">
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                      <div>
-                        <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">{p.provider_type || "Provider"}</div>
-                        <h2 className="text-2xl font-extrabold text-gray-900">{p.name}</h2>
-                        {p.trading_name && p.trading_name !== p.name && (
-                          <div className="text-sm text-gray-500 mt-1">Trading as {p.trading_name}</div>
-                        )}
-                        <div className="text-sm text-gray-600 mt-2">
-                          {[p.local_authority, p.region].filter(Boolean).join(" · ")}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-gray-500">Known contract value</div>
-                        <div className="text-2xl font-extrabold text-gray-900">
-                          €{(totalValue || p.total_known_revenue_eur || 0).toLocaleString()}
-                        </div>
-                      </div>
+                  {/* Entity header */}
+                  <div className="border-b-4 border-emerald-600 pb-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">
+                        {p.provider_type || "Provider"}
+                      </span>
+                      {p.company_status && (
+                        <span className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                          /active/i.test(p.company_status) ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        }`}>{p.company_status}</span>
+                      )}
                     </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="text-xs text-gray-500">Contracts on record</div>
-                        <div className="text-lg font-bold">{pContracts.length}</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="text-xs text-gray-500">Public sources</div>
-                        <div className="text-lg font-bold">{p.source_count || 0}</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="text-xs text-gray-500">Est. bed capacity</div>
-                        <div className="text-lg font-bold">{p.est_bed_capacity || "—"}</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="text-xs text-gray-500">CRO number</div>
-                        <div className="text-lg font-bold">
-                          {p.cro_number ? (
-                            <button
-                              onClick={() => setPage && setPage(`organisations/${p.cro_number}`)}
-                              className="text-emerald-700 hover:text-emerald-900 underline"
-                            >{p.cro_number}</button>
-                          ) : "—"}
-                        </div>
-                      </div>
-                    </div>
+                    <h1 className="text-3xl font-extrabold text-gray-900 mt-2">{p.name}</h1>
+                    {p.trading_name && p.trading_name !== p.name && (
+                      <div className="text-gray-500 mt-1">Trading as: {p.trading_name}</div>
+                    )}
                   </div>
 
-                  {/* Company details + Directors */}
-                  {(p.company_status || p.registered_address || (p.directors && JSON.parse(p.directors || "[]").length > 0)) && (
-                    <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
-                      <h3 className="font-bold text-gray-900">Company information</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                        {p.company_status && (
-                          <div>
-                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">Status</div>
-                            <div className={`font-semibold ${/active/i.test(p.company_status) ? "text-emerald-700" : "text-red-600"}`}>
-                              {p.company_status}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Left column: company data */}
+                    <div className="lg:col-span-2 space-y-6">
+
+                      {/* Key facts — definition list style */}
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
+                          <h3 className="font-bold text-sm text-gray-700 uppercase tracking-wider">Company Data</h3>
+                        </div>
+                        <dl className="divide-y divide-gray-100">
+                          {[
+                            ["Company name", p.name],
+                            ["CRO number", p.cro_number ? (
+                              <button key="cro" onClick={() => setPage && setPage(`organisations/${p.cro_number}`)}
+                                className="text-emerald-700 hover:text-emerald-900 underline font-semibold">{p.cro_number}</button>
+                            ) : null],
+                            ["Company type", p.company_type],
+                            ["Status", p.company_status ? (
+                              <span key="st" className={/active/i.test(p.company_status) ? "text-green-700 font-semibold" : "text-red-600 font-semibold"}>
+                                {p.company_status}
+                              </span>
+                            ) : null],
+                            ["Incorporated", p.incorporation_date],
+                            ["Registered address", p.registered_address],
+                            ["Charity number", p.charity_number],
+                            ["Local authority area", p.local_authority],
+                            ["Region", p.region],
+                            ["Provider type", p.provider_type],
+                            ["First seen in public records", p.first_seen_date],
+                            ["Last seen in public records", p.last_seen_date],
+                            ["Public sources referencing", `${p.source_count || 0} sources`],
+                          ].filter(([, v]) => v).map(([label, value]) => (
+                            <div key={label} className="flex px-5 py-3">
+                              <dt className="w-48 flex-shrink-0 text-sm text-gray-500">{label}</dt>
+                              <dd className="text-sm text-gray-900">{value}</dd>
                             </div>
+                          ))}
+                        </dl>
+                      </div>
+
+                      {/* Directors */}
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <div className="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+                          <h3 className="font-bold text-sm text-gray-700 uppercase tracking-wider">Directors / Officers</h3>
+                          <span className="text-xs text-gray-500">{dirs.length} current</span>
+                        </div>
+                        {dirs.length ? (
+                          <div className="divide-y divide-gray-100">
+                            {dirs.map((d, i) => (
+                              <div key={i} className="flex items-center gap-3 px-5 py-3">
+                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-sm font-bold text-emerald-800 flex-shrink-0">
+                                  {(d.name || "").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-900">{d.name}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {d.role || "Director"}
+                                    {d.appointed ? ` · appointed ${d.appointed}` : ""}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        )}
-                        {p.company_type && (
-                          <div>
-                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">Company type</div>
-                            <div className="text-gray-900">{p.company_type}</div>
-                          </div>
-                        )}
-                        {p.incorporation_date && (
-                          <div>
-                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">Incorporated</div>
-                            <div className="text-gray-900">{p.incorporation_date}</div>
-                          </div>
-                        )}
-                        {p.registered_address && (
-                          <div>
-                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">Registered address</div>
-                            <div className="text-gray-900">{p.registered_address}</div>
-                          </div>
-                        )}
-                        {p.opencorporates_url && (
-                          <div>
-                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">OpenCorporates</div>
-                            <a href={p.opencorporates_url} target="_blank" rel="noopener noreferrer"
-                               className="text-emerald-700 hover:text-emerald-900 underline text-xs">
-                              View on OpenCorporates ↗
-                            </a>
-                          </div>
-                        )}
-                        {p.charity_number && (
-                          <div>
-                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">Charity number</div>
-                            <div className="text-gray-900">{p.charity_number}</div>
+                        ) : (
+                          <div className="px-5 py-8 text-center text-sm text-gray-400">
+                            Director data not yet available. CRO enrichment pending.
                           </div>
                         )}
                       </div>
 
-                      {(() => {
-                        const dirs = JSON.parse(p.directors || "[]");
-                        if (!dirs.length) return null;
-                        return (
-                          <div className="mt-4">
-                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">
-                              Current directors ({dirs.length})
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {dirs.map((d, i) => (
-                                <div key={i} className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded-lg">
-                                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
-                                    {d.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                      {/* Contract list */}
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <div className="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+                          <h3 className="font-bold text-sm text-gray-700 uppercase tracking-wider">Public Contracts</h3>
+                          <span className="text-xs text-gray-500">{pContracts.length} records</span>
+                        </div>
+                        {pContracts.length ? (
+                          <div className="divide-y divide-gray-100">
+                            {pContracts.map(c => (
+                              <div key={c.id} className="px-5 py-4">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold text-gray-900 leading-tight">{c.contract_title || "Untitled contract"}</div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      {c.awarding_body || c.local_authority || "Unknown buyer"}
+                                      {c.award_date ? ` · ${c.award_date}` : ""}
+                                    </div>
                                   </div>
-                                  <div>
-                                    <div className="font-semibold text-gray-900">{d.name}</div>
-                                    <div className="text-xs text-gray-500">{d.role}{d.appointed ? ` · since ${d.appointed}` : ""}</div>
+                                  <div className="text-right flex-shrink-0">
+                                    {c.value_eur ? (
+                                      <div className="text-sm font-bold text-gray-900">€{c.value_eur.toLocaleString()}</div>
+                                    ) : (
+                                      <div className="text-xs text-gray-400">Value undisclosed</div>
+                                    )}
+                                    {c.source_url ? (
+                                      <a href={c.source_url} target="_blank" rel="noopener noreferrer"
+                                         className="text-xs text-emerald-700 hover:text-emerald-900 font-semibold">
+                                        {c.source_type || "source"} ↗
+                                      </a>
+                                    ) : (
+                                      <span className="text-xs text-gray-400">{c.source_type}</span>
+                                    )}
                                   </div>
                                 </div>
-                              ))}
-                            </div>
+                              </div>
+                            ))}
                           </div>
-                        );
-                      })()}
+                        ) : (
+                          <div className="px-5 py-8 text-center text-sm text-gray-400">
+                            No individual contract records yet — identified from narrative sources only.
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
 
-                  {/* Contract list */}
-                  <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                      <h3 className="font-bold text-gray-900">Contracts on record</h3>
-                      <span className="text-xs text-gray-500">{pContracts.length} records</span>
+                    {/* Right column: summary sidebar */}
+                    <div className="space-y-4">
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5">
+                        <div className="text-xs text-emerald-700 uppercase font-bold tracking-wider mb-2">Known contract value</div>
+                        <div className="text-3xl font-extrabold text-emerald-900">
+                          €{(totalValue || p.total_known_revenue_eur || 0).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-emerald-600 mt-1">
+                          Across {pContracts.length} recorded contract{pContracts.length !== 1 ? "s" : ""}
+                        </div>
+                      </div>
+
+                      {p.est_bed_capacity && (
+                        <div className="bg-white border border-gray-200 rounded-xl p-5">
+                          <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Est. bed capacity</div>
+                          <div className="text-2xl font-bold text-gray-900">{p.est_bed_capacity}</div>
+                        </div>
+                      )}
+
+                      {p.opencorporates_url && (
+                        <a href={p.opencorporates_url} target="_blank" rel="noopener noreferrer"
+                           className="block bg-white border border-gray-200 rounded-xl p-4 text-sm text-emerald-700 hover:bg-emerald-50 transition">
+                          View on OpenCorporates ↗
+                        </a>
+                      )}
+
+                      <div className="bg-white border border-gray-200 rounded-xl p-4 text-xs text-gray-500">
+                        <div className="font-bold text-gray-700 mb-1">Data sources</div>
+                        <div>Irish OGP procurement data (data.gov.ie), Oireachtas PQ responses, public FOI logs.</div>
+                        <div className="mt-2">Last updated: {p.last_seen_date || "—"}</div>
+                      </div>
                     </div>
-                    {pContracts.length ? (
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50 text-xs font-bold uppercase text-gray-500">
-                          <tr>
-                            <th className="px-6 py-3 text-left">Awarding body</th>
-                            <th className="px-6 py-3 text-left">Title</th>
-                            <th className="px-6 py-3 text-right">Value (€)</th>
-                            <th className="px-6 py-3 text-left">Date</th>
-                            <th className="px-6 py-3 text-left">Source</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {pContracts.map(c => (
-                            <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50">
-                              <td className="px-6 py-3 text-gray-700">{c.awarding_body || c.local_authority || "—"}</td>
-                              <td className="px-6 py-3 text-gray-900 font-medium">{c.contract_title || "—"}</td>
-                              <td className="px-6 py-3 text-right font-mono text-gray-900">{c.value_eur?.toLocaleString() || "—"}</td>
-                              <td className="px-6 py-3 text-gray-600">{c.award_date || "—"}</td>
-                              <td className="px-6 py-3">
-                                {c.source_url ? (
-                                  <a href={c.source_url} target="_blank" rel="noopener noreferrer"
-                                     className="text-emerald-700 hover:text-emerald-900 text-xs font-semibold uppercase">
-                                    {c.source_type} ↗
-                                  </a>
-                                ) : <span className="text-xs text-gray-400 uppercase">{c.source_type}</span>}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <div className="px-6 py-12 text-center text-sm text-gray-500">No individual contract records yet — this provider was identified from narrative sources only.</div>
-                    )}
                   </div>
                 </div>
               );
             })()
           ) : (
-            /* Provider leaderboard */
-            <>
-              <div className="flex items-center gap-3 flex-wrap">
-                <input
-                  type="text"
-                  placeholder="Search providers…"
-                  value={providerFilter}
-                  onChange={e => setProviderFilter(e.target.value)}
-                  className="flex-1 min-w-[200px] px-4 py-2 border border-gray-200 rounded-lg text-sm"
-                />
-                <select
-                  value={providerSort}
-                  onChange={e => setProviderSort(e.target.value)}
-                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
-                >
-                  <option value="revenue">Sort: revenue (high → low)</option>
-                  <option value="name">Sort: name (A → Z)</option>
-                  <option value="contracts">Sort: contract count</option>
-                  <option value="recent">Sort: most recent</option>
-                </select>
-                <div className="text-sm text-gray-500">{providers.length} providers</div>
-              </div>
-
-              <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-xs font-bold uppercase text-gray-500">
-                    <tr>
-                      <th className="px-6 py-3 text-left">#</th>
-                      <th className="px-6 py-3 text-left">Provider</th>
-                      <th className="px-6 py-3 text-left">Type</th>
-                      <th className="px-6 py-3 text-left">Local authority</th>
-                      <th className="px-6 py-3 text-right">Known revenue (€)</th>
-                      <th className="px-6 py-3 text-right">Contracts</th>
-                      <th className="px-6 py-3 text-right">Sources</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {providers
-                      .filter(p => !providerFilter || p.name.toLowerCase().includes(providerFilter.toLowerCase()))
-                      .sort((a, b) => {
-                        if (providerSort === "name")      return (a.name || "").localeCompare(b.name || "");
-                        if (providerSort === "contracts") return (providerContracts.filter(c => c.provider_id === b.id).length) - (providerContracts.filter(c => c.provider_id === a.id).length);
-                        if (providerSort === "recent")    return new Date(b.last_seen_date || 0) - new Date(a.last_seen_date || 0);
-                        return (b.total_known_revenue_eur || 0) - (a.total_known_revenue_eur || 0);
-                      })
-                      .slice(0, 200)
-                      .map((p, i) => {
-                        const cCount = providerContracts.filter(c => c.provider_id === p.id).length;
-                        return (
-                          <tr key={p.id}
-                              onClick={() => setSelectedProvider(p.id)}
-                              className="border-t border-gray-100 hover:bg-emerald-50 cursor-pointer">
-                            <td className="px-6 py-3 text-gray-400 font-mono">{i + 1}</td>
-                            <td className="px-6 py-3 font-semibold text-gray-900">{p.name}</td>
-                            <td className="px-6 py-3">
-                              <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 bg-gray-100 text-gray-700 rounded">{p.provider_type || "Unknown"}</span>
-                            </td>
-                            <td className="px-6 py-3 text-gray-600">{p.local_authority || "—"}</td>
-                            <td className="px-6 py-3 text-right font-mono text-gray-900">{(p.total_known_revenue_eur || 0).toLocaleString()}</td>
-                            <td className="px-6 py-3 text-right text-gray-700">{cCount}</td>
-                            <td className="px-6 py-3 text-right text-gray-500">{p.source_count || 0}</td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              </div>
-            </>
+            /* ─── OpenCorporates-style search results ─── */
+            <div className="space-y-3">
+              {providers
+                .filter(p => !providerFilter || p.name.toLowerCase().includes(providerFilter.toLowerCase()))
+                .sort((a, b) => {
+                  if (providerSort === "name")      return (a.name || "").localeCompare(b.name || "");
+                  if (providerSort === "contracts") return (providerContracts.filter(c => c.provider_id === b.id).length) - (providerContracts.filter(c => c.provider_id === a.id).length);
+                  if (providerSort === "recent")    return new Date(b.last_seen_date || 0) - new Date(a.last_seen_date || 0);
+                  return (b.total_known_revenue_eur || 0) - (a.total_known_revenue_eur || 0);
+                })
+                .slice(0, 100)
+                .map((p) => {
+                  const cCount = providerContracts.filter(c => c.provider_id === p.id).length;
+                  return (
+                    <div key={p.id}
+                         onClick={() => setSelectedProvider(p.id)}
+                         className="bg-white border border-gray-200 rounded-xl p-5 hover:border-emerald-400 hover:shadow-md cursor-pointer transition group">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-bold text-emerald-800 group-hover:text-emerald-600 leading-tight">
+                            {p.name}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                            <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                              {p.provider_type || "Unknown"}
+                            </span>
+                            {p.company_status && (
+                              <span className={`text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded ${
+                                /active/i.test(p.company_status) ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"
+                              }`}>{p.company_status}</span>
+                            )}
+                            {p.local_authority && (
+                              <span className="text-xs text-gray-500">{p.local_authority}</span>
+                            )}
+                          </div>
+                          {p.registered_address && (
+                            <div className="text-xs text-gray-400 mt-1 truncate">{p.registered_address}</div>
+                          )}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          {(p.total_known_revenue_eur || 0) > 0 ? (
+                            <div className="text-lg font-bold text-gray-900">€{(p.total_known_revenue_eur || 0).toLocaleString()}</div>
+                          ) : (
+                            <div className="text-sm text-gray-400">—</div>
+                          )}
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {cCount} contract{cCount !== 1 ? "s" : ""} · {p.source_count || 0} source{(p.source_count || 0) !== 1 ? "s" : ""}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
           )}
         </div>
       )}
