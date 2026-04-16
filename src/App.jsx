@@ -568,15 +568,8 @@ function Navbar({ page, setPage }) {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center cursor-pointer flex-shrink-0" onClick={() => nav("home")}>
             <div className="leading-none">
-              <span className="font-wordmark text-[28px] text-emerald-700">open</span>
-              <span className="font-wordmark text-[28px] text-[#1a1a2e]">benefacts</span>
-              <div className="flex gap-1 mt-0.5 justify-end">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-              </div>
+              <span className="font-wordmark text-[28px] text-emerald-700">Open</span>
+              <span className="font-wordmark text-[28px] text-[#1a1a2e]">Benefacts</span>
             </div>
           </div>
           <div className="hidden md:flex items-center gap-0.5">
