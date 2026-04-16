@@ -6,6 +6,7 @@ import { DATA } from "./data.js";
 import CouncilFinancesPage from "./CouncilFinances.jsx";
 import FollowTheMoneyPage from "./FollowTheMoney.jsx";
 import EmergencyAccommodationPage from "./EmergencyAccommodation.jsx";
+import KnowledgeBasePage from "./KnowledgeBase.jsx";
 
 // ===========================================================
 // ERROR BOUNDARY
@@ -560,7 +561,7 @@ function Navbar({ page, setPage }) {
   }, []);
 
   const nav = (p) => { setPage(p); setMobileOpen(false); };
-  const links = [["home","Dashboard"],["orgs","Organisations"],["funders","Funders"],["councils","Council Finances"],["trackers/emergency-accommodation","Housing Tracker"],["pricing","Pricing"],["api","API"],["about","About"]];
+  const links = [["home","Dashboard"],["orgs","Organisations"],["funders","Funders"],["councils","Council Finances"],["trackers/emergency-accommodation","Housing Tracker"],["knowledge","Knowledge Base"],["pricing","Pricing"],["api","API"],["about","About"]];
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -4033,6 +4034,7 @@ function InnerApp() {
       case "foundations": return <FoundationsPage orgCount={orgCount} />;
       case "csr": return <CsrPage orgCount={orgCount} />;
       case "media": return <MediaPage orgCount={orgCount} />;
+      case "knowledge": return <KnowledgeBasePage setPage={handleSetPage} />;
       case "api": return <ApiPage />;
       case "about": return <AboutPage orgCount={orgCount} />;
       case "privacy": return <PrivacyPage />;
@@ -4072,6 +4074,7 @@ function InnerApp() {
                 <li><button onClick={() => handleSetPage("foundations")} className="text-sm text-white/70 hover:text-white">Foundations</button></li>
                 <li><button onClick={() => handleSetPage("trackers/emergency-accommodation")} className="text-sm text-white/70 hover:text-white">Housing Tracker</button></li>
                 <li><button onClick={() => handleSetPage("api")} className="text-sm text-white/70 hover:text-white">API</button></li>
+                <li><button onClick={() => handleSetPage("knowledge")} className="text-sm text-white/70 hover:text-white">Knowledge Base</button></li>
               </ul>
             </div>
 
