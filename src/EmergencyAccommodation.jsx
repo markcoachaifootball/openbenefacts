@@ -945,6 +945,81 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
                     </div>
                   </div>
 
+                  {/* Company details + Directors */}
+                  {(p.company_status || p.registered_address || (p.directors && JSON.parse(p.directors || "[]").length > 0)) && (
+                    <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
+                      <h3 className="font-bold text-gray-900">Company information</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        {p.company_status && (
+                          <div>
+                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">Status</div>
+                            <div className={`font-semibold ${/active/i.test(p.company_status) ? "text-emerald-700" : "text-red-600"}`}>
+                              {p.company_status}
+                            </div>
+                          </div>
+                        )}
+                        {p.company_type && (
+                          <div>
+                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">Company type</div>
+                            <div className="text-gray-900">{p.company_type}</div>
+                          </div>
+                        )}
+                        {p.incorporation_date && (
+                          <div>
+                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">Incorporated</div>
+                            <div className="text-gray-900">{p.incorporation_date}</div>
+                          </div>
+                        )}
+                        {p.registered_address && (
+                          <div>
+                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">Registered address</div>
+                            <div className="text-gray-900">{p.registered_address}</div>
+                          </div>
+                        )}
+                        {p.opencorporates_url && (
+                          <div>
+                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">OpenCorporates</div>
+                            <a href={p.opencorporates_url} target="_blank" rel="noopener noreferrer"
+                               className="text-emerald-700 hover:text-emerald-900 underline text-xs">
+                              View on OpenCorporates ↗
+                            </a>
+                          </div>
+                        )}
+                        {p.charity_number && (
+                          <div>
+                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">Charity number</div>
+                            <div className="text-gray-900">{p.charity_number}</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {(() => {
+                        const dirs = JSON.parse(p.directors || "[]");
+                        if (!dirs.length) return null;
+                        return (
+                          <div className="mt-4">
+                            <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">
+                              Current directors ({dirs.length})
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {dirs.map((d, i) => (
+                                <div key={i} className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded-lg">
+                                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
+                                    {d.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="font-semibold text-gray-900">{d.name}</div>
+                                    <div className="text-xs text-gray-500">{d.role}{d.appointed ? ` · since ${d.appointed}` : ""}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
                   {/* Contract list */}
                   <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
