@@ -563,21 +563,20 @@ function Navbar({ page, setPage }) {
   const links = [["home","Dashboard"],["orgs","Organisations"],["funders","Funders"],["councils","Council Finances"],["trackers/emergency-accommodation","Housing Tracker"],["pricing","Pricing"],["api","API"],["about","About"]];
 
   return (
-    <nav className="bg-[#1B3A4B] border-b border-[#1B3A4B] sticky top-0 z-40 backdrop-blur">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => nav("home")}>
-            <span className="font-wordmark text-[26px] sm:text-[28px] text-white leading-none">OpenBenefacts</span>
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <div className="w-full px-6 lg:px-10">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center gap-3 cursor-pointer flex-shrink-0" onClick={() => nav("home")}>
+            <span className="font-wordmark text-[24px] text-[#1B3A4B] leading-none">open</span>
+            <span className="font-wordmark text-[24px] text-[#1B3A4B] leading-none -ml-2.5">benefacts</span>
           </div>
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-0.5">
             {links.map(([key, label]) => (
-              <button key={key} onClick={() => nav(key)} className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${page === key ? "bg-white/20 text-white" : "text-white/75 hover:text-white hover:bg-white/10"}`}>{label}</button>
+              <button key={key} onClick={() => nav(key)} className={`px-3 py-1.5 text-sm font-medium transition-colors ${page === key ? "text-[#1B3A4B] border-b-2 border-[#1B3A4B]" : "text-gray-500 hover:text-[#1B3A4B]"}`}>{label}</button>
             ))}
-          </div>
-          <div className="flex items-center gap-2">
             {user ? (
-              <div className="relative" ref={avatarRef}>
-                <button onClick={() => setAvatarOpen(!avatarOpen)} className="w-10 h-10 rounded-full bg-[#1B3A4B] text-white font-semibold text-sm flex items-center justify-center hover:bg-[#0f2b3a]">
+              <div className="relative ml-4" ref={avatarRef}>
+                <button onClick={() => setAvatarOpen(!avatarOpen)} className="w-8 h-8 rounded-full bg-[#1B3A4B] text-white font-semibold text-xs flex items-center justify-center hover:bg-[#0f2b3a]">
                   {(user.name || user.email)[0].toUpperCase()}
                 </button>
                 {avatarOpen && (
@@ -597,19 +596,19 @@ function Navbar({ page, setPage }) {
                 )}
               </div>
             ) : (
-              <>
-                <button onClick={() => { setShowAuth(true); setAuthMode("login"); }} className="px-3 py-2 text-sm text-white/75 hover:text-white font-semibold hidden sm:block">Sign in</button>
-                <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-5 py-2.5 bg-white text-[#1B3A4B] text-sm rounded-full font-semibold hover:bg-gray-100 transition-colors">Sign up free</button>
-              </>
+              <div className="flex items-center gap-2 ml-4">
+                <button onClick={() => { setShowAuth(true); setAuthMode("login"); }} className="px-3 py-1.5 text-sm text-gray-500 hover:text-[#1B3A4B] font-medium">Login</button>
+                <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-4 py-1.5 bg-[#1B3A4B] text-white text-sm rounded font-medium hover:bg-[#0f2b3a] transition-colors">Sign up</button>
+              </div>
             )}
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-white">{mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
           </div>
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-gray-600">{mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
         </div>
       </div>
       {mobileOpen && (
-        <div className="md:hidden border-t border-white/10 bg-[#1B3A4B] px-4 py-3 space-y-1">
-          {links.map(([key, label]) => (<button key={key} onClick={() => nav(key)} className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${page === key ? "bg-white/20 text-white font-semibold" : "text-white/75"}`}>{label}</button>))}
-          {user && <button onClick={() => { logout(); setMobileOpen(false); }} className="block w-full text-left px-3 py-2 rounded-lg text-sm text-red-300">Sign Out</button>}
+        <div className="md:hidden border-t border-gray-200 bg-white px-4 py-3 space-y-1">
+          {links.map(([key, label]) => (<button key={key} onClick={() => nav(key)} className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${page === key ? "bg-gray-100 text-[#1B3A4B] font-semibold" : "text-gray-600"}`}>{label}</button>))}
+          {user && <button onClick={() => { logout(); setMobileOpen(false); }} className="block w-full text-left px-3 py-2 rounded-lg text-sm text-red-600">Sign Out</button>}
         </div>
       )}
     </nav>
@@ -649,74 +648,46 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
   const sectorIcons = { "Education, Research": GraduationCap, "Health": Heart, "Social Services": Users, "Arts, Culture, Heritage": Award, "Arts, Culture, Media": Award, "Recreation, Sports": Zap, "Local Development, Housing": Building2, "Religion": Star, "International": Globe, "Environment": Globe, "Advocacy": Shield, "Philanthropy": Sparkles };
 
   return (
-    <div className="bg-[#f8f9fa]">
-      {/* Hero — clean, search-first, OpenCorporates-inspired */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20">
-        <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-          {/* Left: copy + search */}
-          <div className="flex-1 max-w-2xl">
-            <div className="inline-flex items-center gap-2 mb-6 text-[11px] font-bold tracking-[0.15em] uppercase text-[#1B3A4B]">
-              <span className="w-8 h-px bg-[#1B3A4B]"></span>
-              Nonprofit transparency for Ireland
+    <div className="bg-white">
+      {/* Hero — full-width, OpenCorporates-style with geometric background */}
+      <div className="relative w-full overflow-hidden" style={{ background: "linear-gradient(135deg, #1B3A4B 0%, #2d5f73 50%, #1B3A4B 100%)" }}>
+        {/* Geometric pattern overlay */}
+        <div className="absolute inset-0 opacity-10">
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="hero-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+                <path d="M0 30 L30 0 L60 30 L30 60Z" fill="none" stroke="white" strokeWidth="0.5" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#hero-pattern)" />
+          </svg>
+        </div>
+
+        <div className="relative z-10 w-full px-6 lg:px-10 py-20 lg:py-28 text-center">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight max-w-3xl mx-auto">
+            Nonprofit transparency data you can trust
+          </h1>
+          <p className="text-base sm:text-lg text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Fresh, auditable information direct from official Irish sources — {orgCount.toLocaleString()} organisations, {financialCount.toLocaleString()} financial records. Free and open to everyone.
+          </p>
+          <form onSubmit={e => { e.preventDefault(); doSearch(); }} className="max-w-2xl mx-auto mb-6">
+            <div className="flex items-center bg-white rounded-lg shadow-xl overflow-hidden">
+              <div className="flex-1 flex items-center">
+                <Search className="w-5 h-5 text-gray-400 ml-4 flex-shrink-0" />
+                <input type="text" placeholder={`Search ${orgCount.toLocaleString()} Organisations`} value={heroSearch} onChange={e => setHeroSearch(e.target.value)} className="flex-1 px-3 py-4 text-base text-gray-900 placeholder:text-gray-400 outline-none border-0" />
+              </div>
+              <button type="submit" className="px-8 py-4 bg-[#c0392b] text-white font-semibold hover:bg-[#a93226] transition-colors flex-shrink-0">
+                <Search className="w-5 h-5" />
+              </button>
             </div>
-            <h1 className="font-wordmark text-[44px] sm:text-[64px] lg:text-[76px] text-[#1a1a2e] mb-6 leading-[0.95]">
-              Where does Ireland's <span className="text-[#1B3A4B]">€14 billion</span> go?
-            </h1>
-            <p className="text-lg sm:text-xl text-[#1B3A4B]/75 mb-8 leading-relaxed max-w-xl">
-              Search {orgCount.toLocaleString()} organisations and {financialCount.toLocaleString()} financial records. Follow the money from government to nonprofits — free and open to everyone.
-            </p>
-            <form onSubmit={e => { e.preventDefault(); doSearch(); }} className="relative max-w-lg mb-4">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#1B3A4B]/40" />
-              <input type="text" placeholder="Search by name, sector, or county..." value={heroSearch} onChange={e => setHeroSearch(e.target.value)} className="w-full pl-14 pr-32 py-5 border-2 border-[#1B3A4B]/15 rounded-full text-base focus:border-[#1B3A4B] focus:outline-none shadow-sm bg-white placeholder:text-[#1B3A4B]/40" />
-              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-3 bg-[#1B3A4B] text-white text-sm rounded-full font-semibold hover:bg-[#0f2b3a] transition-colors">Search</button>
-            </form>
-            <div className="flex flex-wrap gap-2">
-              <span className="text-xs text-[#1B3A4B]/50 font-semibold tracking-wide uppercase py-1.5 mr-1">Try:</span>
-              {chips.map(c => <button key={c} onClick={() => doSearch(c)} className="px-4 py-1.5 bg-white border border-[#1B3A4B]/15 rounded-full text-sm text-[#1B3A4B]/80 hover:border-[#1B3A4B] hover:text-[#1B3A4B] transition-colors">{c}</button>)}
-            </div>
-          </div>
-
-          {/* Right: Blackbaud-style illustration — bold geometric funding flow */}
-          <div className="hidden lg:block flex-shrink-0 w-[440px] h-[440px] relative">
-            <svg viewBox="0 0 440 440" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-              {/* Big background accent circle */}
-              <circle cx="220" cy="220" r="210" fill="#4A9B8E" opacity="0.35" />
-              <circle cx="320" cy="140" r="90" fill="#1B3A4B" opacity="0.08" />
-
-              {/* Big gov node */}
-              <rect x="20" y="170" width="110" height="100" rx="20" fill="#1B3A4B" />
-              <text x="75" y="210" textAnchor="middle" fill="white" fontSize="14" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">GOV</text>
-              <text x="75" y="232" textAnchor="middle" fill="#4A9B8E" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€14B</text>
-              <text x="75" y="248" textAnchor="middle" fill="white" fontSize="9" opacity="0.75">annual outflow</text>
-
-              {/* Flow paths */}
-              <path d="M130 200 Q210 140 300 130" stroke="#1B3A4B" strokeWidth="3" fill="none" />
-              <path d="M130 220 Q210 220 300 220" stroke="#1B3A4B" strokeWidth="4" fill="none" />
-              <path d="M130 240 Q210 300 300 310" stroke="#1B3A4B" strokeWidth="2.5" fill="none" />
-
-              {/* Sector cards */}
-              <rect x="300" y="100" width="130" height="70" rx="14" fill="white" stroke="#1B3A4B" strokeWidth="2" />
-              <text x="365" y="125" textAnchor="middle" fill="#1B3A4B" fontSize="11" fontWeight="700">Education</text>
-              <text x="365" y="150" textAnchor="middle" fill="#1B3A4B" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€2.7B</text>
-
-              <rect x="300" y="185" width="130" height="70" rx="14" fill="#1B3A4B" />
-              <text x="365" y="210" textAnchor="middle" fill="#4A9B8E" fontSize="11" fontWeight="700">Health</text>
-              <text x="365" y="235" textAnchor="middle" fill="white" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€37.7B</text>
-
-              <rect x="300" y="270" width="130" height="70" rx="14" fill="white" stroke="#1B3A4B" strokeWidth="2" />
-              <text x="365" y="295" textAnchor="middle" fill="#1B3A4B" fontSize="11" fontWeight="700">Housing</text>
-              <text x="365" y="320" textAnchor="middle" fill="#1B3A4B" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€970M</text>
-
-              {/* Connecting dots */}
-              <circle cx="290" cy="135" r="5" fill="#1B3A4B" />
-              <circle cx="290" cy="220" r="5" fill="#1B3A4B" />
-              <circle cx="290" cy="305" r="5" fill="#1B3A4B" />
-            </svg>
+          </form>
+          <div className="flex flex-wrap justify-center gap-2 mb-4">
+            {chips.map(c => <button key={c} onClick={() => doSearch(c)} className="px-4 py-1.5 bg-white/10 border border-white/20 rounded text-sm text-white/90 hover:bg-white/20 transition-colors">{c}</button>)}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full px-6 lg:px-10 py-8">
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-16">
