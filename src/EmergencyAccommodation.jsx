@@ -888,15 +888,25 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
                   onChange={e => setProviderSort(e.target.value)}
                   className="px-3 py-3 rounded-lg text-sm bg-white border-0 shadow-lg"
                 >
-                  <option value="revenue">By revenue</option>
+                  <option value="revenue">By actual spend</option>
                   <option value="name">A → Z</option>
                   <option value="contracts">By contracts</option>
+                  <option value="type">By entity type</option>
                   <option value="recent">Most recent</option>
                 </select>
               </div>
               <p className="text-emerald-300 text-xs mt-3">
                 Sources: Irish Government OGP procurement data, Oireachtas PQ responses. Coverage is partial.
               </p>
+              {/* Framework value warning banner */}
+              <div className="max-w-xl mx-auto mt-4 bg-amber-900/30 border border-amber-500/30 rounded-lg p-3 text-left">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200">
+                    <strong className="text-amber-100">About contract values:</strong> Some providers show large framework agreement ceilings (e.g. €700M) — these are shared multi-year maximums across many providers, not actual payments received. Where possible, we separate actual spend from framework ceilings.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -924,19 +934,62 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
 
                   {/* Entity header */}
                   <div className="border-b-4 border-emerald-600 pb-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">
-                        {p.provider_type || "Provider"}
-                      </span>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      {p.provider_type === "COMPANY" ? (
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                          Private Company
+                        </span>
+                      ) : p.provider_type === "CHARITY" ? (
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">
+                          Registered Charity
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                          {p.provider_type || "Provider"}
+                        </span>
+                      )}
+                      {p.company_type && (
+                        <span className="text-xs font-medium px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                          {p.company_type}
+                        </span>
+                      )}
                       {p.company_status && (
                         <span className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                          /active/i.test(p.company_status) ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                          /active/i.test(p.company_status) ? "bg-green-100 text-green-800" :
+                          /dissolved/i.test(p.company_status) ? "bg-red-100 text-red-800" :
+                          "bg-gray-100 text-gray-700"
                         }`}>{p.company_status}</span>
+                      )}
+                      {p.cro_number && (
+                        <span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded">
+                          CRO {p.cro_number}
+                        </span>
                       )}
                     </div>
                     <h1 className="text-3xl font-extrabold text-gray-900 mt-2">{p.name}</h1>
                     {p.trading_name && p.trading_name !== p.name && (
                       <div className="text-gray-500 mt-1">Trading as: {p.trading_name}</div>
+                    )}
+                    {p.registered_address && (
+                      <div className="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5" />
+                        {p.registered_address}
+                      </div>
+                    )}
+                    {/* Quick summary: who's behind this entity */}
+                    {(dirs.length > 0 || p.provider_type === "COMPANY") && (
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                        <div className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">
+                          {p.provider_type === "COMPANY" ? "Private company receiving State payments" : "Organisation receiving State payments"}
+                        </div>
+                        <div className="text-sm text-blue-700">
+                          {dirs.length > 0 ? (
+                            <>Controlled by {dirs.length} director{dirs.length !== 1 ? "s" : ""}: <strong>{dirs.map(d => d.name).join(", ")}</strong></>
+                          ) : (
+                            <>Director information not yet available — CRO enrichment pending</>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
 
@@ -1110,50 +1163,109 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
               {providers
                 .filter(p => !providerFilter || p.name.toLowerCase().includes(providerFilter.toLowerCase()))
                 .sort((a, b) => {
-                  if (providerSort === "name")      return (a.name || "").localeCompare(b.name || "");
+                  if (providerSort === "name") return (a.name || "").localeCompare(b.name || "");
                   if (providerSort === "contracts") return (providerContracts.filter(c => c.provider_id === b.id).length) - (providerContracts.filter(c => c.provider_id === a.id).length);
-                  if (providerSort === "recent")    return new Date(b.last_seen_date || 0) - new Date(a.last_seen_date || 0);
-                  return (b.total_known_revenue_eur || 0) - (a.total_known_revenue_eur || 0);
+                  if (providerSort === "recent") return new Date(b.last_seen_date || 0) - new Date(a.last_seen_date || 0);
+                  if (providerSort === "type") return (a.provider_type || "ZZZ").localeCompare(b.provider_type || "ZZZ");
+                  // "By actual spend" — deprioritize framework-only values (€100M+)
+                  // Providers with only framework ceilings sort below those with real contract values
+                  const aVal = a.total_known_revenue_eur || 0;
+                  const bVal = b.total_known_revenue_eur || 0;
+                  const aIsFramework = aVal >= 100000000;
+                  const bIsFramework = bVal >= 100000000;
+                  if (aIsFramework && !bIsFramework) return 1;  // push frameworks down
+                  if (!aIsFramework && bIsFramework) return -1;
+                  return bVal - aVal;
                 })
                 .slice(0, 100)
                 .map((p) => {
                   const cCount = providerContracts.filter(c => c.provider_id === p.id).length;
+                  const rev = p.total_known_revenue_eur || 0;
+                  const isFramework = rev >= 100000000;
+                  const dirs = (() => { try { return JSON.parse(p.directors || "[]"); } catch { return []; } })();
+
                   return (
                     <div key={p.id}
                          onClick={() => setSelectedProvider(p.id)}
-                         className="bg-white border border-gray-200 rounded-xl p-5 hover:border-emerald-400 hover:shadow-md cursor-pointer transition group">
+                         className={`bg-white border rounded-xl p-5 hover:shadow-md cursor-pointer transition group ${
+                           isFramework ? "border-amber-200 hover:border-amber-400" : "border-gray-200 hover:border-emerald-400"
+                         }`}>
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base font-bold text-emerald-800 group-hover:text-emerald-600 leading-tight">
                             {p.name}
                           </h3>
                           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                              {p.provider_type || "Unknown"}
-                            </span>
+                            {/* Entity type badge — prominent for companies */}
+                            {p.provider_type === "COMPANY" ? (
+                              <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                                Company
+                              </span>
+                            ) : p.provider_type === "CHARITY" ? (
+                              <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">
+                                Charity
+                              </span>
+                            ) : (
+                              <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                                {p.provider_type || "Unknown"}
+                              </span>
+                            )}
                             {p.company_status && (
                               <span className={`text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded ${
-                                /active/i.test(p.company_status) ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"
+                                /active/i.test(p.company_status) ? "bg-green-50 text-green-700" :
+                                /dissolved/i.test(p.company_status) ? "bg-red-50 text-red-600" :
+                                "bg-gray-50 text-gray-600"
                               }`}>{p.company_status}</span>
                             )}
-                            {p.local_authority && (
-                              <span className="text-xs text-gray-500">{p.local_authority}</span>
+                            {p.company_type && (
+                              <span className="text-xs text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">{p.company_type}</span>
+                            )}
+                            {p.cro_number && (
+                              <span className="text-xs text-gray-400">CRO {p.cro_number}</span>
                             )}
                           </div>
-                          {p.registered_address && (
-                            <div className="text-xs text-gray-400 mt-1 truncate">{p.registered_address}</div>
-                          )}
+                          {/* Second row: address + directors summary */}
+                          <div className="flex items-center gap-3 mt-2 flex-wrap">
+                            {p.registered_address && (
+                              <div className="text-xs text-gray-400 truncate max-w-md flex items-center gap-1">
+                                <MapPin className="w-3 h-3 flex-shrink-0" />
+                                {p.registered_address}
+                              </div>
+                            )}
+                            {dirs.length > 0 && (
+                              <div className="text-xs text-gray-500 flex items-center gap-1">
+                                <Users className="w-3 h-3 flex-shrink-0" />
+                                {dirs.length} director{dirs.length !== 1 ? "s" : ""}
+                                {dirs.length <= 3 && (
+                                  <span className="text-gray-400 ml-0.5">
+                                    ({dirs.map(d => d.name?.split(" ").pop()).join(", ")})
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          {(p.total_known_revenue_eur || 0) > 0 ? (
-                            <div className={`text-lg font-bold ${(p.total_known_revenue_eur || 0) >= 100000000 ? "text-amber-600" : "text-gray-900"}`}>
-                              €{(p.total_known_revenue_eur || 0).toLocaleString()}
-                              {(p.total_known_revenue_eur || 0) >= 100000000 && (
-                                <span className="text-xs font-normal text-amber-500 ml-1" title="Framework agreement ceiling — actual spend likely much lower">*</span>
-                              )}
-                            </div>
+                          {rev > 0 ? (
+                            isFramework ? (
+                              <div>
+                                <div className="text-xs font-bold text-amber-600 uppercase tracking-wide">Framework</div>
+                                <div className="text-base font-bold text-amber-600">
+                                  €{rev.toLocaleString()}
+                                </div>
+                                <div className="text-[10px] text-amber-500 max-w-[140px] leading-tight mt-0.5">
+                                  Shared ceiling — not actual payment
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="text-lg font-bold text-gray-900">
+                                  {FMT(rev)}
+                                </div>
+                              </div>
+                            )
                           ) : (
-                            <div className="text-sm text-gray-400">—</div>
+                            <div className="text-sm text-gray-400">Value undisclosed</div>
                           )}
                           <div className="text-xs text-gray-500 mt-0.5">
                             {cCount} contract{cCount !== 1 ? "s" : ""} · {p.source_count || 0} source{(p.source_count || 0) !== 1 ? "s" : ""}
