@@ -485,7 +485,7 @@ function AuthProvider({ children }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowOnboarding(false)}>
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="text-center mb-6">
-              <div className="font-wordmark text-[32px] text-[#0F4C5C] mb-4 text-center">OpenBenefacts</div>
+              <div className="font-wordmark text-[32px] text-[#1B3A4B] mb-4 text-center">OpenBenefacts</div>
               <h2 className="text-2xl font-bold text-gray-900">Welcome to OpenBenefacts!</h2>
               <p className="text-gray-500 mt-2">Your 30-day Professional trial is now active. Here's how to get the most out of it:</p>
             </div>
@@ -563,21 +563,21 @@ function Navbar({ page, setPage }) {
   const links = [["home","Dashboard"],["orgs","Organisations"],["funders","Funders"],["councils","Council Finances"],["trackers/emergency-accommodation","Housing Tracker"],["pricing","Pricing"],["api","API"],["about","About"]];
 
   return (
-    <nav className="bg-[#FAF6EE] border-b border-[#0F4C5C]/10 sticky top-0 z-40 backdrop-blur">
+    <nav className="bg-[#1B3A4B] border-b border-[#1B3A4B] sticky top-0 z-40 backdrop-blur">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => nav("home")}>
-            <span className="font-wordmark text-[26px] sm:text-[28px] text-[#0F4C5C] leading-none">OpenBenefacts</span>
+            <span className="font-wordmark text-[26px] sm:text-[28px] text-white leading-none">OpenBenefacts</span>
           </div>
           <div className="hidden md:flex items-center gap-1">
             {links.map(([key, label]) => (
-              <button key={key} onClick={() => nav(key)} className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${page === key ? "bg-[#0F4C5C] text-white" : "text-[#0F4C5C]/80 hover:text-[#0F4C5C] hover:bg-[#0F4C5C]/5"}`}>{label}</button>
+              <button key={key} onClick={() => nav(key)} className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${page === key ? "bg-white/20 text-white" : "text-white/75 hover:text-white hover:bg-white/10"}`}>{label}</button>
             ))}
           </div>
           <div className="flex items-center gap-2">
             {user ? (
               <div className="relative" ref={avatarRef}>
-                <button onClick={() => setAvatarOpen(!avatarOpen)} className="w-10 h-10 rounded-full bg-[#0F4C5C] text-white font-semibold text-sm flex items-center justify-center hover:bg-[#0a3b47]">
+                <button onClick={() => setAvatarOpen(!avatarOpen)} className="w-10 h-10 rounded-full bg-[#1B3A4B] text-white font-semibold text-sm flex items-center justify-center hover:bg-[#0f2b3a]">
                   {(user.name || user.email)[0].toUpperCase()}
                 </button>
                 {avatarOpen && (
@@ -598,18 +598,18 @@ function Navbar({ page, setPage }) {
               </div>
             ) : (
               <>
-                <button onClick={() => { setShowAuth(true); setAuthMode("login"); }} className="px-3 py-2 text-sm text-[#0F4C5C]/80 hover:text-[#0F4C5C] font-semibold hidden sm:block">Sign in</button>
-                <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-5 py-2.5 bg-[#0F4C5C] text-white text-sm rounded-full font-semibold hover:bg-[#0a3b47] transition-colors">Sign up free</button>
+                <button onClick={() => { setShowAuth(true); setAuthMode("login"); }} className="px-3 py-2 text-sm text-white/75 hover:text-white font-semibold hidden sm:block">Sign in</button>
+                <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-5 py-2.5 bg-white text-[#1B3A4B] text-sm rounded-full font-semibold hover:bg-gray-100 transition-colors">Sign up free</button>
               </>
             )}
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-[#0F4C5C]">{mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-white">{mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
           </div>
         </div>
       </div>
       {mobileOpen && (
-        <div className="md:hidden border-t border-[#0F4C5C]/10 bg-[#FAF6EE] px-4 py-3 space-y-1">
-          {links.map(([key, label]) => (<button key={key} onClick={() => nav(key)} className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${page === key ? "bg-[#0F4C5C] text-white font-semibold" : "text-[#0F4C5C]/80"}`}>{label}</button>))}
-          {user && <button onClick={() => { logout(); setMobileOpen(false); }} className="block w-full text-left px-3 py-2 rounded-lg text-sm text-red-600">Sign Out</button>}
+        <div className="md:hidden border-t border-white/10 bg-[#1B3A4B] px-4 py-3 space-y-1">
+          {links.map(([key, label]) => (<button key={key} onClick={() => nav(key)} className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${page === key ? "bg-white/20 text-white font-semibold" : "text-white/75"}`}>{label}</button>))}
+          {user && <button onClick={() => { logout(); setMobileOpen(false); }} className="block w-full text-left px-3 py-2 rounded-lg text-sm text-red-300">Sign Out</button>}
         </div>
       )}
     </nav>
@@ -649,30 +649,30 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
   const sectorIcons = { "Education, Research": GraduationCap, "Health": Heart, "Social Services": Users, "Arts, Culture, Heritage": Award, "Arts, Culture, Media": Award, "Recreation, Sports": Zap, "Local Development, Housing": Building2, "Religion": Star, "International": Globe, "Environment": Globe, "Advocacy": Shield, "Philanthropy": Sparkles };
 
   return (
-    <div className="bg-[#FAF6EE]">
-      {/* Hero — Blackbaud-style: cream, editorial headline, bold serif feel */}
+    <div className="bg-[#f8f9fa]">
+      {/* Hero — clean, search-first, OpenCorporates-inspired */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20">
         <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
           {/* Left: copy + search */}
           <div className="flex-1 max-w-2xl">
-            <div className="inline-flex items-center gap-2 mb-6 text-[11px] font-bold tracking-[0.15em] uppercase text-[#0F4C5C]">
-              <span className="w-8 h-px bg-[#0F4C5C]"></span>
+            <div className="inline-flex items-center gap-2 mb-6 text-[11px] font-bold tracking-[0.15em] uppercase text-[#1B3A4B]">
+              <span className="w-8 h-px bg-[#1B3A4B]"></span>
               Nonprofit transparency for Ireland
             </div>
-            <h1 className="font-wordmark text-[44px] sm:text-[64px] lg:text-[76px] text-[#0F2327] mb-6 leading-[0.95]">
-              Where does Ireland's <span className="text-[#0F4C5C]">€14 billion</span> go?
+            <h1 className="font-wordmark text-[44px] sm:text-[64px] lg:text-[76px] text-[#1a1a2e] mb-6 leading-[0.95]">
+              Where does Ireland's <span className="text-[#1B3A4B]">€14 billion</span> go?
             </h1>
-            <p className="text-lg sm:text-xl text-[#0F4C5C]/75 mb-8 leading-relaxed max-w-xl">
+            <p className="text-lg sm:text-xl text-[#1B3A4B]/75 mb-8 leading-relaxed max-w-xl">
               Search {orgCount.toLocaleString()} organisations and {financialCount.toLocaleString()} financial records. Follow the money from government to nonprofits — free and open to everyone.
             </p>
             <form onSubmit={e => { e.preventDefault(); doSearch(); }} className="relative max-w-lg mb-4">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#0F4C5C]/40" />
-              <input type="text" placeholder="Search by name, sector, or county..." value={heroSearch} onChange={e => setHeroSearch(e.target.value)} className="w-full pl-14 pr-32 py-5 border-2 border-[#0F4C5C]/15 rounded-full text-base focus:border-[#0F4C5C] focus:outline-none shadow-sm bg-white placeholder:text-[#0F4C5C]/40" />
-              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-3 bg-[#0F4C5C] text-white text-sm rounded-full font-semibold hover:bg-[#0a3b47] transition-colors">Search</button>
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#1B3A4B]/40" />
+              <input type="text" placeholder="Search by name, sector, or county..." value={heroSearch} onChange={e => setHeroSearch(e.target.value)} className="w-full pl-14 pr-32 py-5 border-2 border-[#1B3A4B]/15 rounded-full text-base focus:border-[#1B3A4B] focus:outline-none shadow-sm bg-white placeholder:text-[#1B3A4B]/40" />
+              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-3 bg-[#1B3A4B] text-white text-sm rounded-full font-semibold hover:bg-[#0f2b3a] transition-colors">Search</button>
             </form>
             <div className="flex flex-wrap gap-2">
-              <span className="text-xs text-[#0F4C5C]/50 font-semibold tracking-wide uppercase py-1.5 mr-1">Try:</span>
-              {chips.map(c => <button key={c} onClick={() => doSearch(c)} className="px-4 py-1.5 bg-white border border-[#0F4C5C]/15 rounded-full text-sm text-[#0F4C5C]/80 hover:border-[#0F4C5C] hover:text-[#0F4C5C] transition-colors">{c}</button>)}
+              <span className="text-xs text-[#1B3A4B]/50 font-semibold tracking-wide uppercase py-1.5 mr-1">Try:</span>
+              {chips.map(c => <button key={c} onClick={() => doSearch(c)} className="px-4 py-1.5 bg-white border border-[#1B3A4B]/15 rounded-full text-sm text-[#1B3A4B]/80 hover:border-[#1B3A4B] hover:text-[#1B3A4B] transition-colors">{c}</button>)}
             </div>
           </div>
 
@@ -680,37 +680,37 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
           <div className="hidden lg:block flex-shrink-0 w-[440px] h-[440px] relative">
             <svg viewBox="0 0 440 440" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
               {/* Big background accent circle */}
-              <circle cx="220" cy="220" r="210" fill="#C4E86B" opacity="0.35" />
-              <circle cx="320" cy="140" r="90" fill="#0F4C5C" opacity="0.08" />
+              <circle cx="220" cy="220" r="210" fill="#4A9B8E" opacity="0.35" />
+              <circle cx="320" cy="140" r="90" fill="#1B3A4B" opacity="0.08" />
 
               {/* Big gov node */}
-              <rect x="20" y="170" width="110" height="100" rx="20" fill="#0F4C5C" />
+              <rect x="20" y="170" width="110" height="100" rx="20" fill="#1B3A4B" />
               <text x="75" y="210" textAnchor="middle" fill="white" fontSize="14" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">GOV</text>
-              <text x="75" y="232" textAnchor="middle" fill="#C4E86B" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€14B</text>
+              <text x="75" y="232" textAnchor="middle" fill="#4A9B8E" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€14B</text>
               <text x="75" y="248" textAnchor="middle" fill="white" fontSize="9" opacity="0.75">annual outflow</text>
 
               {/* Flow paths */}
-              <path d="M130 200 Q210 140 300 130" stroke="#0F4C5C" strokeWidth="3" fill="none" />
-              <path d="M130 220 Q210 220 300 220" stroke="#0F4C5C" strokeWidth="4" fill="none" />
-              <path d="M130 240 Q210 300 300 310" stroke="#0F4C5C" strokeWidth="2.5" fill="none" />
+              <path d="M130 200 Q210 140 300 130" stroke="#1B3A4B" strokeWidth="3" fill="none" />
+              <path d="M130 220 Q210 220 300 220" stroke="#1B3A4B" strokeWidth="4" fill="none" />
+              <path d="M130 240 Q210 300 300 310" stroke="#1B3A4B" strokeWidth="2.5" fill="none" />
 
               {/* Sector cards */}
-              <rect x="300" y="100" width="130" height="70" rx="14" fill="white" stroke="#0F4C5C" strokeWidth="2" />
-              <text x="365" y="125" textAnchor="middle" fill="#0F4C5C" fontSize="11" fontWeight="700">Education</text>
-              <text x="365" y="150" textAnchor="middle" fill="#0F4C5C" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€2.7B</text>
+              <rect x="300" y="100" width="130" height="70" rx="14" fill="white" stroke="#1B3A4B" strokeWidth="2" />
+              <text x="365" y="125" textAnchor="middle" fill="#1B3A4B" fontSize="11" fontWeight="700">Education</text>
+              <text x="365" y="150" textAnchor="middle" fill="#1B3A4B" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€2.7B</text>
 
-              <rect x="300" y="185" width="130" height="70" rx="14" fill="#0F4C5C" />
-              <text x="365" y="210" textAnchor="middle" fill="#C4E86B" fontSize="11" fontWeight="700">Health</text>
+              <rect x="300" y="185" width="130" height="70" rx="14" fill="#1B3A4B" />
+              <text x="365" y="210" textAnchor="middle" fill="#4A9B8E" fontSize="11" fontWeight="700">Health</text>
               <text x="365" y="235" textAnchor="middle" fill="white" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€37.7B</text>
 
-              <rect x="300" y="270" width="130" height="70" rx="14" fill="white" stroke="#0F4C5C" strokeWidth="2" />
-              <text x="365" y="295" textAnchor="middle" fill="#0F4C5C" fontSize="11" fontWeight="700">Housing</text>
-              <text x="365" y="320" textAnchor="middle" fill="#0F4C5C" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€970M</text>
+              <rect x="300" y="270" width="130" height="70" rx="14" fill="white" stroke="#1B3A4B" strokeWidth="2" />
+              <text x="365" y="295" textAnchor="middle" fill="#1B3A4B" fontSize="11" fontWeight="700">Housing</text>
+              <text x="365" y="320" textAnchor="middle" fill="#1B3A4B" fontSize="18" fontWeight="900" fontFamily="'Archivo Black', Impact, sans-serif">€970M</text>
 
               {/* Connecting dots */}
-              <circle cx="290" cy="135" r="5" fill="#0F4C5C" />
-              <circle cx="290" cy="220" r="5" fill="#0F4C5C" />
-              <circle cx="290" cy="305" r="5" fill="#0F4C5C" />
+              <circle cx="290" cy="135" r="5" fill="#1B3A4B" />
+              <circle cx="290" cy="220" r="5" fill="#1B3A4B" />
+              <circle cx="290" cy="305" r="5" fill="#1B3A4B" />
             </svg>
           </div>
         </div>
@@ -726,11 +726,11 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
           { label: "Funding Links", value: fundingLinks.toLocaleString(), sub: "State → nonprofit relationships", icon: Zap },
           { label: "State Funders", value: funderData.length || 14, sub: `${totalRecipients.toLocaleString()} orgs funded`, icon: Landmark },
         ].map((s, i) => (
-          <div key={i} className="bg-white rounded-2xl border border-[#0F4C5C]/10 p-5">
-            <s.icon className="w-7 h-7 text-[#0F4C5C] mb-2" />
-            <div className="font-wordmark text-3xl text-[#0F2327]">{s.value}</div>
-            <div className="text-sm font-semibold text-[#0F4C5C]">{s.label}</div>
-            <div className="text-xs text-[#0F4C5C]/60 mt-0.5">{s.sub}</div>
+          <div key={i} className="bg-white rounded-2xl border border-[#1B3A4B]/10 p-5">
+            <s.icon className="w-7 h-7 text-[#1B3A4B] mb-2" />
+            <div className="font-wordmark text-3xl text-[#1a1a2e]">{s.value}</div>
+            <div className="text-sm font-semibold text-[#1B3A4B]">{s.label}</div>
+            <div className="text-xs text-[#1B3A4B]/60 mt-0.5">{s.sub}</div>
           </div>
         ))}
       </div>
@@ -738,13 +738,13 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
       {/* What OpenBenefacts Offers — services grid */}
       <div className="mb-16">
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#0F4C5C]">
-            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#1B3A4B]">
+            <span className="w-8 h-px bg-[#1B3A4B]"></span>
             What we offer
-            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+            <span className="w-8 h-px bg-[#1B3A4B]"></span>
           </div>
-          <h2 className="font-wordmark text-4xl sm:text-5xl text-[#0F2327] mb-4 leading-[1]">Everything you need to follow Irish nonprofit money.</h2>
-          <p className="text-lg text-[#0F4C5C]/70">Free tools for the public. Professional tools for journalists, funders, researchers, and nonprofits who need to go deeper.</p>
+          <h2 className="font-wordmark text-4xl sm:text-5xl text-[#1a1a2e] mb-4 leading-[1]">Everything you need to follow Irish nonprofit money.</h2>
+          <p className="text-lg text-[#1B3A4B]/70">Free tools for the public. Professional tools for journalists, funders, researchers, and nonprofits who need to go deeper.</p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -757,16 +757,16 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
             { icon: Database, title: "API & Bulk Data", desc: "Programmatic access to every organisation, financial record, and funding relationship. CSV exports and JSON endpoints for developers and researchers.", cta: "View the API", page: "api", tag: "Pro" },
             { icon: Home, title: "Housing Tracker", desc: "Live LA-by-LA breakdown of emergency accommodation usage and estimated spend across all 31 Irish local authorities. Data from DHLGH monthly reports.", cta: "View tracker", page: "trackers/emergency-accommodation", tag: "Free" },
           ].map((svc, i) => (
-            <button key={i} onClick={() => setPage(svc.page)} className="group text-left bg-white rounded-2xl border border-[#0F4C5C]/10 p-7 hover:border-[#0F4C5C] hover:shadow-xl hover:-translate-y-1 transition-all">
+            <button key={i} onClick={() => setPage(svc.page)} className="group text-left bg-white rounded-2xl border border-[#1B3A4B]/10 p-7 hover:border-[#1B3A4B] hover:shadow-xl hover:-translate-y-1 transition-all">
               <div className="flex items-start justify-between mb-5">
-                <div className="w-12 h-12 bg-[#C4E86B] rounded-xl flex items-center justify-center group-hover:bg-[#0F4C5C] transition-colors">
-                  <svc.icon className="w-6 h-6 text-[#0F4C5C] group-hover:text-[#C4E86B] transition-colors" />
+                <div className="w-12 h-12 bg-[#4A9B8E] rounded-xl flex items-center justify-center group-hover:bg-[#1B3A4B] transition-colors">
+                  <svc.icon className="w-6 h-6 text-[#1B3A4B] group-hover:text-[#4A9B8E] transition-colors" />
                 </div>
-                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${svc.tag === "Pro" ? "bg-[#0F4C5C] text-[#C4E86B]" : "bg-[#0F4C5C]/10 text-[#0F4C5C]"}`}>{svc.tag}</span>
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${svc.tag === "Pro" ? "bg-[#1B3A4B] text-[#4A9B8E]" : "bg-[#1B3A4B]/10 text-[#1B3A4B]"}`}>{svc.tag}</span>
               </div>
-              <h3 className="font-wordmark text-2xl text-[#0F2327] mb-3 leading-tight">{svc.title}</h3>
-              <p className="text-sm text-[#0F4C5C]/70 leading-relaxed mb-5">{svc.desc}</p>
-              <div className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0F4C5C] group-hover:gap-3 transition-all">
+              <h3 className="font-wordmark text-2xl text-[#1a1a2e] mb-3 leading-tight">{svc.title}</h3>
+              <p className="text-sm text-[#1B3A4B]/70 leading-relaxed mb-5">{svc.desc}</p>
+              <div className="inline-flex items-center gap-1.5 text-sm font-bold text-[#1B3A4B] group-hover:gap-3 transition-all">
                 {svc.cta} <ArrowRight className="w-4 h-4" />
               </div>
             </button>
@@ -775,14 +775,14 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
       </div>
 
       {/* Who uses OpenBenefacts — audience ribbon */}
-      <div className="bg-white rounded-3xl border border-[#0F4C5C]/10 p-8 sm:p-12 mb-16">
+      <div className="bg-white rounded-3xl border border-[#1B3A4B]/10 p-8 sm:p-12 mb-16">
         <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#0F4C5C]">
-            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#1B3A4B]">
+            <span className="w-8 h-px bg-[#1B3A4B]"></span>
             Who uses it
-            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+            <span className="w-8 h-px bg-[#1B3A4B]"></span>
           </div>
-          <h2 className="font-wordmark text-3xl sm:text-4xl text-[#0F2327] leading-[1]">Built for everyone who cares where the money goes.</h2>
+          <h2 className="font-wordmark text-3xl sm:text-4xl text-[#1a1a2e] leading-[1]">Built for everyone who cares where the money goes.</h2>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
@@ -792,11 +792,11 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
             { icon: GraduationCap, title: "Researchers", desc: "Academic access to bulk data, funding flows, and historical records for policy and civil society research." },
           ].map((a, i) => (
             <div key={i} className="text-center">
-              <div className="w-14 h-14 bg-[#0F4C5C] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <a.icon className="w-7 h-7 text-[#C4E86B]" />
+              <div className="w-14 h-14 bg-[#1B3A4B] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <a.icon className="w-7 h-7 text-[#4A9B8E]" />
               </div>
-              <h3 className="font-wordmark text-xl text-[#0F2327] mb-2">{a.title}</h3>
-              <p className="text-sm text-[#0F4C5C]/70 leading-relaxed">{a.desc}</p>
+              <h3 className="font-wordmark text-xl text-[#1a1a2e] mb-2">{a.title}</h3>
+              <p className="text-sm text-[#1B3A4B]/70 leading-relaxed">{a.desc}</p>
             </div>
           ))}
         </div>
@@ -805,12 +805,12 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
       {/* How it works — 3-step process */}
       <div className="mb-16">
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#0F4C5C]">
-            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#1B3A4B]">
+            <span className="w-8 h-px bg-[#1B3A4B]"></span>
             How it works
-            <span className="w-8 h-px bg-[#0F4C5C]"></span>
+            <span className="w-8 h-px bg-[#1B3A4B]"></span>
           </div>
-          <h2 className="font-wordmark text-3xl sm:text-4xl text-[#0F2327] leading-[1]">From question to answer in three steps.</h2>
+          <h2 className="font-wordmark text-3xl sm:text-4xl text-[#1a1a2e] leading-[1]">From question to answer in three steps.</h2>
         </div>
         <div className="grid sm:grid-cols-3 gap-6">
           {[
@@ -818,10 +818,10 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
             { n: "02", title: "Explore", desc: "Open any organisation for the full financial history, governance data, state-funding trail, and risk flags." },
             { n: "03", title: "Export or cite", desc: "Download a due diligence PDF, grab a shareable URL, pull data through the API, or embed a live widget." },
           ].map((s, i) => (
-            <div key={i} className="bg-[#FAF6EE] rounded-2xl p-7 border border-[#0F4C5C]/10">
-              <div className="font-wordmark text-5xl text-[#C4E86B] mb-3 leading-none">{s.n}</div>
-              <h3 className="font-wordmark text-2xl text-[#0F2327] mb-2">{s.title}</h3>
-              <p className="text-sm text-[#0F4C5C]/70 leading-relaxed">{s.desc}</p>
+            <div key={i} className="bg-[#FFFFFF] rounded-2xl p-7 border border-[#1B3A4B]/10">
+              <div className="font-wordmark text-5xl text-[#4A9B8E] mb-3 leading-none">{s.n}</div>
+              <h3 className="font-wordmark text-2xl text-[#1a1a2e] mb-2">{s.title}</h3>
+              <p className="text-sm text-[#1B3A4B]/70 leading-relaxed">{s.desc}</p>
             </div>
           ))}
         </div>
@@ -980,14 +980,14 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
       )}
 
       {/* CTA — narrative-driven */}
-      <div className="bg-[#0F4C5C] rounded-3xl p-8 sm:p-12 text-center text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#C4E86B]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
+      <div className="bg-[#1B3A4B] rounded-3xl p-8 sm:p-12 text-center text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#4A9B8E]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="relative z-10">
-          <p className="text-[#C4E86B] text-xs font-bold uppercase tracking-[0.2em] mb-4">The money trail is back</p>
+          <p className="text-[#4A9B8E] text-xs font-bold uppercase tracking-[0.2em] mb-4">The money trail is back</p>
           <h2 className="font-wordmark text-3xl sm:text-5xl text-white mb-4 leading-[1]">€14 billion deserves oversight.</h2>
           <p className="text-white/80 max-w-2xl mx-auto mb-8 text-lg">Benefacts is gone. OpenBenefacts is here — with full financials, AI risk scores, funder mapping, and due diligence reports.</p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <button onClick={() => setPage("pricing")} className="px-8 py-4 bg-[#C4E86B] text-[#0F4C5C] rounded-full font-bold hover:bg-white transition-colors">Start free trial</button>
+            <button onClick={() => setPage("pricing")} className="px-8 py-4 bg-[#4A9B8E] text-[#1B3A4B] rounded-full font-bold hover:bg-white transition-colors">Start free trial</button>
             <button onClick={() => setPage("orgs")} className="px-8 py-4 bg-white/10 text-white rounded-full font-semibold hover:bg-white/20 transition-colors border border-white/30">Browse {orgCount.toLocaleString()} organisations</button>
           </div>
         </div>
@@ -1315,7 +1315,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
     return (
       <div className="p-5 bg-white min-h-0">
         <div className="flex items-center gap-2 mb-3">
-          <span className="font-wordmark text-[18px] text-[#0F4C5C]">OpenBenefacts</span>
+          <span className="font-wordmark text-[18px] text-[#1B3A4B]">OpenBenefacts</span>
           <span className="text-xs text-gray-400">· Nonprofit Transparency</span>
         </div>
         <h2 className="text-lg font-bold text-gray-900">{cleanName(org.name)}</h2>
@@ -1355,13 +1355,13 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <button onClick={() => setPage("orgs")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6"><ArrowLeft className="w-4 h-4" /> Back to directory</button>
 
-      <div className="bg-white rounded-2xl border border-[#0F4C5C]/10 overflow-hidden">
-        <div className="bg-[#0F4C5C] px-6 py-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-72 h-72 bg-[#C4E86B]/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+      <div className="bg-white rounded-2xl border border-[#1B3A4B]/10 overflow-hidden">
+        <div className="bg-[#1B3A4B] px-6 py-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-72 h-72 bg-[#4A9B8E]/10 rounded-full -translate-y-1/2 translate-x-1/2" />
           <div className="relative z-10 flex items-start justify-between">
             <div>
               <h1 className="font-wordmark text-3xl sm:text-4xl text-white leading-[1.05]">{cleanName(org.name)}</h1>
-              <p className="text-[#C4E86B] mt-2 font-semibold">{[clean(org.county), clean(org.sector)].filter(Boolean).join(" · ")}</p>
+              <p className="text-[#4A9B8E] mt-2 font-semibold">{[clean(org.county), clean(org.sector)].filter(Boolean).join(" · ")}</p>
               <div className="flex flex-wrap gap-2 mt-3">
                 {clean(org.charity_number) && <span className="text-xs bg-white/15 text-white px-2.5 py-1 rounded-full font-medium">RCN {org.charity_number}</span>}
                 {clean(org.cro_number) && <span className="text-xs bg-white/15 text-white px-2.5 py-1 rounded-full font-medium">CRO {org.cro_number}</span>}
@@ -1703,10 +1703,10 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
         })()}
 
         {/* Tabs */}
-        <div className="border-b border-[#0F4C5C]/10">
+        <div className="border-b border-[#1B3A4B]/10">
           <div className="flex gap-0">
             {["overview","governance","financials","details"].map(t => (
-              <button key={t} onClick={() => setTab(t)} className={`px-6 py-3.5 text-sm font-semibold capitalize border-b-2 transition-colors ${tab === t ? "border-[#0F4C5C] text-[#0F4C5C]" : "border-transparent text-[#0F4C5C]/50 hover:text-[#0F4C5C]"}`}>{t}</button>
+              <button key={t} onClick={() => setTab(t)} className={`px-6 py-3.5 text-sm font-semibold capitalize border-b-2 transition-colors ${tab === t ? "border-[#1B3A4B] text-[#1B3A4B]" : "border-transparent text-[#1B3A4B]/50 hover:text-[#1B3A4B]"}`}>{t}</button>
             ))}
           </div>
         </div>
@@ -1734,49 +1734,49 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                 if (clean(org.date_incorporated)) statements.push(`incorporated ${String(org.date_incorporated).slice(0, 4)}`);
                 const summarySentence = statements.length ? `${cleanName(org.name)} is ${statements.join(", ")}.` : `${cleanName(org.name)} is listed in the Irish nonprofit sector.`;
                 return (
-                  <div className="bg-[#FAF6EE] border border-[#0F4C5C]/10 rounded-xl p-5 mb-6">
+                  <div className="bg-[#FFFFFF] border border-[#1B3A4B]/10 rounded-xl p-5 mb-6">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#0F4C5C]">At a glance</div>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#1B3A4B]">At a glance</div>
                       {entity.type !== "unknown" && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider bg-[#C4E86B]/30 text-[#0F4C5C] px-2 py-1 rounded-full">{entity.label}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-[#4A9B8E]/30 text-[#1B3A4B] px-2 py-1 rounded-full">{entity.label}</span>
                       )}
                     </div>
-                    <p className={`text-[15px] text-[#0F2327] leading-relaxed ${entity.description ? "mb-2" : "mb-4"}`}>{summarySentence}</p>
-                    {entity.description && <p className="text-[12px] text-[#0F4C5C]/65 leading-relaxed mb-4">{entity.description}</p>}
+                    <p className={`text-[15px] text-[#1a1a2e] leading-relaxed ${entity.description ? "mb-2" : "mb-4"}`}>{summarySentence}</p>
+                    {entity.description && <p className="text-[12px] text-[#1B3A4B]/65 leading-relaxed mb-4">{entity.description}</p>}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div>
-                        <div className="font-wordmark text-2xl text-[#0F4C5C] leading-none">{filingCount}</div>
-                        <div className="text-[11px] text-[#0F4C5C]/60 mt-1 font-medium uppercase tracking-wider">Filings on record</div>
+                        <div className="font-wordmark text-2xl text-[#1B3A4B] leading-none">{filingCount}</div>
+                        <div className="text-[11px] text-[#1B3A4B]/60 mt-1 font-medium uppercase tracking-wider">Filings on record</div>
                       </div>
                       <div>
-                        <div className="font-wordmark text-2xl text-[#0F4C5C] leading-none">{boardCount}</div>
-                        <div className="text-[11px] text-[#0F4C5C]/60 mt-1 font-medium uppercase tracking-wider">Board members</div>
+                        <div className="font-wordmark text-2xl text-[#1B3A4B] leading-none">{boardCount}</div>
+                        <div className="text-[11px] text-[#1B3A4B]/60 mt-1 font-medium uppercase tracking-wider">Board members</div>
                       </div>
                       <div>
-                        <div className="font-wordmark text-2xl text-[#0F4C5C] leading-none">{latest?.gross_income > 0 ? fmt(latest.gross_income) : "—"}</div>
-                        <div className="text-[11px] text-[#0F4C5C]/60 mt-1 font-medium uppercase tracking-wider">Latest income</div>
+                        <div className="font-wordmark text-2xl text-[#1B3A4B] leading-none">{latest?.gross_income > 0 ? fmt(latest.gross_income) : "—"}</div>
+                        <div className="text-[11px] text-[#1B3A4B]/60 mt-1 font-medium uppercase tracking-wider">Latest income</div>
                       </div>
                       <div>
-                        <div className="font-wordmark text-2xl text-[#0F4C5C] leading-none">{grantTotal > 0 ? fmt(grantTotal) : "—"}</div>
-                        <div className="text-[11px] text-[#0F4C5C]/60 mt-1 font-medium uppercase tracking-wider">State funding tracked</div>
+                        <div className="font-wordmark text-2xl text-[#1B3A4B] leading-none">{grantTotal > 0 ? fmt(grantTotal) : "—"}</div>
+                        <div className="text-[11px] text-[#1B3A4B]/60 mt-1 font-medium uppercase tracking-wider">State funding tracked</div>
                       </div>
                     </div>
                   </div>
                 );
               })()}
 
-              <h3 className="text-xs font-bold text-[#0F4C5C] uppercase tracking-[0.15em] mb-4">Organisation Info</h3>
+              <h3 className="text-xs font-bold text-[#1B3A4B] uppercase tracking-[0.15em] mb-4">Organisation Info</h3>
               {fields.length > 0 ? (
                 <div className="grid sm:grid-cols-2 gap-4">
                   {fields.slice(0, 6).map((f, i) => (
-                    <div key={i} className="p-3 rounded-lg bg-[#FAF6EE] border border-[#0F4C5C]/5">
-                      <div className="text-[10px] text-[#0F4C5C]/60 font-bold uppercase tracking-wider">{f.label}</div>
-                      <div className="text-sm text-[#0F2327] mt-1 font-medium">{f.value}{f.sub ? ` — ${f.sub}` : ""}</div>
+                    <div key={i} className="p-3 rounded-lg bg-[#FFFFFF] border border-[#1B3A4B]/5">
+                      <div className="text-[10px] text-[#1B3A4B]/60 font-bold uppercase tracking-wider">{f.label}</div>
+                      <div className="text-sm text-[#1a1a2e] mt-1 font-medium">{f.value}{f.sub ? ` — ${f.sub}` : ""}</div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="p-4 rounded-lg bg-[#FAF6EE] border border-[#0F4C5C]/10 text-sm text-[#0F4C5C]/70">
+                <div className="p-4 rounded-lg bg-[#FFFFFF] border border-[#1B3A4B]/10 text-sm text-[#1B3A4B]/70">
                   We don't have structured identifiers for this organisation yet. Check the source links below or help us improve the listing.
                 </div>
               )}
@@ -1786,28 +1786,28 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                 const entity = classifyEntity(org);
                 const sources = getEntitySources(org, entity);
                 return (
-                  <div className="mt-6 p-5 rounded-xl border border-[#0F4C5C]/10 bg-white">
+                  <div className="mt-6 p-5 rounded-xl border border-[#1B3A4B]/10 bg-white">
                     <div className="flex items-center gap-2 mb-3">
-                      <ExternalLink className="w-4 h-4 text-[#0F4C5C]" />
-                      <h3 className="text-xs font-bold text-[#0F4C5C] uppercase tracking-[0.15em]">Verify with the source</h3>
+                      <ExternalLink className="w-4 h-4 text-[#1B3A4B]" />
+                      <h3 className="text-xs font-bold text-[#1B3A4B] uppercase tracking-[0.15em]">Verify with the source</h3>
                     </div>
-                    <p className="text-xs text-[#0F4C5C]/60 mb-4">OpenBenefacts mirrors public regulator data. For the canonical record, go to the source.</p>
+                    <p className="text-xs text-[#1B3A4B]/60 mb-4">OpenBenefacts mirrors public regulator data. For the canonical record, go to the source.</p>
                     <div className="space-y-2">
                       {sources.map((src, i) => (
-                        <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-lg bg-[#FAF6EE] hover:bg-[#C4E86B]/20 border border-[#0F4C5C]/10 hover:border-[#0F4C5C]/30 transition-colors group">
+                        <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-lg bg-[#FFFFFF] hover:bg-[#4A9B8E]/20 border border-[#1B3A4B]/10 hover:border-[#1B3A4B]/30 transition-colors group">
                           <div>
-                            <div className="text-sm font-semibold text-[#0F2327]">{src.label}</div>
-                            <div className="text-xs text-[#0F4C5C]/60">{src.note}</div>
+                            <div className="text-sm font-semibold text-[#1a1a2e]">{src.label}</div>
+                            <div className="text-xs text-[#1B3A4B]/60">{src.note}</div>
                           </div>
-                          <ArrowRight className="w-4 h-4 text-[#0F4C5C] group-hover:translate-x-1 transition-transform" />
+                          <ArrowRight className="w-4 h-4 text-[#1B3A4B] group-hover:translate-x-1 transition-transform" />
                         </a>
                       ))}
-                      <button onClick={() => setPage("claim")} className="w-full flex items-center justify-between p-3 rounded-lg bg-[#0F4C5C]/5 hover:bg-[#0F4C5C]/10 border border-dashed border-[#0F4C5C]/30 transition-colors group text-left">
+                      <button onClick={() => setPage("claim")} className="w-full flex items-center justify-between p-3 rounded-lg bg-[#1B3A4B]/5 hover:bg-[#1B3A4B]/10 border border-dashed border-[#1B3A4B]/30 transition-colors group text-left">
                         <div>
-                          <div className="text-sm font-semibold text-[#0F4C5C]">Something missing? Claim or correct this listing</div>
-                          <div className="text-xs text-[#0F4C5C]/60">Verified orgs can add descriptions, contact details, and upload reports</div>
+                          <div className="text-sm font-semibold text-[#1B3A4B]">Something missing? Claim or correct this listing</div>
+                          <div className="text-xs text-[#1B3A4B]/60">Verified orgs can add descriptions, contact details, and upload reports</div>
                         </div>
-                        <ArrowRight className="w-4 h-4 text-[#0F4C5C] group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="w-4 h-4 text-[#1B3A4B] group-hover:translate-x-1 transition-transform" />
                       </button>
                     </div>
                   </div>
@@ -2098,22 +2098,22 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     unknown: "We haven't classified this organisation yet. Try the sources below or help us improve the listing.",
                   }[entity.type] || "";
                   return (
-                    <div className="bg-[#FAF6EE] border border-[#0F4C5C]/10 rounded-xl p-6">
+                    <div className="bg-[#FFFFFF] border border-[#1B3A4B]/10 rounded-xl p-6">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-[#C4E86B] rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Users className="w-6 h-6 text-[#0F4C5C]" />
+                        <div className="w-12 h-12 bg-[#4A9B8E] rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Users className="w-6 h-6 text-[#1B3A4B]" />
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h4 className="font-wordmark text-xl text-[#0F2327]">No board data on file yet</h4>
+                            <h4 className="font-wordmark text-xl text-[#1a1a2e]">No board data on file yet</h4>
                             {entity.type !== "unknown" && (
-                              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#C4E86B]/30 text-[#0F4C5C] px-2 py-1 rounded-full">{entity.label}</span>
+                              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#4A9B8E]/30 text-[#1B3A4B] px-2 py-1 rounded-full">{entity.label}</span>
                             )}
                           </div>
-                          <p className="text-sm text-[#0F4C5C]/70 mb-4 leading-relaxed">{contextBlurb}</p>
+                          <p className="text-sm text-[#1B3A4B]/70 mb-4 leading-relaxed">{contextBlurb}</p>
                           <div className="flex flex-wrap gap-2">
                             {sources.map((src, i) => (
-                              <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#0F4C5C]/20 text-[#0F4C5C] text-xs font-semibold rounded-lg hover:bg-[#C4E86B]/20 hover:border-[#0F4C5C] transition-colors">{src.label} <ExternalLink className="w-3 h-3" /></a>
+                              <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#1B3A4B]/20 text-[#1B3A4B] text-xs font-semibold rounded-lg hover:bg-[#4A9B8E]/20 hover:border-[#1B3A4B] transition-colors">{src.label} <ExternalLink className="w-3 h-3" /></a>
                             ))}
                           </div>
                         </div>
@@ -2155,12 +2155,12 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                 return (
                 <div className="space-y-6">
                   {/* Header bar */}
-                  <div className="bg-[#C4E86B]/25 border border-[#0F4C5C]/15 rounded-xl p-4 flex items-center justify-between">
+                  <div className="bg-[#4A9B8E]/25 border border-[#1B3A4B]/15 rounded-xl p-4 flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-[#0F4C5C] font-bold">Latest Annual Return ({cur.year || "Most Recent"})</p>
+                      <p className="text-sm text-[#1B3A4B] font-bold">Latest Annual Return ({cur.year || "Most Recent"})</p>
                       {filingLag && <p className="text-[10px] text-amber-600 mt-0.5">⚠ This organisation's filing may be overdue — newer data may not yet be available</p>}
                     </div>
-                    {org.financials.length > 1 && <span className="text-xs text-[#0F4C5C]/70 font-semibold">{org.financials.length} years on file</span>}
+                    {org.financials.length > 1 && <span className="text-xs text-[#1B3A4B]/70 font-semibold">{org.financials.length} years on file</span>}
                   </div>
 
                   {/* ===== KEY METRICS GRID ===== */}
@@ -2493,15 +2493,15 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     unknown: "We haven't classified this organisation. Audited accounts are often published on its own website or in an annual report.",
                   }[entity.type] || "";
                   return (
-                    <div className="bg-[#FAF6EE] border border-[#0F4C5C]/10 rounded-xl p-6 mb-6">
+                    <div className="bg-[#FFFFFF] border border-[#1B3A4B]/10 rounded-xl p-6 mb-6">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-[#C4E86B] rounded-xl flex items-center justify-center flex-shrink-0"><FileText className="w-6 h-6 text-[#0F4C5C]" /></div>
+                        <div className="w-12 h-12 bg-[#4A9B8E] rounded-xl flex items-center justify-center flex-shrink-0"><FileText className="w-6 h-6 text-[#1B3A4B]" /></div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap"><h4 className="font-wordmark text-xl text-[#0F2327]">No financial filings on record yet</h4>{entity.type !== "unknown" && <span className="text-[10px] font-bold uppercase tracking-wider bg-[#C4E86B]/30 text-[#0F4C5C] px-2 py-1 rounded-full">{entity.label}</span>}</div>
-                          <p className="text-sm text-[#0F4C5C]/70 mb-4 leading-relaxed">{contextBlurb}</p>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap"><h4 className="font-wordmark text-xl text-[#1a1a2e]">No financial filings on record yet</h4>{entity.type !== "unknown" && <span className="text-[10px] font-bold uppercase tracking-wider bg-[#4A9B8E]/30 text-[#1B3A4B] px-2 py-1 rounded-full">{entity.label}</span>}</div>
+                          <p className="text-sm text-[#1B3A4B]/70 mb-4 leading-relaxed">{contextBlurb}</p>
                           <div className="flex flex-wrap gap-2">
-                            {sources.map((src, i) => <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#0F4C5C]/20 text-[#0F4C5C] text-xs font-semibold rounded-lg hover:bg-[#C4E86B]/20 hover:border-[#0F4C5C] transition-colors">{src.label} <ExternalLink className="w-3 h-3" /></a>)}
-                            <button onClick={() => setPage("claim")} className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#0F4C5C] text-white text-xs font-semibold rounded-lg hover:bg-[#0a3b47] transition-colors">Upload financials</button>
+                            {sources.map((src, i) => <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#1B3A4B]/20 text-[#1B3A4B] text-xs font-semibold rounded-lg hover:bg-[#4A9B8E]/20 hover:border-[#1B3A4B] transition-colors">{src.label} <ExternalLink className="w-3 h-3" /></a>)}
+                            <button onClick={() => setPage("claim")} className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1B3A4B] text-white text-xs font-semibold rounded-lg hover:bg-[#0f2b3a] transition-colors">Upload financials</button>
                           </div>
                         </div>
                       </div>
@@ -3091,7 +3091,7 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
     return (
       <div className="p-4 bg-white min-h-screen">
         <div className="flex items-center gap-2 mb-3">
-          <span className="font-wordmark text-[16px] text-[#0F4C5C]">OpenBenefacts</span>
+          <span className="font-wordmark text-[16px] text-[#1B3A4B]">OpenBenefacts</span>
           <span className="text-xs text-gray-400">· Follow the Money</span>
         </div>
         <h2 className="text-lg font-bold text-gray-900 mb-1">{funder.name}</h2>
@@ -4057,11 +4057,11 @@ function InnerApp() {
   if (isEmbed) return <div className="min-h-screen bg-white">{renderPage()}</div>;
 
   return (
-    <div className="min-h-screen bg-[#FAF6EE]">
+    <div className="min-h-screen bg-[#FFFFFF]">
       <Navbar page={page} setPage={handleSetPage} />
       {renderPage()}
       <DonationPopup />
-      <footer className="bg-[#0F4C5C] text-white mt-16">
+      <footer className="bg-[#1B3A4B] text-white mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
             {/* Brand column */}
@@ -4074,7 +4074,7 @@ function InnerApp() {
 
             {/* Explore */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#C4E86B] mb-4">Explore</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">Explore</h4>
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("orgs")} className="text-sm text-white/70 hover:text-white">Organisations</button></li>
                 <li><button onClick={() => handleSetPage("funders")} className="text-sm text-white/70 hover:text-white">Funders</button></li>
@@ -4087,7 +4087,7 @@ function InnerApp() {
 
             {/* For nonprofits */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#C4E86B] mb-4">For nonprofits</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">For nonprofits</h4>
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("claim")} className="text-sm text-white/70 hover:text-white">Claim your listing</button></li>
                 <li><a href="mailto:corrections@openbenefacts.com" className="text-sm text-white/70 hover:text-white">Request a correction</a></li>
@@ -4098,7 +4098,7 @@ function InnerApp() {
 
             {/* Company */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#C4E86B] mb-4">Company</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">Company</h4>
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("about")} className="text-sm text-white/70 hover:text-white">About</button></li>
                 <li><button onClick={() => handleSetPage("media")} className="text-sm text-white/70 hover:text-white">Media</button></li>
@@ -4109,7 +4109,7 @@ function InnerApp() {
 
             {/* Legal */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#C4E86B] mb-4">Legal</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">Legal</h4>
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("privacy")} className="text-sm text-white/70 hover:text-white">Privacy policy</button></li>
                 <li><button onClick={() => handleSetPage("terms")} className="text-sm text-white/70 hover:text-white">Terms of use</button></li>
@@ -4120,7 +4120,7 @@ function InnerApp() {
         </div>
 
         {/* Dark bottom bar */}
-        <div className="bg-[#0a3b47] text-white/60 py-6 border-t border-white/10">
+        <div className="bg-[#0f2b3a] text-white/60 py-6 border-t border-white/10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
               <p>&copy; 2026 OpenBenefacts. Independent nonprofit transparency for Ireland.</p>

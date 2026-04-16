@@ -190,12 +190,11 @@ async function upsertProvider(name, ctx) {
     .ilike("name", clean)
     .maybeSingle();
   if (existing) {
+    // Only update last_seen_date — revenue is recalculated at end from contracts
+    const updates = { last_seen_date: ctx.date };
+    if (!existing.source_count) updates.source_count = 1;
     await supabase.from("emergency_providers")
-      .update({
-        source_count: (existing.source_count || 0) + 1,
-        last_seen_date: ctx.date,
-        total_known_revenue_eur: (existing.total_known_revenue_eur || 0) + (ctx.value || 0),
-      })
+      .update(updates)
       .eq("id", existing.id);
     return existing.id;
   }
@@ -299,6 +298,29 @@ async function main() {
     }
   }
 
+  // ── Recalculate revenue from actual contracts (idempotent) ──
+  console.log(`\n4) Recalculating provider revenue from contracts`);
+  const { data: allProviders } = await supabase
+    .from("emergency_providers")
+    .select("id, name");
+  let revenueFixed = 0;
+  for (const p of (allProviders || [])) {
+    const { data: contracts } = await supabase
+      .from("provider_contracts")
+      .select("value_eur")
+      .eq("provider_id", p.id);
+    const total = (contracts || []).reduce((s, c) => s + (c.value_eur || 0), 0);
+    const { error: upErr } = await supabase
+      .from("emergency_providers")
+      .update({
+        total_known_revenue_eur: total,
+        source_count: (contracts || []).length,
+      })
+      .eq("id", p.id);
+    if (!upErr && total > 0) revenueFixed++;
+  }
+  console.log(`   ${revenueFixed} providers with recalculated revenue`);
+
   console.log(`\n${"=".repeat(60)}`);
   console.log(`📊 Summary`);
   console.log(`   Rows in CSV:           ${rows.length}`);
@@ -306,6 +328,7 @@ async function main() {
   console.log(`   Skipped (no supplier): ${skipped}`);
   console.log(`   Providers touched:     ${providerCount}`);
   console.log(`   Contracts recorded:    ${contractCount}`);
+  console.log(`   Revenue recalculated:  ${revenueFixed}`);
   console.log(`${"=".repeat(60)}\n`);
 }
 

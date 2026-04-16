@@ -45,7 +45,7 @@ const ACCOMM_COLOURS = {
 };
 
 const REGION_COLOURS = {
-  "Dublin Region": "#0F4C5C",
+  "Dublin Region": "#1B3A4B",
   "Mid-East":      "#1e7a8f",
   "South":         "#2a9d8f",
   "South-East":    "#43aa8b",
@@ -257,9 +257,9 @@ function AccommSankey({ data, highlight, onHighlight }) {
 
         {/* Source node */}
         <rect x={leftX} y={srcNode.y} width={leftW} height={srcNode.h}
-          rx="4" fill="#0F4C5C" />
+          rx="4" fill="#1B3A4B" />
         <text x={leftX - 6} y={srcNode.y + srcNode.h / 2} textAnchor="end"
-          dominantBaseline="middle" fontSize="11" fontWeight="600" fill="#0F4C5C">
+          dominantBaseline="middle" fontSize="11" fontWeight="600" fill="#1B3A4B">
           Dept of Housing
         </text>
         <text x={leftX - 6} y={srcNode.y + srcNode.h / 2 + 13} textAnchor="end"
@@ -464,9 +464,9 @@ function EmbedWidget({ embed }) {
   if (embed) return null;
 
   return (
-    <div className="bg-gradient-to-br from-[#0F4C5C] to-teal-800 rounded-2xl p-6 text-white">
+    <div className="bg-gradient-to-br from-[#1B3A4B] to-teal-800 rounded-2xl p-6 text-white">
       <div className="flex items-center gap-2 mb-3">
-        <Share2 className="w-4 h-4 text-[#C4E86B]" />
+        <Share2 className="w-4 h-4 text-[#4A9B8E]" />
         <h3 className="font-bold text-sm">Embed this tracker</h3>
       </div>
       <p className="text-xs text-white/70 mb-4 leading-relaxed">
@@ -476,7 +476,7 @@ function EmbedWidget({ embed }) {
         {iframeCode}
       </div>
       <button onClick={copy}
-        className="flex items-center gap-2 px-4 py-2 bg-[#C4E86B] text-[#0F4C5C] rounded-lg font-semibold text-xs hover:bg-white transition-colors">
+        className="flex items-center gap-2 px-4 py-2 bg-[#4A9B8E] text-[#1B3A4B] rounded-lg font-semibold text-xs hover:bg-white transition-colors">
         {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
         {copied ? "Copied!" : "Copy embed code"}
       </button>
@@ -623,12 +623,12 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
       )}
 
       {/* ── Hero header ──────────────────────────────── */}
-      <div className="bg-gradient-to-r from-[#0F4C5C] to-teal-700 rounded-2xl px-6 py-8 mb-8 text-white">
+      <div className="bg-gradient-to-r from-[#1B3A4B] to-teal-700 rounded-2xl px-6 py-8 mb-8 text-white">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Home className="w-5 h-5 text-[#C4E86B]" />
-              <span className="text-xs font-bold uppercase tracking-widest text-[#C4E86B]">OpenBenefacts Tracker</span>
+              <Home className="w-5 h-5 text-[#4A9B8E]" />
+              <span className="text-xs font-bold uppercase tracking-widest text-[#4A9B8E]">OpenBenefacts Tracker</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold leading-tight mb-2">
               Emergency Accommodation Tracker
@@ -653,7 +653,7 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
           {[
             { label: "Persons housed",   value: NUM(metrics.totalPersons),     icon: Users,       colour: "text-white" },
-            { label: "Est. weekly spend", value: FMT(metrics.weekCost),          icon: TrendingUp,  colour: "text-[#C4E86B]" },
+            { label: "Est. weekly spend", value: FMT(metrics.weekCost),          icon: TrendingUp,  colour: "text-[#4A9B8E]" },
             { label: "In B&B / hotels",  value: `${metrics.peaPct}% (PEA)`,     icon: AlertTriangle, colour: "text-red-300" },
             { label: "Supported accomm", value: `${metrics.staPct}% (STA)`,     icon: Home,        colour: "text-orange-300" },
           ].map(({ label, value, icon: Icon, colour }) => (
@@ -822,8 +822,8 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
                   formatter={(v) => [v.toLocaleString(), "Persons"]}
                   contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #e2e8f0" }}
                 />
-                <Line type="monotone" dataKey="persons" stroke="#0F4C5C" strokeWidth={2.5}
-                  dot={{ r: 3, fill: "#0F4C5C" }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="persons" stroke="#1B3A4B" strokeWidth={2.5}
+                  dot={{ r: 3, fill: "#1B3A4B" }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
             <p className="text-xs text-gray-400 mt-3 text-center">
