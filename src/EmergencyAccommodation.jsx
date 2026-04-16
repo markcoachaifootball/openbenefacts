@@ -1057,15 +1057,28 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
 
                     {/* Right column: summary sidebar */}
                     <div className="space-y-4">
-                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5">
-                        <div className="text-xs text-emerald-700 uppercase font-bold tracking-wider mb-2">Known contract value</div>
-                        <div className="text-3xl font-extrabold text-emerald-900">
-                          €{(totalValue || p.total_known_revenue_eur || 0).toLocaleString()}
-                        </div>
-                        <div className="text-xs text-emerald-600 mt-1">
-                          Across {pContracts.length} recorded contract{pContracts.length !== 1 ? "s" : ""}
-                        </div>
-                      </div>
+                      {(() => {
+                        const val = totalValue || p.total_known_revenue_eur || 0;
+                        const isFramework = val >= 100000000; // €100M+ is likely a framework ceiling
+                        return (
+                          <div className={`${isFramework ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"} border rounded-xl p-5`}>
+                            <div className={`text-xs ${isFramework ? "text-amber-700" : "text-emerald-700"} uppercase font-bold tracking-wider mb-2`}>
+                              {isFramework ? "Framework ceiling value" : "Known contract value"}
+                            </div>
+                            <div className={`text-3xl font-extrabold ${isFramework ? "text-amber-900" : "text-emerald-900"}`}>
+                              €{val.toLocaleString()}
+                            </div>
+                            <div className={`text-xs ${isFramework ? "text-amber-600" : "text-emerald-600"} mt-1`}>
+                              Across {pContracts.length} recorded contract{pContracts.length !== 1 ? "s" : ""}
+                            </div>
+                            {isFramework && (
+                              <div className="text-xs text-amber-700 mt-2 bg-amber-100 rounded px-2 py-1">
+                                This is a multi-year framework agreement maximum — actual spend is likely much lower.
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {p.est_bed_capacity && (
                         <div className="bg-white border border-gray-200 rounded-xl p-5">
@@ -1133,7 +1146,12 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
                         </div>
                         <div className="text-right flex-shrink-0">
                           {(p.total_known_revenue_eur || 0) > 0 ? (
-                            <div className="text-lg font-bold text-gray-900">€{(p.total_known_revenue_eur || 0).toLocaleString()}</div>
+                            <div className={`text-lg font-bold ${(p.total_known_revenue_eur || 0) >= 100000000 ? "text-amber-600" : "text-gray-900"}`}>
+                              €{(p.total_known_revenue_eur || 0).toLocaleString()}
+                              {(p.total_known_revenue_eur || 0) >= 100000000 && (
+                                <span className="text-xs font-normal text-amber-500 ml-1" title="Framework agreement ceiling — actual spend likely much lower">*</span>
+                              )}
+                            </div>
                           ) : (
                             <div className="text-sm text-gray-400">—</div>
                           )}
