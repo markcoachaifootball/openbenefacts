@@ -237,6 +237,9 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
   const [expandedRecipient, setExpandedRecipient] = useState(null);
   const [searchRecipients, setSearchRecipients] = useState("");
   const [recipientSort, setRecipientSort] = useState("total"); // total | name | count
+  const [sectorFilter, setSectorFilter] = useState(null);
+  const [countyFilter, setCountyFilter] = useState(null);
+  const [grantSizeBand, setGrantSizeBand] = useState(null); // e.g. [0,10000] or [1000000, Infinity]
   const [selectedYear, setSelectedYear] = useState("all"); // global year filter
 
   // ---- Available years (sorted) ----
@@ -270,10 +273,14 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
     return Object.values(map).map(p => ({ ...p, recipients: p.recipients.size })).sort((a, b) => b.total - a.total);
   }, [filteredGrants]);
 
-  // By recipient (aggregated, uses filteredGrants + progFilter)
+  // By recipient (aggregated, uses filteredGrants + all active filters)
   const byRecipient = useMemo(() => {
     const map = {};
-    const base = progFilter ? filteredGrants.filter(g => (g.programme || "General") === progFilter) : filteredGrants;
+    let base = filteredGrants;
+    if (progFilter) base = base.filter(g => (g.programme || "General") === progFilter);
+    if (sectorFilter) base = base.filter(g => (g.organisations?.sector || "Unclassified") === sectorFilter);
+    if (countyFilter) base = base.filter(g => (g.organisations?.county || "Unknown") === countyFilter);
+    if (grantSizeBand) base = base.filter(g => (g.amount || 0) >= grantSizeBand[0] && (g.amount || 0) < grantSizeBand[1]);
     base.forEach(g => {
       const name = cleanName(g.organisations?.name || g.recipient_name_raw) || "Unknown";
       const id = g.organisations?.id || name;
@@ -293,7 +300,7 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
       if (recipientSort === "count") return b.count - a.count;
       return b.total - a.total;
     });
-  }, [filteredGrants, progFilter, searchRecipients, recipientSort]);
+  }, [filteredGrants, progFilter, sectorFilter, countyFilter, grantSizeBand, searchRecipients, recipientSort]);
 
   // By county (uses filteredGrants)
   const byCounty = useMemo(() => {
@@ -491,11 +498,13 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">By Programme</h3>
                 <ResponsiveContainer width="100%" height={280}>
                   <PieChart>
-                    <Pie data={byProgramme.slice(0, 8)} dataKey="total" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent }) => `${name.length > 15 ? name.substring(0, 13) + "…" : name} ${(percent * 100).toFixed(0)}%`} labelLine={{ strokeWidth: 1 }}>
+                    <Pie data={byProgramme.slice(0, 8)} dataKey="total" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent }) => `${name.length > 15 ? name.substring(0, 13) + "…" : name} ${(percent * 100).toFixed(0)}%`} labelLine={{ strokeWidth: 1 }} cursor="pointer"
+                      onClick={(data) => { if (data?.name) { setProgrammeFilter(data.name); setActiveTab("recipients"); } }}>
                       {byProgramme.slice(0, 8).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <RTooltip formatter={(v) => fmtFull(v)} />
                   </PieChart>
+                  <p className="text-[10px] text-gray-400 text-center mt-2">Click a segment to filter recipients by programme</p>
                 </ResponsiveContainer>
               </div>
             )}
@@ -503,11 +512,13 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">By Sector</h3>
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
-                  <Pie data={bySector.slice(0, 8)} dataKey="total" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent }) => `${SECTOR_ICONS[name] || ""} ${name.length > 15 ? name.substring(0, 13) + "…" : name} ${(percent * 100).toFixed(0)}%`} labelLine={{ strokeWidth: 1 }}>
+                  <Pie data={bySector.slice(0, 8)} dataKey="total" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, percent }) => `${SECTOR_ICONS[name] || ""} ${name.length > 15 ? name.substring(0, 13) + "…" : name} ${(percent * 100).toFixed(0)}%`} labelLine={{ strokeWidth: 1 }} cursor="pointer"
+                    onClick={(data) => { if (data?.name) { setSectorFilter(data.name); setActiveTab("recipients"); } }}>
                     {bySector.slice(0, 8).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <RTooltip formatter={(v) => fmtFull(v)} />
                 </PieChart>
+                <p className="text-[10px] text-gray-400 text-center mt-2">Click a segment to filter recipients by sector</p>
               </ResponsiveContainer>
             </div>
           </div>
@@ -524,19 +535,26 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
               ].map(b => {
                 const count = grants.filter(g => (g.amount || 0) >= b.range[0] && (g.amount || 0) < b.range[1]).length;
                 const total = grants.filter(g => (g.amount || 0) >= b.range[0] && (g.amount || 0) < b.range[1]).reduce((s, g) => s + (g.amount || 0), 0);
+                const isActive = grantSizeBand && grantSizeBand[0] === b.range[0] && grantSizeBand[1] === b.range[1];
                 return (
-                  <div key={b.label} className="bg-gray-50 rounded-xl p-3 text-center">
+                  <button key={b.label} onClick={() => { setGrantSizeBand(isActive ? null : b.range); setActiveTab("recipients"); }}
+                    className={`rounded-xl p-3 text-center transition-all cursor-pointer ${isActive ? "bg-emerald-100 border-2 border-emerald-500 shadow-sm" : "bg-gray-50 border-2 border-transparent hover:border-emerald-200 hover:bg-emerald-50"}`}>
                     <div className="text-xs text-gray-400 font-medium">{b.label}</div>
                     <div className="text-xl font-bold text-gray-900 mt-1">{count}</div>
                     <div className="text-xs text-emerald-600 font-semibold">{fmt(total)}</div>
-                  </div>
+                    <div className="text-[9px] text-gray-400 mt-1">{count > 0 ? "Click to view →" : ""}</div>
+                  </button>
                 );
               })}
             </div>
             {largestGrant && (
               <div className="flex flex-wrap gap-4 text-xs text-gray-500 mt-2">
-                <span>Largest: <strong className="text-gray-900">{fmtFull(largestGrant.amount)}</strong> → {cleanName(largestGrant.organisations?.name || largestGrant.recipient_name_raw)}</span>
-                {smallestGrant && <span>Smallest: <strong className="text-gray-900">{fmtFull(smallestGrant.amount)}</strong> → {cleanName(smallestGrant.organisations?.name || smallestGrant.recipient_name_raw)}</span>}
+                <span>Largest: <strong className="text-gray-900">{fmtFull(largestGrant.amount)}</strong> → {largestGrant.organisations?.id ? (
+                  <button onClick={() => setPage(`org:${largestGrant.organisations.id}`)} className="text-emerald-600 hover:text-emerald-800 font-semibold underline">{cleanName(largestGrant.organisations?.name || largestGrant.recipient_name_raw)}</button>
+                ) : cleanName(largestGrant.organisations?.name || largestGrant.recipient_name_raw)}</span>
+                {smallestGrant && <span>Smallest: <strong className="text-gray-900">{fmtFull(smallestGrant.amount)}</strong> → {smallestGrant.organisations?.id ? (
+                  <button onClick={() => setPage(`org:${smallestGrant.organisations.id}`)} className="text-emerald-600 hover:text-emerald-800 font-semibold underline">{cleanName(smallestGrant.organisations?.name || smallestGrant.recipient_name_raw)}</button>
+                ) : cleanName(smallestGrant.organisations?.name || smallestGrant.recipient_name_raw)}</span>}
               </div>
             )}
           </div>
@@ -546,6 +564,31 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
       {/* ============ RECIPIENTS TAB ============ */}
       {activeTab === "recipients" && (
         <div>
+          {/* Active filter banners */}
+          {(sectorFilter || countyFilter || grantSizeBand) && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {sectorFilter && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-100 text-violet-800 text-xs font-semibold rounded-full">
+                  Sector: {sectorFilter}
+                  <button onClick={() => setSectorFilter(null)} className="ml-1 text-violet-500 hover:text-violet-700 font-bold">×</button>
+                </span>
+              )}
+              {countyFilter && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-100 text-teal-800 text-xs font-semibold rounded-full">
+                  County: {countyFilter}
+                  <button onClick={() => setCountyFilter(null)} className="ml-1 text-teal-500 hover:text-teal-700 font-bold">×</button>
+                </span>
+              )}
+              {grantSizeBand && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">
+                  Grant size: {fmt(grantSizeBand[0])}–{grantSizeBand[1] === Infinity ? "∞" : fmt(grantSizeBand[1])}
+                  <button onClick={() => setGrantSizeBand(null)} className="ml-1 text-amber-500 hover:text-amber-700 font-bold">×</button>
+                </span>
+              )}
+              <button onClick={() => { setSectorFilter(null); setCountyFilter(null); setGrantSizeBand(null); setProgrammeFilter(null); }} className="text-xs text-gray-500 hover:text-gray-700 underline ml-2">Clear all filters</button>
+            </div>
+          )}
+
           {/* Programme filter + search */}
           <div className="flex flex-wrap gap-3 mb-4">
             <div className="relative flex-1 min-w-[200px]">
@@ -732,9 +775,9 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
                 </tr></thead>
                 <tbody>
                   {byCounty.map((c, i) => (
-                    <tr key={c.name} className="border-b border-gray-50 hover:bg-gray-50">
+                    <tr key={c.name} className="border-b border-gray-50 hover:bg-emerald-50 cursor-pointer transition-colors" onClick={() => { setCountyFilter(c.name); setActiveTab("recipients"); }}>
                       <td className="py-2 pr-3 text-gray-400 text-xs">{i + 1}</td>
-                      <td className="py-2 pr-3 font-medium text-gray-900">{c.name}</td>
+                      <td className="py-2 pr-3 font-medium text-emerald-700 hover:underline">{c.name}</td>
                       <td className="py-2 pr-3 text-right text-gray-600">{c.count}</td>
                       <td className="py-2 pr-3 text-right text-gray-600">{c.orgs}</td>
                       <td className="py-2 pr-3 text-right font-semibold text-emerald-600">{fmt(c.total)}</td>
@@ -769,9 +812,9 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
           {/* Sector cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {bySector.map((s, si) => (
-              <div key={s.name} className="bg-white rounded-xl border border-gray-100 p-4">
+              <button key={s.name} onClick={() => { setSectorFilter(s.name); setActiveTab("recipients"); }} className="bg-white rounded-xl border border-gray-100 p-4 text-left hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer group">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                  <span className="font-semibold text-gray-900 text-sm flex items-center gap-2 group-hover:text-emerald-700">
                     <span className="text-lg">{SECTOR_ICONS[s.name] || "📋"}</span>
                     {s.name}
                   </span>
@@ -785,7 +828,8 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
                 <div className="w-full h-1.5 bg-gray-100 rounded-full mt-2">
                   <div className="h-full rounded-full" style={{ width: `${Math.max(1, (s.total / (bySector[0]?.total || 1)) * 100)}%`, background: COLORS[si % COLORS.length] }} />
                 </div>
-              </div>
+                <div className="text-[10px] text-gray-400 mt-2 group-hover:text-emerald-600">Click to see all {s.orgs} recipients →</div>
+              </button>
             ))}
           </div>
         </div>

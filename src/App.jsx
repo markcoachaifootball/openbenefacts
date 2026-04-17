@@ -1239,6 +1239,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
   const [directorBoards, setDirectorBoards] = useState({});
   const [benchmark, setBenchmark] = useState(null);
   const [copied, setCopied] = useState(null); // "link" | "cite" | "embed"
+  const [showAllFunding, setShowAllFunding] = useState(false);
   // White-label branding for reports
   const [showBranding, setShowBranding] = useState(null); // "pdf" or "dd"
   const [brandName, setBrandName] = useState(() => { try { return localStorage.getItem("ob_brand_name") || ""; } catch { return ""; } });
@@ -1852,21 +1853,55 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                 );
               })()}
 
-              {/* Funding received */}
+              {/* Funding received — clickable to funder pages */}
               {org.grants && org.grants.length > 0 && (
                 <div className="mt-6">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">State Funding Received</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">State Funding Received</h3>
+                    <div className="text-sm font-bold text-emerald-600">{fmt(org.grants.reduce((s, g) => s + (g.amount || 0), 0))} total</div>
+                  </div>
+                  {/* Funder pills — clickable */}
+                  {(() => {
+                    const uniqueFunders = [...new Set(org.grants.map(g => g.funders?.name || g.funder_name || "Government"))];
+                    return uniqueFunders.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {uniqueFunders.slice(0, 6).map(fName => {
+                          const fGrants = org.grants.filter(g => (g.funders?.name || g.funder_name || "Government") === fName);
+                          const fTotal = fGrants.reduce((s, g) => s + (g.amount || 0), 0);
+                          return (
+                            <button key={fName} onClick={() => setPage(`funder:${fName}`)}
+                              className="text-xs px-3 py-1.5 rounded-full font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer transition-colors">
+                              {fName.length > 30 ? fName.substring(0, 28) + "…" : fName} · {fmt(fTotal)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                   <div className="space-y-2">
-                    {org.grants.slice(0, 5).map((g, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                    {org.grants.slice(0, showAllFunding ? 999 : 10).map((g, i) => (
+                      <button key={i} onClick={() => setPage(`funder:${g.funders?.name || g.funder_name || "Government"}`)}
+                        className="w-full flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-emerald-50 transition-colors text-left group">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{g.funders?.name || g.funder_name || "Government"}</div>
+                          <div className="text-sm font-medium text-gray-900 group-hover:text-emerald-700">{g.funders?.name || g.funder_name || "Government"}</div>
                           <div className="text-xs text-gray-400">{g.programme || ""} {g.year ? `· ${g.year}` : ""}</div>
                         </div>
-                        {g.amount > 0 && <div className="text-sm font-semibold text-emerald-600">{fmt(g.amount)}</div>}
-                      </div>
+                        <div className="flex items-center gap-2">
+                          {g.amount > 0 && <div className="text-sm font-semibold text-emerald-600">{fmt(g.amount)}</div>}
+                          <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-emerald-500" />
+                        </div>
+                      </button>
                     ))}
-                    {org.grants.length > 5 && <p className="text-xs text-gray-400 text-center">{org.grants.length - 5} more funding records</p>}
+                    {org.grants.length > 10 && !showAllFunding && (
+                      <button onClick={() => setShowAllFunding(true)} className="w-full text-center text-xs text-emerald-600 hover:text-emerald-800 font-medium py-2">
+                        Show all {org.grants.length} funding records ↓
+                      </button>
+                    )}
+                    {showAllFunding && org.grants.length > 10 && (
+                      <button onClick={() => setShowAllFunding(false)} className="w-full text-center text-xs text-gray-400 hover:text-gray-600 font-medium py-2">
+                        Show fewer ↑
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
