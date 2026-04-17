@@ -404,7 +404,6 @@ async function importGrants(grants, funderId, lookups) {
       programme: g.programme || "Sports Capital Programme",
       amount: g.amount,
       year: g.year || null,
-      county: g.county || org?.county || null,
     };
 
     // Skip exact duplicates
