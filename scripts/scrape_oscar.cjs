@@ -106,7 +106,7 @@ async function ensureFunder(name, type = "Government Department") {
 
   const { data: created, error } = await supabase
     .from("funders")
-    .insert({ name, type, description: `${name} — Sports Capital Programme funding` })
+    .insert({ name, type })
     .select("id")
     .single();
   if (error) throw error;
