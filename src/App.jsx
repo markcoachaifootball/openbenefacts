@@ -646,14 +646,11 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
     <div className="bg-white min-h-screen">
       {/* Hero — clean white, Benefacts-style */}
       <div className="w-full pt-16 sm:pt-24 pb-8 sm:pb-12 text-center px-4">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl text-gray-700 mb-2 leading-tight max-w-3xl mx-auto font-light">
-          Welcome to OpenBenefacts,
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 leading-tight max-w-3xl mx-auto">
+          Nonprofit transparency data you can trust
         </h1>
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl text-gray-900 mb-6 leading-tight max-w-3xl mx-auto">
-          the <span className="font-bold">database of Irish nonprofits</span>
-        </h2>
-        <p className="text-base sm:text-lg text-gray-500 mb-12 max-w-xl mx-auto leading-relaxed">
-          We get our data from many public sources, refine it,<br className="hidden sm:block" /> and publish it for easy access.
+        <p className="text-base sm:text-lg text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed">
+          Fresh, auditable information direct from official Irish sources — {orgCount.toLocaleString()} organisations, {financialCount.toLocaleString()} financial records. Free and open to everyone.
         </p>
 
         {/* Simple Search / Advanced Search tabs */}
@@ -3956,58 +3953,47 @@ function AboutPage({ orgCount = 36803 }) {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
         {/* Section label */}
-        <p className="text-emerald-600 font-medium text-sm mb-3">OpenBenefacts searchable public website</p>
+        <p className="text-emerald-600 font-medium text-sm mb-3">About the project</p>
 
         {/* Title */}
         <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-gray-900 leading-tight mb-10">
-          What's the difference between this website and the charities register?
+          About OpenBenefacts
         </h1>
 
-        {/* Article body — clean prose like Benefacts */}
+        {/* Article body */}
         <div className="space-y-6 text-base text-gray-700 leading-relaxed">
           <p>
-            The Charities Regulator is a body <strong>established by statute</strong>. OpenBenefacts is an independent project with no regulatory powers or responsibilities. We aggregate, augment, structure, publish and analyse data on all nonprofits in a way that makes their work more accessible and transparent to the public, mainly by publishing it on this free public website.
+            OpenBenefacts is an open-data platform that maps the funding relationships between Irish government bodies, philanthropic organisations, and Ireland's {orgCount.toLocaleString()} nonprofits. We are the successor to Benefacts, which closed in 2022 after government funding was pulled, leaving a four-year gap in Irish nonprofit transparency.
           </p>
 
           <p>
-            OpenBenefacts publishes information on more than {orgCount.toLocaleString()} nonprofits — whether or not they are registered as charities — by re-using data which it accumulates from <strong>many public sources</strong>, including the public register of charities.
+            Our mission is to make nonprofit funding data accessible, searchable, and transparent — helping donors, researchers, journalists, policymakers, and the public understand where money flows in Ireland's charitable sector.
           </p>
 
           <p>
-            In some cases this means OpenBenefacts has more data about charities, because they have provided information to other regulators as well, which we amalgamate into their listing on openbenefacts.ie.
+            We are independent, with no regulatory powers or responsibilities. We aggregate, structure, and publish data from many public sources in a way that makes nonprofit activity more accessible and transparent, mainly by publishing it on this free public website.
           </p>
 
           <p>
-            In other cases, the OpenBenefacts listing may be more up to date, for example because a charity has updated the names of its Directors to the <strong>Companies Registration Office</strong>.
-          </p>
-
-          <p>
-            In a very limited set of cases, organisations listed on the Register of Charities are not included on this website. This is because they are public bodies, established and controlled by the State, and they do not conform with the widely-used definition of a nonprofit organisation.
+            OpenBenefacts publishes information on all types of nonprofits — whether or not they are registered as charities. In many cases we have more data than any single regulator, because we combine information filed with the Charities Regulator, the Companies Registration Office, Revenue, and 14 government funding bodies.
           </p>
         </div>
 
-        <p className="text-sm text-gray-400 mt-10">Last updated April 2026</p>
-
-        {/* Separator */}
         <hr className="my-10 border-gray-200" />
 
-        {/* More about sections */}
-        <p className="text-emerald-600 font-medium text-sm mb-3">About the project</p>
+        {/* Why this matters */}
+        <p className="text-emerald-600 font-medium text-sm mb-3">Why this matters</p>
         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-10">
-          Why does OpenBenefacts exist?
+          €14 billion deserves oversight
         </h2>
 
         <div className="space-y-6 text-base text-gray-700 leading-relaxed">
           <p>
-            Every year, the Irish government distributes between €11 billion and €14 billion to nonprofits — charities, housing bodies, schools, sports clubs, and health agencies. For years, Benefacts was the only independent platform tracking where this money went. When government funding was pulled in 2022, Benefacts shut down.
+            Every year, the Irish government distributes between €11 billion and €14 billion to nonprofits — charities, housing bodies, schools, sports clubs, and health agencies. For years, Benefacts was the only independent platform tracking where this money went. When it closed, that oversight disappeared.
           </p>
 
           <p>
-            For four years, there was no single place where citizens, journalists, or grant-makers could see the full picture of nonprofit funding in Ireland. OpenBenefacts fills that gap.
-          </p>
-
-          <p>
-            We aggregate data from the Charities Regulator, the Companies Registration Office, the Revenue Commissioners, and 14 government funding bodies including the HSE, Tusla, Pobal, Sport Ireland, and the Arts Council. All of this is published here, free to search.
+            OpenBenefacts picks up where they left off — open, independent, and free to search. With full financials, funder mapping, AI risk scores, and due diligence reports, we give the public the tools to follow Irish nonprofit money.
           </p>
         </div>
 
