@@ -238,9 +238,6 @@ async function downloadSCEP2023() {
   const statusIdx = headers.findIndex(h => /status|outcome|decision/i.test(h));
   const grantCatIdx = headers.findIndex(h => /grant\s*category/i.test(h));
 
-  console.log(`\n   Column mapping:`);
-  console.log(`     Name:   "${nameCol}"`);
-  console.log(`     Amount: "${amountCol}"`);
   console.log(`\n   Column indices:`);
   console.log(`     Name [${nameIdx}]:    "${nameIdx >= 0 ? headers[nameIdx] : 'NOT FOUND'}"`);
   console.log(`     Amount [${amountIdx}]: "${amountIdx >= 0 ? headers[amountIdx] : 'NOT FOUND'}"`);
