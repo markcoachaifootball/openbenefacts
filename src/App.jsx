@@ -3942,48 +3942,133 @@ function PricingPage({ orgCount = 36803, setPage }) {
 // ===========================================================
 function AboutPage({ orgCount = 36803 }) {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-4xl font-bold text-gray-900 mb-3">About OpenBenefacts</h1>
-      <p className="text-lg text-gray-500 mb-8">Bringing transparency to Ireland's nonprofit sector</p>
-      <div className="prose prose-gray max-w-none space-y-4">
-        <p>OpenBenefacts is a modern, open-data platform that maps the funding relationships between government bodies, philanthropic organisations, and Ireland's {orgCount.toLocaleString()} registered nonprofits. We are the successor to Benefacts, which closed in 2022, leaving a four-year gap in Irish nonprofit transparency.</p>
-        <p>Our mission is to make nonprofit funding data accessible, searchable, and transparent — helping donors, researchers, journalists, policymakers, and the public understand where money flows in Ireland's charitable sector.</p>
-      </div>
-      <h2 className="text-2xl font-bold text-gray-900 mt-10 mb-4">Data Sources</h2>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {[
-          { name: "Charities Regulator", desc: "Charity register, annual returns, financials", records: "12,000+", icon: Shield },
-          { name: "Companies Registration Office", desc: "Company directors, legal status, incorporation", records: "25,000+", icon: Building2 },
-          { name: "Revenue Commissioners", desc: "CHY numbers, tax-exempt status", records: "10,000+", icon: Landmark },
-          { name: "Government Estimates", desc: "Departmental spending allocations", records: "Annual", icon: FileText },
-          { name: "HSE Section 38/39", desc: "Health service funding to nonprofits", records: "1,500+", icon: Heart },
-          { name: "Tusla Section 56", desc: "Child & family service grants", records: "500+", icon: Users },
-          { name: "Arts Council", desc: "Arts organisation funding decisions", records: "2,000+", icon: Award },
-          { name: "Sport Ireland", desc: "NGB allocations and programme funding", records: "500+", icon: Zap },
-          { name: "Pobal", desc: "Community and social programme data", records: "3,000+", icon: Globe },
-          { name: "EU Structural Funds", desc: "European funding to Irish nonprofits", records: "Varies", icon: Star },
-          { name: "Local Authorities", desc: "31 county/city council grants", records: "1,000+", icon: MapPin },
-        ].map((src, i) => (
-          <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
-              <src.icon className="w-4 h-4 text-emerald-600" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-semibold text-gray-900">{src.name}</div>
-              <div className="text-xs text-gray-500 mt-0.5">{src.desc}</div>
-              <div className="text-xs text-emerald-600 font-medium mt-1">{src.records} records</div>
-            </div>
+    <div className="bg-white min-h-screen">
+      {/* Breadcrumb */}
+      <div className="border-b border-gray-200">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3">
+          <div className="text-sm text-gray-400">
+            <span className="hover:text-gray-600 cursor-pointer">Home</span>
+            <span className="mx-2">·</span>
+            <span className="text-gray-700">About</span>
           </div>
-        ))}
+        </div>
       </div>
 
-      <h2 className="text-2xl font-bold text-gray-900 mt-10 mb-3">Why This Matters</h2>
-      <div className="prose prose-gray max-w-none">
-        <p>Every year, the Irish government distributes €11–14 billion to nonprofits. Since Benefacts closed, there has been no single platform where citizens, journalists, or grant-makers can track where this money goes. OpenBenefacts fills that gap.</p>
-      </div>
-      <div className="mt-12 p-6 bg-emerald-50 rounded-2xl">
-        <h3 className="font-bold text-emerald-900 mb-2">Contact</h3>
-        <p className="text-emerald-700">Questions, data corrections, or partnership inquiries: <a href="mailto:mark@openbenefacts.com" className="underline font-medium">mark@openbenefacts.com</a></p>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+        {/* Section label */}
+        <p className="text-emerald-600 font-medium text-sm mb-3">OpenBenefacts searchable public website</p>
+
+        {/* Title */}
+        <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-gray-900 leading-tight mb-10">
+          What's the difference between this website and the charities register?
+        </h1>
+
+        {/* Article body — clean prose like Benefacts */}
+        <div className="space-y-6 text-base text-gray-700 leading-relaxed">
+          <p>
+            The Charities Regulator is a body <strong>established by statute</strong>. OpenBenefacts is an independent project with no regulatory powers or responsibilities. We aggregate, augment, structure, publish and analyse data on all nonprofits in a way that makes their work more accessible and transparent to the public, mainly by publishing it on this free public website.
+          </p>
+
+          <p>
+            OpenBenefacts publishes information on more than {orgCount.toLocaleString()} nonprofits — whether or not they are registered as charities — by re-using data which it accumulates from <strong>many public sources</strong>, including the public register of charities.
+          </p>
+
+          <p>
+            In some cases this means OpenBenefacts has more data about charities, because they have provided information to other regulators as well, which we amalgamate into their listing on openbenefacts.ie.
+          </p>
+
+          <p>
+            In other cases, the OpenBenefacts listing may be more up to date, for example because a charity has updated the names of its Directors to the <strong>Companies Registration Office</strong>.
+          </p>
+
+          <p>
+            In a very limited set of cases, organisations listed on the Register of Charities are not included on this website. This is because they are public bodies, established and controlled by the State, and they do not conform with the widely-used definition of a nonprofit organisation.
+          </p>
+        </div>
+
+        <p className="text-sm text-gray-400 mt-10">Last updated April 2026</p>
+
+        {/* Separator */}
+        <hr className="my-10 border-gray-200" />
+
+        {/* More about sections */}
+        <p className="text-emerald-600 font-medium text-sm mb-3">About the project</p>
+        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-10">
+          Why does OpenBenefacts exist?
+        </h2>
+
+        <div className="space-y-6 text-base text-gray-700 leading-relaxed">
+          <p>
+            Every year, the Irish government distributes between €11 billion and €14 billion to nonprofits — charities, housing bodies, schools, sports clubs, and health agencies. For years, Benefacts was the only independent platform tracking where this money went. When government funding was pulled in 2022, Benefacts shut down.
+          </p>
+
+          <p>
+            For four years, there was no single place where citizens, journalists, or grant-makers could see the full picture of nonprofit funding in Ireland. OpenBenefacts fills that gap.
+          </p>
+
+          <p>
+            We aggregate data from the Charities Regulator, the Companies Registration Office, the Revenue Commissioners, and 14 government funding bodies including the HSE, Tusla, Pobal, Sport Ireland, and the Arts Council. All of this is published here, free to search.
+          </p>
+        </div>
+
+        <hr className="my-10 border-gray-200" />
+
+        {/* Data sources — clean list style */}
+        <p className="text-emerald-600 font-medium text-sm mb-3">Our data</p>
+        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-10">
+          Where does the data come from?
+        </h2>
+
+        <div className="space-y-6 text-base text-gray-700 leading-relaxed">
+          <p>OpenBenefacts re-uses data from many public sources. The main ones are:</p>
+
+          <div className="space-y-4 ml-1">
+            {[
+              { name: "Charities Regulator of Ireland", desc: "The public register of charities, annual returns, and financial statements filed by registered charities." },
+              { name: "Companies Registration Office (CRO)", desc: "Company directors, legal status, incorporation dates, and annual returns for companies limited by guarantee." },
+              { name: "Revenue Commissioners", desc: "CHY numbers identifying organisations with tax-exempt charitable status." },
+              { name: "HSE (Section 38 & 39 agencies)", desc: "Funding to health and disability service providers under the Health Act." },
+              { name: "Tusla — Child and Family Agency", desc: "Section 56 grants to family support, childcare, and domestic violence organisations." },
+              { name: "Sport Ireland & Sports Capital Programme", desc: "National governing body allocations and capital grants to sports clubs nationwide." },
+              { name: "Arts Council / An Chomhairle Ealaion", desc: "Annual funding decisions to arts organisations across all artforms." },
+              { name: "Pobal", desc: "Community development, social inclusion, and early years programme funding." },
+              { name: "Department of Housing — Local Authorities", desc: "Emergency accommodation data and housing body funding across 31 councils." },
+            ].map((src, i) => (
+              <div key={i} className="border-l-2 border-emerald-200 pl-4">
+                <div className="font-semibold text-gray-900">{src.name}</div>
+                <div className="text-sm text-gray-500 mt-0.5">{src.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          <p>
+            We continuously add new sources as we identify and process them. If you know of a public dataset we should include, please get in touch.
+          </p>
+        </div>
+
+        <hr className="my-10 border-gray-200" />
+
+        {/* Contact */}
+        <div className="bg-emerald-50 rounded-xl p-6">
+          <h3 className="font-bold text-emerald-900 mb-2">Contact</h3>
+          <p className="text-emerald-700 text-sm">Questions, data corrections, or partnership inquiries: <a href="mailto:mark@openbenefacts.com" className="underline font-medium">mark@openbenefacts.com</a></p>
+        </div>
+
+        {/* Similar help topics */}
+        <div className="mt-12">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Similar help topics</h3>
+          <div className="space-y-2">
+            {[
+              { label: "How to search for an organisation", page: "knowledge" },
+              { label: "Understanding financial data on OpenBenefacts", page: "knowledge" },
+              { label: "What is a Section 38 or Section 39 agency?", page: "knowledge" },
+            ].map((link, i) => (
+              <div key={i} className="text-emerald-600 hover:text-emerald-700 cursor-pointer text-sm font-medium">
+                {link.label} →
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
