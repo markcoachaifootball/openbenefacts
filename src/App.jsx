@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { Search, Building2, Users, TrendingUp, DollarSign, ChevronRight, ArrowLeft, Eye, Star, Shield, Menu, X, MapPin, Hash, Landmark, GraduationCap, Heart, Briefcase, Globe, Filter, ChevronDown, ExternalLink, Info, BarChart3, FileText, Award, Zap, Database, ArrowRight, Layers, Check, CreditCard, LogIn, UserPlus, Crown, Sparkles, LogOut, AlertTriangle, Lock, ArrowUpDown, Bookmark, Share2, Copy, Code, Download, Home } from "lucide-react";
-import { supabase, fetchStats, fetchFunders, fetchOrganisations, fetchOrganisation, searchOrganisations, fetchSectorCounts, fetchCountyCounts, fetchDirectorBoards, fetchFunderGrants, fetchFunderGrantsByName, fetchSectorBenchmark } from "./supabase.js";
+import { supabase, fetchStats, fetchFunders, fetchOrganisations, fetchOrganisationsAdvanced, fetchOrganisation, searchOrganisations, fetchSectorCounts, fetchCountyCounts, fetchSubsectorCounts, fetchGovFormCounts, fetchDirectorBoards, fetchFunderGrants, fetchFunderGrantsByName, fetchSectorBenchmark } from "./supabase.js";
 import { DATA } from "./data.js";
 import CouncilFinancesPage from "./CouncilFinances.jsx";
 import FollowTheMoneyPage from "./FollowTheMoney.jsx";
@@ -989,8 +989,79 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
 }
 
 // ===========================================================
-// ORGANIZATIONS PAGE (with working filters + search)
+// ORGANIZATIONS PAGE — Advanced search with Benefacts-style filter sidebar
 // ===========================================================
+
+// Reusable accordion filter section
+function FilterSection({ title, icon: Icon, open, onToggle, count, children }) {
+  return (
+    <div className="border-b border-gray-100 last:border-0">
+      <button onClick={onToggle} className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 transition-colors">
+        <div className="flex items-center gap-2">
+          {Icon && <Icon className="w-3.5 h-3.5 text-gray-400" />}
+          <span className="text-sm font-medium text-gray-700">{title}</span>
+          {count > 0 && <span className="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium">{count}</span>}
+        </div>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && <div className="px-3 pb-3">{children}</div>}
+    </div>
+  );
+}
+
+// Checkbox list with optional "show more" and search
+function CheckboxFilter({ items, selected, onToggle, maxVisible = 8, showCounts = true }) {
+  const [expanded, setExpanded] = useState(false);
+  const [filterText, setFilterText] = useState("");
+  const filtered = filterText ? items.filter(i => i.label.toLowerCase().includes(filterText.toLowerCase())) : items;
+  const visible = expanded ? filtered : filtered.slice(0, maxVisible);
+  const hasMore = filtered.length > maxVisible;
+
+  return (
+    <div>
+      {items.length > maxVisible && (
+        <input type="text" placeholder="Filter..." value={filterText} onChange={e => setFilterText(e.target.value)}
+          className="w-full px-2 py-1 mb-1.5 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-emerald-400 outline-none" />
+      )}
+      <div className="space-y-0.5 max-h-56 overflow-y-auto">
+        {visible.map(item => (
+          <label key={item.value} className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-gray-50 cursor-pointer group">
+            <input type="checkbox" checked={selected.includes(item.value)} onChange={() => onToggle(item.value)}
+              className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
+            <span className="text-xs text-gray-600 flex-1 truncate group-hover:text-gray-900">{item.label}</span>
+            {showCounts && item.count != null && <span className="text-xs text-gray-400">{item.count.toLocaleString()}</span>}
+          </label>
+        ))}
+      </div>
+      {hasMore && !filterText && (
+        <button onClick={() => setExpanded(!expanded)} className="text-xs text-emerald-600 hover:underline mt-1 px-1">
+          {expanded ? "Show less" : `Show all ${items.length}`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// The 26 Republic of Ireland counties (canonical order — alphabetical)
+const IRISH_COUNTIES = [
+  "ANTRIM","ARMAGH","CARLOW","CAVAN","CLARE","CORK","DERRY","DONEGAL","DOWN",
+  "DUBLIN","FERMANAGH","GALWAY","KERRY","KILDARE","KILKENNY","LAOIS","LEITRIM",
+  "LIMERICK","LONGFORD","LOUTH","MAYO","MEATH","MONAGHAN","OFFALY","ROSCOMMON",
+  "SLIGO","TIPPERARY","TYRONE","WATERFORD","WESTMEATH","WEXFORD","WICKLOW",
+];
+
+const INCOME_BANDS = [
+  { label: "Less than €10K", value: "0-10k", min: 0, max: 10000 },
+  { label: "€10K – €50K", value: "10k-50k", min: 10000, max: 50000 },
+  { label: "€50K – €100K", value: "50k-100k", min: 50000, max: 100000 },
+  { label: "€100K – €500K", value: "100k-500k", min: 100000, max: 500000 },
+  { label: "€500K – €1M", value: "500k-1m", min: 500000, max: 1000000 },
+  { label: "€1M – €5M", value: "1m-5m", min: 1000000, max: 5000000 },
+  { label: "€5M – €10M", value: "5m-10m", min: 5000000, max: 10000000 },
+  { label: "€10M – €50M", value: "10m-50m", min: 10000000, max: 50000000 },
+  { label: "Over €50M", value: "50m+", min: 50000000, max: null },
+];
+
 function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, setInitialSector, watchlist }) {
   const { tier, requirePro } = useAuth();
   const isProfessional = tier === "professional" || tier === "enterprise";
@@ -1000,63 +1071,101 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
   const [pageNum, setPageNum] = useState(1);
   const [search, setSearch] = useState(initialSearch || "");
   const [sortBy, setSortBy] = useState("income");
-  const [showFilters, setShowFilters] = useState(false);
-  const [sector, setSector] = useState("");
-  const [county, setCounty] = useState("");
-  const [govForm, setGovForm] = useState("");
-  const [incomeRange, setIncomeRange] = useState("");
-  const [sectors, setSectors] = useState([]);
-  const [counties, setCounties] = useState([]);
+  const [showFilters, setShowFilters] = useState(true);
   const [suggestions, setSuggestions] = useState([]);
   const pageSize = 30;
   const timer = useRef(null);
 
+  // Multi-select filter state
+  const [selSectors, setSelSectors] = useState([]);
+  const [selSubsectors, setSelSubsectors] = useState([]);
+  const [selCounties, setSelCounties] = useState([]);
+  const [selGovForms, setSelGovForms] = useState([]);
+  const [selIncomeBand, setSelIncomeBand] = useState("");
+  const [hasCharityNum, setHasCharityNum] = useState(null);
+  const [hasCroNum, setHasCroNum] = useState(null);
+  const [hasChyNum, setHasChyNum] = useState(null);
+  const [hasFunding, setHasFunding] = useState(null);
+
+  // Reference data for filter panels
+  const [sectorList, setSectorList] = useState([]);
+  const [subsectorList, setSubsectorList] = useState([]);
+  const [countyList, setCountyList] = useState([]);
+  const [govFormList, setGovFormList] = useState([]);
+
+  // Accordion open state
+  const [openSections, setOpenSections] = useState({ county: false, sector: true, type: false, income: false, regulatory: false });
+  const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+  // Load reference data
   useEffect(() => {
-    fetchSectorCounts().then(d => setSectors((d || []).slice(0, 8))).catch(() => {});
+    fetchSectorCounts().then(d => {
+      setSectorList((d || []).map(s => ({ label: s.sector, value: s.sector, count: s.org_count })));
+    }).catch(() => {});
     fetchCountyCounts().then(d => {
-      // Normalise county names and deduplicate
       const raw = (d || []).map(c => ({ ...c, county: normaliseCounty(c.county) })).filter(c => c.county);
       const merged = {};
       raw.forEach(c => { merged[c.county] = (merged[c.county] || 0) + (c.org_count || 1); });
-      const sorted = Object.entries(merged).sort((a, b) => b[1] - a[1]).map(([county]) => county);
-      setCounties(sorted);
+      // Use canonical county list, supplemented with any extras from DB
+      const canonical = IRISH_COUNTIES.map(c => ({ label: c, value: c, count: merged[c] || 0 })).filter(c => c.count > 0);
+      const extras = Object.entries(merged).filter(([c]) => !IRISH_COUNTIES.includes(c)).map(([c, count]) => ({ label: c, value: c, count }));
+      setCountyList([...canonical, ...extras]);
+    }).catch(() => {});
+    fetchGovFormCounts().then(d => {
+      setGovFormList((d || []).map(g => ({ label: g.form, value: g.form, count: g.count })));
     }).catch(() => {});
   }, []);
 
+  // Load subsectors when sector selection changes
+  useEffect(() => {
+    if (selSectors.length === 1) {
+      fetchSubsectorCounts(selSectors[0]).then(d => {
+        setSubsectorList((d || []).map(s => ({ label: s.subsector, value: s.subsector, count: s.count })));
+      }).catch(() => {});
+    } else {
+      setSubsectorList([]);
+      setSelSubsectors([]);
+    }
+  }, [selSectors]);
+
+  // Handle initial values from hero search
   useEffect(() => {
     if (initialSearch) { setSearch(initialSearch); setInitialSearch(""); }
   }, [initialSearch]);
-
   useEffect(() => {
-    if (initialSector) { setSector(initialSector); setInitialSector(""); setShowFilters(true); }
+    if (initialSector) { setSelSectors([initialSector]); setInitialSector(""); setShowFilters(true); }
   }, [initialSector]);
 
-  const INCOME_RANGES = [
-    { label: "All", value: "", min: null, max: null },
-    { label: "Under €100K", value: "0-100k", min: 0, max: 100000 },
-    { label: "€100K – €1M", value: "100k-1m", min: 100000, max: 1000000 },
-    { label: "€1M – €10M", value: "1m-10m", min: 1000000, max: 10000000 },
-    { label: "€10M – €100M", value: "10m-100m", min: 10000000, max: 100000000 },
-    { label: "Over €100M", value: "100m+", min: 100000000, max: null },
-  ];
-
-  const resultsRef = useRef(null);
   const isFirstLoad = useRef(true);
+
+  // Count active filters
+  const activeFilterCount = selSectors.length + selSubsectors.length + selCounties.length + selGovForms.length
+    + (selIncomeBand ? 1 : 0) + (hasCharityNum !== null ? 1 : 0) + (hasCroNum !== null ? 1 : 0) + (hasChyNum !== null ? 1 : 0) + (hasFunding !== null ? 1 : 0);
+
+  const toggleArrayValue = (arr, setArr, value) => {
+    setArr(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+    setPageNum(1);
+  };
 
   const loadOrgs = useCallback(async () => {
     setLoading(true);
     try {
       const sortMap = { income: "gross_income", employees: "employees", stateFunding: "total_grant_amount", name: "name" };
-      const range = INCOME_RANGES.find(r => r.value === incomeRange);
-      const result = await fetchOrganisations({
+      const band = INCOME_BANDS.find(r => r.value === selIncomeBand);
+      const result = await fetchOrganisationsAdvanced({
         page: pageNum,
         pageSize,
         search: search.trim(),
-        sector,
-        county,
-        governingForm: govForm,
-        minIncome: range?.min,
-        maxIncome: range?.max,
+        sectors: selSectors,
+        subsectors: selSubsectors,
+        counties: selCounties,
+        govForms: selGovForms,
+        minIncome: band?.min ?? null,
+        maxIncome: band?.max ?? null,
+        hasCharityNumber: hasCharityNum,
+        hasCroNumber: hasCroNum,
+        hasChyNumber: hasChyNum,
+        hasFunding,
         sortBy: sortMap[sortBy] || "gross_income",
         sortDir: sortBy === "name" ? "asc" : "desc",
       });
@@ -1068,7 +1177,7 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
     isFirstLoad.current = false;
-  }, [search, pageNum, sector, county, govForm, incomeRange, sortBy]);
+  }, [search, pageNum, selSectors, selSubsectors, selCounties, selGovForms, selIncomeBand, hasCharityNum, hasCroNum, hasChyNum, hasFunding, sortBy]);
 
   useEffect(() => { loadOrgs(); }, [loadOrgs]);
 
@@ -1085,25 +1194,45 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
     }, 300);
   };
 
+  const clearAllFilters = () => {
+    setSelSectors([]); setSelSubsectors([]); setSelCounties([]); setSelGovForms([]);
+    setSelIncomeBand(""); setHasCharityNum(null); setHasCroNum(null); setHasChyNum(null); setHasFunding(null);
+    setPageNum(1);
+  };
+
   const totalPages = Math.ceil(total / pageSize);
+
+  // Active filter pills
+  const filterPills = [
+    ...selSectors.map(s => ({ label: s, clear: () => setSelSectors(p => p.filter(v => v !== s)) })),
+    ...selSubsectors.map(s => ({ label: s, clear: () => setSelSubsectors(p => p.filter(v => v !== s)) })),
+    ...selCounties.map(c => ({ label: c, clear: () => setSelCounties(p => p.filter(v => v !== c)) })),
+    ...selGovForms.map(g => ({ label: g, clear: () => setSelGovForms(p => p.filter(v => v !== g)) })),
+    ...(selIncomeBand ? [{ label: INCOME_BANDS.find(b => b.value === selIncomeBand)?.label || selIncomeBand, clear: () => setSelIncomeBand("") }] : []),
+    ...(hasCharityNum !== null ? [{ label: hasCharityNum ? "Has Charity Number" : "No Charity Number", clear: () => setHasCharityNum(null) }] : []),
+    ...(hasCroNum !== null ? [{ label: hasCroNum ? "Has CRO Number" : "No CRO Number", clear: () => setHasCroNum(null) }] : []),
+    ...(hasChyNum !== null ? [{ label: "Has Revenue CHY", clear: () => setHasChyNum(null) }] : []),
+    ...(hasFunding !== null ? [{ label: "Has State Funding", clear: () => setHasFunding(null) }] : []),
+  ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Organisations</h1>
-          <p className="text-gray-500">Irish nonprofits with real government data</p>
+          <h1 className="text-3xl font-bold text-gray-900">Advanced Search</h1>
+          <p className="text-gray-500">Search {total.toLocaleString()} Irish nonprofits with real government data</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-400">{total.toLocaleString()} results</span>
           {isProfessional ? (
             <button onClick={() => {
-              const headers = ["Name","Sector","County","Type","Charity Number","CRO Number","Gross Income","Gross Expenditure","Employees"];
+              const headers = ["Name","Sector","Subsector","County","Type","Charity Number","CRO Number","Gross Income","Gross Expenditure","Employees"];
               const csvRows = [headers.join(",")];
               orgs.forEach(o => {
                 csvRows.push([
                   `"${(o.name || "").replace(/"/g, '""')}"`,
                   `"${o.sector || ""}"`,
+                  `"${o.subsector || ""}"`,
                   `"${o.county || ""}"`,
                   `"${o.governing_form || ""}"`,
                   o.charity_number || "",
@@ -1129,11 +1258,11 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
         </div>
       </div>
 
-      {/* Search + Filter bar */}
+      {/* Search bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search organisations..." value={search} onChange={e => handleSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" />
+          <input type="text" placeholder="Search by name, charity number, or CRO number..." value={search} onChange={e => handleSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" />
           {suggestions.length > 0 && search.trim().length >= 2 && (
             <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
               {suggestions.map(s => (
@@ -1145,84 +1274,154 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
             </div>
           )}
         </div>
-        <button onClick={() => setShowFilters(!showFilters)} className={`px-4 py-3 rounded-xl border font-medium text-sm flex items-center gap-2 ${showFilters ? "border-emerald-500 text-emerald-700 bg-emerald-50" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
-          <Filter className="w-4 h-4" /> Filters {(sector || county || govForm || incomeRange) ? <span className="w-2 h-2 bg-emerald-500 rounded-full" /> : null}
+        <button onClick={() => setShowFilters(!showFilters)} className={`px-4 py-3 rounded-xl border font-medium text-sm flex items-center gap-2 whitespace-nowrap ${showFilters ? "border-emerald-500 text-emerald-700 bg-emerald-50" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+          <Filter className="w-4 h-4" /> {showFilters ? "Hide Filters" : "Show Filters"} {activeFilterCount > 0 && <span className="bg-emerald-500 text-white text-xs px-1.5 py-0.5 rounded-full">{activeFilterCount}</span>}
         </button>
       </div>
 
-      {/* Filter panel */}
-      {showFilters && (
-        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4 grid sm:grid-cols-4 gap-4">
-          <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Sector</label>
-            <select value={sector} onChange={e => { setSector(e.target.value); setPageNum(1); }} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-              <option value="">All Sectors</option>
-              {sectors.map(s => <option key={typeof s === "string" ? s : s.sector} value={typeof s === "string" ? s : s.sector}>{typeof s === "string" ? s : s.sector}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">County</label>
-            <select value={county} onChange={e => { setCounty(e.target.value); setPageNum(1); }} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-              <option value="">All Counties</option>
-              {counties.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Legal Type</label>
-            <select value={govForm} onChange={e => { setGovForm(e.target.value); setPageNum(1); }} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-              <option value="">All Types</option>
-              {["Company Limited by Guarantee","Trust","Designated Activity Company","Unincorporated Association","Friendly Society","Royal Charter Governance","Statute / Statutory Instrument"].map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Income Range</label>
-            <select value={incomeRange} onChange={e => { setIncomeRange(e.target.value); setPageNum(1); }} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-              {INCOME_RANGES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </select>
-          </div>
-          {(sector || county || govForm || incomeRange) && <button onClick={() => { setSector(""); setCounty(""); setGovForm(""); setIncomeRange(""); setPageNum(1); }} className="text-sm text-emerald-600 hover:underline sm:col-span-4">Clear all filters</button>}
+      {/* Active filter pills */}
+      {filterPills.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {filterPills.map((pill, i) => (
+            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">
+              {pill.label}
+              <button onClick={() => { pill.clear(); setPageNum(1); }} className="hover:text-emerald-900">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+          <button onClick={clearAllFilters} className="text-xs text-gray-500 hover:text-emerald-600 px-2 py-1">Clear all</button>
         </div>
       )}
 
-      {/* Sort buttons */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {[["income","Income ↓"],["employees","Employees ↓"],["stateFunding","State Funding ↓"],["name","Name A-Z"]].map(([key, label]) => (
-          <button key={key} onClick={() => setSortBy(key)} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${sortBy === key ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}>Sort: {label}</button>
-        ))}
-      </div>
-
-      {/* Results */}
-      {loading ? <Spinner /> : orgs.length === 0 ? <EmptyState icon={Building2} title="No organisations found" sub="Try adjusting your search or filters" /> : (
-        <>
-          <div className="space-y-2">
-            {orgs.map((org, i) => (
-              <div key={org.id || i} className="w-full bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md hover:border-emerald-100 transition-all flex items-center justify-between">
-                <button onClick={() => setPage(`org:${org.id}`)} className="flex-1 min-w-0 text-left">
-                  <h3 className="font-semibold text-gray-900 truncate">{cleanName(org.name)}</h3>
-                  <p className="text-sm text-gray-500 mt-0.5">{[clean(org.sector), clean(org.county), clean(org.governing_form)].filter(Boolean).join(" · ") || "Registered nonprofit"}</p>
-                </button>
-                <div className="text-right flex-shrink-0 ml-4 flex items-center gap-4">
-                  {org.gross_income > 0 && <div><div className="text-sm font-semibold text-gray-900">{fmt(org.gross_income)}</div><div className="text-xs text-gray-400">Income</div></div>}
-                  {org.total_grant_amount > 0 && <div><div className="text-sm font-semibold text-emerald-600">{fmt(org.total_grant_amount)}</div><div className="text-xs text-gray-400">State funding</div></div>}
-                  <button onClick={(e) => { e.stopPropagation(); watchlist.toggle(org.id, org.name); }} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title={watchlist.isWatched(org.id) ? "Remove from watchlist" : "Add to watchlist"}>
-                    <Bookmark className={`w-4 h-4 ${watchlist.isWatched(org.id) ? "fill-emerald-500 text-emerald-500" : "text-gray-300"}`} />
-                  </button>
-                  <ChevronRight className="w-5 h-5 text-gray-300" />
-                </div>
+      {/* Main layout: sidebar + results */}
+      <div className={`flex gap-6 ${showFilters ? "" : ""}`}>
+        {/* Filter sidebar */}
+        {showFilters && (
+          <div className="w-72 flex-shrink-0 hidden lg:block">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden sticky top-4">
+              <div className="px-3 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Filter Results</span>
+                {activeFilterCount > 0 && (
+                  <button onClick={clearAllFilters} className="text-xs text-emerald-600 hover:underline">Reset</button>
+                )}
               </div>
-            ))}
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8">
-              <button onClick={() => setPageNum(1)} disabled={pageNum === 1} className="px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">First</button>
-              <button onClick={() => setPageNum(Math.max(1, pageNum - 1))} disabled={pageNum === 1} className="px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
-              <span className="text-sm text-gray-500">Page {pageNum} of {totalPages}</span>
-              <button onClick={() => setPageNum(Math.min(totalPages, pageNum + 1))} disabled={pageNum === totalPages} className="px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
-              <button onClick={() => setPageNum(totalPages)} disabled={pageNum === totalPages} className="px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Last</button>
+
+              {/* Location */}
+              <FilterSection title="Location" icon={MapPin} open={openSections.county} onToggle={() => toggleSection("county")} count={selCounties.length}>
+                <CheckboxFilter items={countyList} selected={selCounties} onToggle={v => toggleArrayValue(selCounties, setSelCounties, v)} maxVisible={10} />
+              </FilterSection>
+
+              {/* Sector / Classification */}
+              <FilterSection title="Sector" icon={Layers} open={openSections.sector} onToggle={() => toggleSection("sector")} count={selSectors.length + selSubsectors.length}>
+                <CheckboxFilter items={sectorList} selected={selSectors} onToggle={v => toggleArrayValue(selSectors, setSelSectors, v)} maxVisible={10} />
+                {subsectorList.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <div className="text-xs font-medium text-gray-400 mb-1 px-1">Subsectors</div>
+                    <CheckboxFilter items={subsectorList} selected={selSubsectors} onToggle={v => toggleArrayValue(selSubsectors, setSelSubsectors, v)} maxVisible={8} />
+                  </div>
+                )}
+              </FilterSection>
+
+              {/* Organisation Type */}
+              <FilterSection title="Organisation Type" icon={Building2} open={openSections.type} onToggle={() => toggleSection("type")} count={selGovForms.length}>
+                <CheckboxFilter items={govFormList} selected={selGovForms} onToggle={v => toggleArrayValue(selGovForms, setSelGovForms, v)} maxVisible={8} />
+              </FilterSection>
+
+              {/* Income Band */}
+              <FilterSection title="Income Band" icon={DollarSign} open={openSections.income} onToggle={() => toggleSection("income")} count={selIncomeBand ? 1 : 0}>
+                <div className="space-y-0.5">
+                  {INCOME_BANDS.map(band => (
+                    <label key={band.value} className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-gray-50 cursor-pointer">
+                      <input type="radio" name="incomeBand" checked={selIncomeBand === band.value} onChange={() => { setSelIncomeBand(selIncomeBand === band.value ? "" : band.value); setPageNum(1); }}
+                        className="w-3.5 h-3.5 border-gray-300 text-emerald-600 focus:ring-emerald-500" />
+                      <span className="text-xs text-gray-600">{band.label}</span>
+                    </label>
+                  ))}
+                  {selIncomeBand && (
+                    <button onClick={() => { setSelIncomeBand(""); setPageNum(1); }} className="text-xs text-emerald-600 hover:underline px-1 mt-1">Clear</button>
+                  )}
+                </div>
+              </FilterSection>
+
+              {/* Regulatory Status */}
+              <FilterSection title="Regulatory Status" icon={Shield} open={openSections.regulatory} onToggle={() => toggleSection("regulatory")}
+                count={(hasCharityNum !== null ? 1 : 0) + (hasCroNum !== null ? 1 : 0) + (hasChyNum !== null ? 1 : 0) + (hasFunding !== null ? 1 : 0)}>
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" checked={hasCharityNum === true} onChange={() => { setHasCharityNum(hasCharityNum === true ? null : true); setPageNum(1); }}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
+                    <span className="text-xs text-gray-600">Registered Charity (CRA)</span>
+                  </label>
+                  <label className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" checked={hasCroNum === true} onChange={() => { setHasCroNum(hasCroNum === true ? null : true); setPageNum(1); }}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
+                    <span className="text-xs text-gray-600">CRO Registered Company</span>
+                  </label>
+                  <label className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" checked={hasChyNum === true} onChange={() => { setHasChyNum(hasChyNum === true ? null : true); setPageNum(1); }}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
+                    <span className="text-xs text-gray-600">Tax Relief (Revenue CHY)</span>
+                  </label>
+                  <label className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" checked={hasFunding === true} onChange={() => { setHasFunding(hasFunding === true ? null : true); setPageNum(1); }}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
+                    <span className="text-xs text-gray-600">Received State Funding</span>
+                  </label>
+                </div>
+              </FilterSection>
             </div>
+          </div>
+        )}
+
+        {/* No separate mobile filter panel — on smaller screens, the sidebar is hidden and users use the search bar */}
+
+        {/* Results column */}
+        <div className="flex-1 min-w-0">
+          {/* Sort + result count bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div className="flex flex-wrap gap-1.5">
+              {[["income","Income ↓"],["employees","Employees ↓"],["stateFunding","State Funding ↓"],["name","Name A-Z"]].map(([key, label]) => (
+                <button key={key} onClick={() => setSortBy(key)} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${sortBy === key ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}>{label}</button>
+              ))}
+            </div>
+            <span className="text-sm text-gray-400">{total.toLocaleString()} results</span>
+          </div>
+
+          {/* Results */}
+          {loading ? <Spinner /> : orgs.length === 0 ? <EmptyState icon={Building2} title="No organisations found" sub="Try adjusting your search or filters" /> : (
+            <>
+              <div className="space-y-2">
+                {orgs.map((org, i) => (
+                  <div key={org.id || i} className="w-full bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md hover:border-emerald-100 transition-all flex items-center justify-between">
+                    <button onClick={() => setPage(`org:${org.id}`)} className="flex-1 min-w-0 text-left">
+                      <h3 className="font-semibold text-gray-900 truncate">{cleanName(org.name)}</h3>
+                      <p className="text-sm text-gray-500 mt-0.5">{[clean(org.sector), clean(org.subsector), clean(org.county), clean(org.governing_form)].filter(Boolean).join(" · ") || "Registered nonprofit"}</p>
+                    </button>
+                    <div className="text-right flex-shrink-0 ml-4 flex items-center gap-4">
+                      {org.gross_income > 0 && <div><div className="text-sm font-semibold text-gray-900">{fmt(org.gross_income)}</div><div className="text-xs text-gray-400">Income</div></div>}
+                      {org.total_grant_amount > 0 && <div><div className="text-sm font-semibold text-emerald-600">{fmt(org.total_grant_amount)}</div><div className="text-xs text-gray-400">State funding</div></div>}
+                      <button onClick={(e) => { e.stopPropagation(); watchlist.toggle(org.id, org.name); }} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title={watchlist.isWatched(org.id) ? "Remove from watchlist" : "Add to watchlist"}>
+                        <Bookmark className={`w-4 h-4 ${watchlist.isWatched(org.id) ? "fill-emerald-500 text-emerald-500" : "text-gray-300"}`} />
+                      </button>
+                      <ChevronRight className="w-5 h-5 text-gray-300" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8">
+                  <button onClick={() => setPageNum(1)} disabled={pageNum === 1} className="px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">First</button>
+                  <button onClick={() => setPageNum(Math.max(1, pageNum - 1))} disabled={pageNum === 1} className="px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
+                  <span className="text-sm text-gray-500">Page {pageNum} of {totalPages}</span>
+                  <button onClick={() => setPageNum(Math.min(totalPages, pageNum + 1))} disabled={pageNum === totalPages} className="px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+                  <button onClick={() => setPageNum(totalPages)} disabled={pageNum === totalPages} className="px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-50">Last</button>
+                </div>
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }

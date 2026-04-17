@@ -391,3 +391,116 @@ export async function fetchCountyCounts() {
   }
   return data;
 }
+
+/**
+ * Fetch subsector breakdown for a given sector
+ */
+export async function fetchSubsectorCounts(sector) {
+  if (!sector) return [];
+  const { data, error } = await supabase
+    .from('organisations')
+    .select('subsector')
+    .eq('sector', sector)
+    .not('subsector', 'is', null)
+    .limit(5000);
+  if (error) return [];
+  const counts = {};
+  data?.forEach(o => { if (o.subsector) counts[o.subsector] = (counts[o.subsector] || 0) + 1; });
+  return Object.entries(counts)
+    .map(([subsector, count]) => ({ subsector, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/**
+ * Fetch governing form counts for filter display
+ */
+export async function fetchGovFormCounts() {
+  const { data, error } = await supabase
+    .from('organisations')
+    .select('governing_form')
+    .not('governing_form', 'is', null)
+    .limit(10000);
+  if (error) return [];
+  const counts = {};
+  data?.forEach(o => { if (o.governing_form) counts[o.governing_form] = (counts[o.governing_form] || 0) + 1; });
+  return Object.entries(counts)
+    .map(([form, count]) => ({ form, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/**
+ * Advanced search — supports multi-value filters (arrays of sectors, counties, etc.)
+ */
+export async function fetchOrganisationsAdvanced({
+  page = 1,
+  pageSize = 50,
+  search = '',
+  sectors = [],
+  subsectors = [],
+  counties = [],
+  govForms = [],
+  minIncome = null,
+  maxIncome = null,
+  hasCharityNumber = null,
+  hasCroNumber = null,
+  hasChyNumber = null,
+  hasFunding = null,
+  sortBy = 'gross_income',
+  sortDir = 'desc',
+} = {}) {
+  let query = supabase
+    .from('org_summary')
+    .select('*', { count: 'exact' });
+
+  // Full-text search
+  if (search) {
+    const s = search.replace(/[%_(),]/g, ' ').trim();
+    if (s.length >= 2) {
+      const expanded = expandSearch(s);
+      if (expanded) {
+        const e = expanded.replace(/[%_(),]/g, ' ').trim();
+        query = query.or(`name.ilike.%${s}%,name.ilike.%${e}%,charity_number.eq.${s},cro_number.eq.${s}`);
+      } else {
+        query = query.or(`name.ilike.%${s}%,charity_number.eq.${s},cro_number.eq.${s}`);
+      }
+    }
+  }
+
+  // Multi-value filters
+  if (sectors.length === 1) query = query.eq('sector', sectors[0]);
+  else if (sectors.length > 1) query = query.in('sector', sectors);
+
+  if (subsectors.length === 1) query = query.eq('subsector', subsectors[0]);
+  else if (subsectors.length > 1) query = query.in('subsector', subsectors);
+
+  if (counties.length === 1) query = query.eq('county', counties[0]);
+  else if (counties.length > 1) query = query.in('county', counties);
+
+  if (govForms.length === 1) query = query.eq('governing_form', govForms[0]);
+  else if (govForms.length > 1) query = query.in('governing_form', govForms);
+
+  if (minIncome != null) query = query.gte('gross_income', minIncome);
+  if (maxIncome != null) query = query.lte('gross_income', maxIncome);
+
+  // Regulatory filters
+  if (hasCharityNumber === true) query = query.not('charity_number', 'is', null);
+  if (hasCharityNumber === false) query = query.is('charity_number', null);
+  if (hasCroNumber === true) query = query.not('cro_number', 'is', null);
+  if (hasCroNumber === false) query = query.is('cro_number', null);
+  if (hasChyNumber === true) query = query.not('revenue_chy', 'is', null);
+  if (hasFunding === true) query = query.gt('total_grant_amount', 0);
+
+  // Sorting
+  const validSorts = ['gross_income', 'gross_expenditure', 'total_grant_amount', 'name', 'employees'];
+  const col = validSorts.includes(sortBy) ? sortBy : 'gross_income';
+  query = query.order(col, { ascending: sortDir === 'asc', nullsFirst: false });
+
+  // Pagination
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  query = query.range(from, to);
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { orgs: data, total: count, page, pageSize };
+}
