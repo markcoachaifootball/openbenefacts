@@ -383,19 +383,56 @@ async function importGrants(grants, funderId, lookups) {
   console.log(`\n📥 Step 4: Importing ${grants.length} grants to Supabase...`);
   console.log("─".repeat(60));
 
-  let matched = 0, unmatched = 0, inserted = 0, skipped = 0, errors = 0;
+  let matched = 0, created = 0, inserted = 0, skipped = 0, errors = 0;
 
   // Batch process
   for (let i = 0; i < grants.length; i++) {
     const g = grants[i];
     if (i % 100 === 0 && i > 0) {
-      console.log(`   Progress: ${i}/${grants.length} (${inserted} inserted, ${matched} matched, ${skipped} skipped)`);
+      console.log(`   Progress: ${i}/${grants.length} (${inserted} inserted, ${matched} matched, ${created} orgs created, ${skipped} skipped)`);
     }
 
-    const org = findMatch(g.name, g.county, lookups);
-    const orgId = org?.id || null;
-    if (orgId) matched++;
-    else unmatched++;
+    let org = findMatch(g.name, g.county, lookups);
+    let orgId = org?.id || null;
+
+    // If no match, create a new organisation for this sports club
+    if (!orgId) {
+      try {
+        const newOrg = {
+          name: g.name.trim(),
+          sector: g.sport ? `Sport — ${g.sport}` : "Sport & Recreation",
+          county: g.county || null,
+          source: "OSCAR Sports Capital Programme",
+        };
+        const { data: createdOrg, error: createErr } = await supabase
+          .from("organisations")
+          .insert(newOrg)
+          .select("id, name")
+          .single();
+        if (createErr) {
+          // Might be a duplicate name — try to find it
+          const { data: found } = await supabase
+            .from("organisations")
+            .select("id")
+            .ilike("name", g.name.trim())
+            .maybeSingle();
+          if (found) {
+            orgId = found.id;
+            matched++;
+          }
+        } else {
+          orgId = createdOrg.id;
+          created++;
+          // Add to lookups so subsequent grants for the same club match
+          const n = normalise(g.name);
+          if (n) lookups.byNorm[n] = { id: orgId, name: g.name, county: g.county };
+        }
+      } catch (e) {
+        // Continue — grant still imports with null org_id
+      }
+    } else {
+      matched++;
+    }
 
     const record = {
       funder_id: funderId,
@@ -430,7 +467,7 @@ async function importGrants(grants, funderId, lookups) {
     }
   }
 
-  return { matched, unmatched, inserted, skipped, errors };
+  return { matched, created, inserted, skipped, errors };
 }
 
 // ─── Step 5: Recalculate org grant totals ───────────────────
@@ -594,7 +631,7 @@ async function main() {
   console.log(`   Total grants processed: ${uniqueGrants.length}`);
   console.log(`   Inserted:              ${result.inserted}`);
   console.log(`   Matched to org:        ${result.matched}`);
-  console.log(`   Unmatched:             ${result.unmatched}`);
+  console.log(`   New orgs created:      ${result.created}`);
   console.log(`   Skipped (dupes):       ${result.skipped}`);
   console.log(`   Errors:                ${result.errors}`);
   console.log(`${"=".repeat(60)}\n`);
