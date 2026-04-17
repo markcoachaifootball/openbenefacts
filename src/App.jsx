@@ -624,345 +624,104 @@ function Navbar({ page, setPage }) {
 function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
   const [stats, setStats] = useState(null);
   const [sectors, setSectors] = useState([]);
+  const [searchTab, setSearchTab] = useState("simple");
 
   useEffect(() => {
     fetchStats().then(setStats).catch(() => {});
     fetchSectorCounts().then(d => setSectors((d || []).slice(0, 8))).catch(() => {});
   }, []);
 
-  const featured = useMemo(() => {
-    const topOrgs = siteStats.topRecipients || [];
-    return topOrgs.length > 0 ? topOrgs[Math.floor(Math.random() * Math.min(5, topOrgs.length))] : null;
-  }, []);
-
   // Use data.js stats as fallback
   const orgCount = stats?.total_orgs || siteStats.totalOrgs || 36803;
   const financialCount = stats?.with_financials || siteStats.withFinancials || 12011;
   const fundingLinks = stats?.total_funding_relationships || siteStats.totalFundingRelationships || 9981;
-
-  const topFunders = useMemo(() => [...funderData].sort((a, b) => (b.total || 0) - (a.total || 0)).slice(0, 6), []);
-  const totalFunding = funderData.reduce((s, f) => s + (f.total || 0), 0);
   const totalRecipients = funderData.reduce((s, f) => s + (f.recipients || 0), 0);
 
   const [heroSearch, setHeroSearch] = useState("");
   const doSearch = (q) => { setInitialSearch(q || heroSearch); setPage("orgs"); };
-  const chips = ["Barnardos", "HSE", "Focus Ireland", "Rehab Group"];
 
   const sectorIcons = { "Education, Research": GraduationCap, "Health": Heart, "Social Services": Users, "Arts, Culture, Heritage": Award, "Arts, Culture, Media": Award, "Recreation, Sports": Zap, "Local Development, Housing": Building2, "Religion": Star, "International": Globe, "Environment": Globe, "Advocacy": Shield, "Philanthropy": Sparkles };
 
   return (
-    <div className="bg-white">
-      {/* Hero — full-width, OpenCorporates-style with geometric background */}
-      <div className="relative w-full overflow-hidden" style={{ background: "#1B3A4B" }}>
-        {/* Sharp geometric 3D panels — architectural glass effect */}
-        <div className="absolute inset-0">
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" viewBox="0 0 1200 600">
-            <defs>
-              <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#2d5f73" /><stop offset="100%" stopColor="#1B3A4B" /></linearGradient>
-              <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3a7d8c" /><stop offset="100%" stopColor="#1B3A4B" /></linearGradient>
-              <linearGradient id="g3" x1="1" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#234e5c" /><stop offset="100%" stopColor="#152d3a" /></linearGradient>
-            </defs>
-            {/* Large angled panels like glass building facade */}
-            <polygon points="0,0 200,0 150,600 0,600" fill="url(#g1)" opacity="0.6" />
-            <polygon points="200,0 400,0 320,600 150,600" fill="url(#g2)" opacity="0.4" />
-            <polygon points="400,0 550,0 500,600 320,600" fill="url(#g3)" opacity="0.5" />
-            <polygon points="550,0 750,0 680,600 500,600" fill="url(#g1)" opacity="0.3" />
-            <polygon points="750,0 900,0 870,600 680,600" fill="url(#g2)" opacity="0.5" />
-            <polygon points="900,0 1050,0 1020,600 870,600" fill="url(#g3)" opacity="0.4" />
-            <polygon points="1050,0 1200,0 1200,600 1020,600" fill="url(#g1)" opacity="0.6" />
-            {/* Highlight lines between panels */}
-            <line x1="150" y1="0" x2="150" y2="600" stroke="white" strokeWidth="1" opacity="0.08" transform="rotate(2 150 300)" />
-            <line x1="320" y1="0" x2="320" y2="600" stroke="white" strokeWidth="1" opacity="0.06" transform="rotate(1.5 320 300)" />
-            <line x1="500" y1="0" x2="500" y2="600" stroke="white" strokeWidth="1.5" opacity="0.1" transform="rotate(1 500 300)" />
-            <line x1="680" y1="0" x2="680" y2="600" stroke="white" strokeWidth="1" opacity="0.07" transform="rotate(-1 680 300)" />
-            <line x1="870" y1="0" x2="870" y2="600" stroke="white" strokeWidth="1" opacity="0.08" transform="rotate(-1.5 870 300)" />
-            <line x1="1020" y1="0" x2="1020" y2="600" stroke="white" strokeWidth="1" opacity="0.06" transform="rotate(-2 1020 300)" />
-            {/* Subtle horizontal reflections */}
-            <rect x="0" y="180" width="1200" height="1" fill="white" opacity="0.04" />
-            <rect x="0" y="350" width="1200" height="1" fill="white" opacity="0.03" />
-          </svg>
-        </div>
+    <div className="bg-white min-h-screen">
+      {/* Hero — clean white, Benefacts-style */}
+      <div className="w-full pt-16 sm:pt-24 pb-8 sm:pb-12 text-center px-4">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl text-gray-700 mb-2 leading-tight max-w-3xl mx-auto font-light">
+          Welcome to OpenBenefacts,
+        </h1>
+        <h2 className="text-2xl sm:text-3xl lg:text-4xl text-gray-900 mb-6 leading-tight max-w-3xl mx-auto">
+          the <span className="font-bold">database of Irish nonprofits</span>
+        </h2>
+        <p className="text-base sm:text-lg text-gray-500 mb-12 max-w-xl mx-auto leading-relaxed">
+          We get our data from many public sources, refine it,<br className="hidden sm:block" /> and publish it for easy access.
+        </p>
 
-        <div className="relative z-10 w-full px-6 lg:px-10 py-20 lg:py-28 text-center">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight max-w-3xl mx-auto">
-            Nonprofit transparency data you can trust
-          </h1>
-          <p className="text-base sm:text-lg text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Fresh, auditable information direct from official Irish sources — {orgCount.toLocaleString()} organisations, {financialCount.toLocaleString()} financial records. Free and open to everyone.
-          </p>
-          <form onSubmit={e => { e.preventDefault(); doSearch(); }} className="max-w-2xl mx-auto mb-6">
-            <div className="flex items-center bg-white rounded-lg shadow-xl overflow-hidden">
-              <div className="flex-1 flex items-center">
-                <Search className="w-5 h-5 text-gray-400 ml-4 flex-shrink-0" />
-                <input type="text" placeholder={`Search ${orgCount.toLocaleString()} Organisations`} value={heroSearch} onChange={e => setHeroSearch(e.target.value)} className="flex-1 px-3 py-4 text-base text-gray-900 placeholder:text-gray-400 outline-none border-0" />
+        {/* Simple Search / Advanced Search tabs */}
+        <div className="max-w-2xl mx-auto">
+          <div className="flex border-b border-gray-200 mb-8">
+            <button onClick={() => setSearchTab("simple")}
+              className={`flex-1 pb-3 text-base font-medium transition-colors ${searchTab === "simple" ? "text-gray-900 border-b-2 border-emerald-600" : "text-gray-400 hover:text-gray-600"}`}>
+              Simple Search
+            </button>
+            <button onClick={() => setSearchTab("advanced")}
+              className={`flex-1 pb-3 text-base font-medium transition-colors ${searchTab === "advanced" ? "text-gray-900 border-b-2 border-emerald-600" : "text-gray-400 hover:text-gray-600"}`}>
+              Advanced Search
+            </button>
+          </div>
+
+          {searchTab === "simple" ? (
+            <form onSubmit={e => { e.preventDefault(); doSearch(); }}>
+              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                <input type="text" placeholder="Search for nonprofits in Ireland" value={heroSearch} onChange={e => setHeroSearch(e.target.value)}
+                  className="flex-1 px-4 py-3.5 text-base text-gray-900 placeholder:text-gray-400 outline-none border-0" />
+                <button type="submit" className="px-8 py-3.5 bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors flex-shrink-0">
+                  Search
+                </button>
               </div>
-              <button type="submit" className="px-8 py-4 bg-[#c0392b] text-white font-semibold hover:bg-[#a93226] transition-colors flex-shrink-0">
-                <Search className="w-5 h-5" />
+            </form>
+          ) : (
+            <div className="text-center">
+              <p className="text-gray-500 text-sm mb-4">Filter by location, sector, organisation type, income band, and regulatory status.</p>
+              <button onClick={() => setPage("orgs")} className="px-8 py-3.5 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
+                Open Advanced Search
               </button>
             </div>
-          </form>
-          <div className="flex flex-wrap justify-center gap-2 mb-4">
-            {chips.map(c => <button key={c} onClick={() => doSearch(c)} className="px-4 py-1.5 bg-white/10 border border-white/20 rounded text-sm text-white/90 hover:bg-white/20 transition-colors">{c}</button>)}
-          </div>
+          )}
         </div>
       </div>
 
-      <div className="w-full px-6 lg:px-10 py-8">
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-16">
-        {[
-          { label: "Organisations", value: orgCount.toLocaleString(), sub: "Charities, AHBs, schools, clubs", icon: Building2 },
-          { label: "Financial Records", value: financialCount.toLocaleString(), sub: "Income, expenditure, assets", icon: FileText },
-          { label: "Funding Links", value: fundingLinks.toLocaleString(), sub: "State → nonprofit relationships", icon: Zap },
-          { label: "State Funders", value: funderData.length || 14, sub: `${totalRecipients.toLocaleString()} orgs funded`, icon: Landmark },
-        ].map((s, i) => (
-          <div key={i} className="bg-white rounded-2xl border border-[#1B3A4B]/10 p-5">
-            <s.icon className="w-7 h-7 text-[#1B3A4B] mb-2" />
-            <div className="font-wordmark text-3xl text-[#1a1a2e]">{s.value}</div>
-            <div className="text-sm font-semibold text-[#1B3A4B]">{s.label}</div>
-            <div className="text-xs text-[#1B3A4B]/60 mt-0.5">{s.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* What OpenBenefacts Offers — services grid */}
-      <div className="mb-16">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#1B3A4B]">
-            <span className="w-8 h-px bg-[#1B3A4B]"></span>
-            What we offer
-            <span className="w-8 h-px bg-[#1B3A4B]"></span>
-          </div>
-          <h2 className="font-wordmark text-4xl sm:text-5xl text-[#1a1a2e] mb-4 leading-[1]">Everything you need to follow Irish nonprofit money.</h2>
-          <p className="text-lg text-[#1B3A4B]/70">Free tools for the public. Professional tools for journalists, funders, researchers, and nonprofits who need to go deeper.</p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* Thin stats bar */}
+      <div className="border-t border-gray-100 bg-gray-50/50">
+        <div className="max-w-4xl mx-auto px-4 py-6 flex flex-wrap justify-center gap-8 sm:gap-16">
           {[
-            { icon: Search, title: "Organisation Search", desc: `Search ${orgCount.toLocaleString()} Irish charities, housing bodies, schools, and sports clubs by name, sector, county, or income.`, cta: "Start searching", page: "orgs", tag: "Free" },
-            { icon: FileText, title: "Financial Records", desc: `${financialCount.toLocaleString()} filed accounts with income, expenditure, assets, reserves, and year-on-year trends for every organisation.`, cta: "Browse financials", page: "orgs", tag: "Free" },
-            { icon: Layers, title: "Follow the Money", desc: "Interactive Sankey diagrams showing exactly where every euro of state funding lands — from government department to recipient organisation.", cta: "See the flows", page: "money", tag: "Free" },
-            { icon: Shield, title: "Due Diligence Reports", desc: "Printable PDF reports with AI-generated risk scores, governance red flags, board analysis, and three-year financial trends.", cta: "Run a report", page: "orgs", tag: "Pro" },
-            { icon: Landmark, title: "Funder Intelligence", desc: `Profiles for ${funderData.length || 14} Irish state funders — HSE, Pobal, Tusla, Arts Council and more — with full recipient lists and grant histories.`, cta: "Browse funders", page: "funders", tag: "Free" },
-            { icon: Database, title: "API & Bulk Data", desc: "Programmatic access to every organisation, financial record, and funding relationship. CSV exports and JSON endpoints for developers and researchers.", cta: "View the API", page: "api", tag: "Pro" },
-            { icon: Home, title: "Housing Tracker", desc: "Live LA-by-LA breakdown of emergency accommodation usage and estimated spend across all 31 Irish local authorities. Data from DHLGH monthly reports.", cta: "View tracker", page: "trackers/emergency-accommodation", tag: "Free" },
-          ].map((svc, i) => (
-            <button key={i} onClick={() => setPage(svc.page)} className="group text-left bg-white rounded-2xl border border-[#1B3A4B]/10 p-7 hover:border-[#1B3A4B] hover:shadow-xl hover:-translate-y-1 transition-all">
-              <div className="flex items-start justify-between mb-5">
-                <div className="w-12 h-12 bg-[#4A9B8E] rounded-xl flex items-center justify-center group-hover:bg-[#1B3A4B] transition-colors">
-                  <svc.icon className="w-6 h-6 text-[#1B3A4B] group-hover:text-[#4A9B8E] transition-colors" />
-                </div>
-                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${svc.tag === "Pro" ? "bg-[#1B3A4B] text-[#4A9B8E]" : "bg-[#1B3A4B]/10 text-[#1B3A4B]"}`}>{svc.tag}</span>
-              </div>
-              <h3 className="font-wordmark text-2xl text-[#1a1a2e] mb-3 leading-tight">{svc.title}</h3>
-              <p className="text-sm text-[#1B3A4B]/70 leading-relaxed mb-5">{svc.desc}</p>
-              <div className="inline-flex items-center gap-1.5 text-sm font-bold text-[#1B3A4B] group-hover:gap-3 transition-all">
-                {svc.cta} <ArrowRight className="w-4 h-4" />
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Who uses OpenBenefacts — audience ribbon */}
-      <div className="bg-white rounded-3xl border border-[#1B3A4B]/10 p-8 sm:p-12 mb-16">
-        <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#1B3A4B]">
-            <span className="w-8 h-px bg-[#1B3A4B]"></span>
-            Who uses it
-            <span className="w-8 h-px bg-[#1B3A4B]"></span>
-          </div>
-          <h2 className="font-wordmark text-3xl sm:text-4xl text-[#1a1a2e] leading-[1]">Built for everyone who cares where the money goes.</h2>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { icon: FileText, title: "Journalists", desc: "Investigate state spending, find stories in the data, and source financial facts with citation-ready URLs." },
-            { icon: Heart, title: "Nonprofits", desc: "Benchmark against peers, find new funders, and claim your listing to keep your public profile accurate." },
-            { icon: Briefcase, title: "Funders & grantmakers", desc: "Due diligence on grantees, portfolio analytics, and context on existing state funding before you commit." },
-            { icon: GraduationCap, title: "Researchers", desc: "Academic access to bulk data, funding flows, and historical records for policy and civil society research." },
-          ].map((a, i) => (
-            <div key={i} className="text-center">
-              <div className="w-14 h-14 bg-[#1B3A4B] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <a.icon className="w-7 h-7 text-[#4A9B8E]" />
-              </div>
-              <h3 className="font-wordmark text-xl text-[#1a1a2e] mb-2">{a.title}</h3>
-              <p className="text-sm text-[#1B3A4B]/70 leading-relaxed">{a.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* How it works — 3-step process */}
-      <div className="mb-16">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 mb-4 text-[11px] font-bold tracking-[0.15em] uppercase text-[#1B3A4B]">
-            <span className="w-8 h-px bg-[#1B3A4B]"></span>
-            How it works
-            <span className="w-8 h-px bg-[#1B3A4B]"></span>
-          </div>
-          <h2 className="font-wordmark text-3xl sm:text-4xl text-[#1a1a2e] leading-[1]">From question to answer in three steps.</h2>
-        </div>
-        <div className="grid sm:grid-cols-3 gap-6">
-          {[
-            { n: "01", title: "Search", desc: "Start with a name, sector, county, or keyword. Narrow by income band, governing form, or year." },
-            { n: "02", title: "Explore", desc: "Open any organisation for the full financial history, governance data, state-funding trail, and risk flags." },
-            { n: "03", title: "Export or cite", desc: "Download a due diligence PDF, grab a shareable URL, pull data through the API, or embed a live widget." },
+            { value: orgCount.toLocaleString(), label: "Organisations" },
+            { value: financialCount.toLocaleString(), label: "Financial Records" },
+            { value: fundingLinks.toLocaleString(), label: "Funding Links" },
+            { value: String(funderData.length || 14), label: "State Funders" },
           ].map((s, i) => (
-            <div key={i} className="bg-[#FFFFFF] rounded-2xl p-7 border border-[#1B3A4B]/10">
-              <div className="font-wordmark text-5xl text-[#4A9B8E] mb-3 leading-none">{s.n}</div>
-              <h3 className="font-wordmark text-2xl text-[#1a1a2e] mb-2">{s.title}</h3>
-              <p className="text-sm text-[#1B3A4B]/70 leading-relaxed">{s.desc}</p>
+            <div key={i} className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-gray-900">{s.value}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* The Story — DOGE for Ireland positioning */}
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 sm:p-8 mb-10 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="relative z-10">
-          <div className="flex flex-col sm:flex-row gap-6 sm:gap-10 items-start">
-            <div className="flex-1">
-              <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-3">Why this exists</p>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-white mb-3 leading-tight">Ireland needed its own DOGE.<br/>It already had one. The government killed it.</h2>
-              <p className="text-gray-400 text-sm leading-relaxed mb-4">Benefacts tracked every euro flowing from the state to nonprofits — who got what, from whom, and whether the money was well spent. In 2022, government funding was pulled and Benefacts shut down. For four years, €14 billion per year flowed with no independent oversight.</p>
-              <p className="text-white text-sm font-medium">OpenBenefacts picks up where they left off — open, independent, and free to search.</p>
-            </div>
-            <div className="sm:w-64 flex-shrink-0 space-y-3">
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <div className="text-3xl font-extrabold text-emerald-400">€14B</div>
-                <div className="text-xs text-gray-400 mt-1">flows from government to nonprofits every year</div>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <div className="text-3xl font-extrabold text-red-400">4 years</div>
-                <div className="text-xs text-gray-400 mt-1">with no independent tracking after Benefacts closed</div>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <div className="text-3xl font-extrabold text-white">{orgCount.toLocaleString()}</div>
-                <div className="text-xs text-gray-400 mt-1">organisations now tracked on OpenBenefacts</div>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3 mt-6">
-            <button onClick={() => setPage("funders")} className="px-5 py-2.5 bg-emerald-500 text-white text-sm rounded-xl font-semibold hover:bg-emerald-400 transition-colors">Follow the money</button>
-            <button onClick={() => setPage("about")} className="px-5 py-2.5 bg-white/10 text-white text-sm rounded-xl font-semibold hover:bg-white/20 transition-colors border border-white/20">Read the full story</button>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts */}
-      <div className="grid sm:grid-cols-2 gap-6 mb-10">
-        {/* Sector Distribution */}
-        {sectors.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Sector Distribution</h3>
-            <ResponsiveContainer width="100%" height={240}>
-              <PieChart>
-                <Pie data={sectors.slice(0, 8).map((s, i) => ({ name: (typeof s === "string" ? s : s.sector) || s, value: typeof s === "string" ? 1 : (s.org_count || 1), fill: COLORS[i % COLORS.length] }))} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${(name || "").split(",")[0].trim().substring(0, 18)} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
-                  {sectors.slice(0, 8).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-        {/* Top Organisations by Income */}
-        {siteStats.topRecipients && siteStats.topRecipients.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Largest Organisations</h3>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={siteStats.topRecipients.slice(0, 6).map(r => ({ name: cleanName(r.name).substring(0, 24), income: r.totalIncome }))} layout="vertical" margin={{ left: 5, right: 20 }}>
-                <XAxis type="number" tickFormatter={v => v >= 1e9 ? `€${(v/1e9).toFixed(0)}B` : v >= 1e6 ? `€${(v/1e6).toFixed(0)}M` : `€${v}`} fontSize={10} />
-                <YAxis type="category" dataKey="name" width={120} fontSize={10} />
-                <Tooltip formatter={v => fmt(v)} />
-                <Bar dataKey="income" fill="#059669" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </div>
-
-      {/* Featured Org */}
-      {featured && (
-        <div onClick={() => setPage(`org:${featured.id}`)} className="bg-white rounded-2xl border border-gray-100 p-6 mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:border-emerald-200 hover:shadow-md transition-all">
-          <div>
-            <div className="text-xs font-medium text-emerald-600 mb-1">Featured Organisation</div>
-            <h3 className="text-lg font-bold text-gray-900">{cleanName(featured.name)}</h3>
-            <p className="text-sm text-gray-500">{featured.rcn ? `RCN ${featured.rcn}` : ""}</p>
-          </div>
-          <div className="flex items-center gap-6">
-            <div><div className="text-xs text-gray-400">Income</div><div className="text-lg font-bold text-gray-900">{fmt(featured.totalIncome)}</div></div>
-            <div><div className="text-xs text-gray-400">State Funding</div><div className="text-lg font-bold text-emerald-600">{fmt(featured.stateIncome)}</div></div>
-            <div><div className="text-xs text-gray-400">State %</div><div className="text-lg font-bold text-blue-600">{featured.statePct?.toFixed(1)}%</div></div>
-          </div>
-        </div>
-      )}
-
-      {/* Watchlist */}
-      {watchlist.watchlist.length > 0 && (
-        <div className="mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Your Watchlist</h2>
-            <span className="text-sm text-gray-400">{watchlist.watchlist.length} organization{watchlist.watchlist.length !== 1 ? "s" : ""}</span>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {watchlist.watchlist.slice(0, 6).map(w => (
-              <div key={w.id} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow flex items-center justify-between">
-                <button onClick={() => setPage(`org:${w.id}`)} className="text-left flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 text-sm truncate">{cleanName(w.name)}</h3>
-                  <div className="text-xs text-gray-400 mt-0.5">Added {new Date(w.added).toLocaleDateString()}</div>
-                </button>
-                <button onClick={() => watchlist.toggle(w.id, w.name)} className="p-1 ml-2 text-gray-300 hover:text-red-500"><X className="w-4 h-4" /></button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* State Funders Preview */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">State Funders</h2>
-          <button onClick={() => setPage("funders")} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium">View all</button>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {topFunders.map((f, i) => {
-            const funderIdx = funderData.indexOf(f);
-            return (
-              <div key={i} onClick={() => setPage(`follow/${getFunderSlug(funderIdx >= 0 ? funderIdx : i)}`)} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer group">
-                <div className="flex items-start justify-between mb-2 gap-2">
-                  <h3 className="font-semibold text-gray-900 text-sm">{f.name}</h3>
-                  <Layers className="w-4 h-4 text-gray-300 group-hover:text-emerald-600 flex-shrink-0 transition-colors" />
-                </div>
-                <div className="flex items-center gap-4 text-sm mb-3">
-                  <span className="font-bold text-gray-900">{fmt(f.total)}</span>
-                  <span className="text-gray-400">{(f.recipients || 0).toLocaleString()} recipients</span>
-                  <span className="text-gray-400">{(f.programmes?.length || 0)} programmes</span>
-                </div>
-                <div className="text-xs font-medium text-emerald-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  View funding flow <ArrowRight className="w-3 h-3" />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Browse by Sector */}
+      {/* Browse by Sector — grid of clickable tiles */}
       {sectors.length > 0 && (
-        <div className="mb-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Browse by Sector</h2>
+        <div className="max-w-5xl mx-auto px-4 py-12">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">Browse by sector</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {sectors.map((s, i) => {
               const sectorName = typeof s === "string" ? s : s.sector;
-              const orgCount = typeof s === "string" ? 0 : s.org_count;
+              const sectorCount = typeof s === "string" ? 0 : s.org_count;
               const Icon = sectorIcons[sectorName] || Briefcase;
               return (
-                <button key={i} onClick={() => { setInitialSearch(""); setInitialSector(sectorName); setPage("orgs"); }} className="bg-white rounded-xl border border-gray-100 p-4 text-left hover:border-emerald-200 hover:shadow-md transition-all group">
-                  <Icon className="w-6 h-6 text-emerald-600 mb-2" />
+                <button key={i} onClick={() => { setInitialSearch(""); setInitialSector(sectorName); setPage("orgs"); }}
+                  className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-emerald-300 hover:shadow-md transition-all group">
+                  <Icon className="w-5 h-5 text-emerald-600 mb-2" />
                   <div className="font-medium text-gray-900 text-sm">{sectorName}</div>
-                  <div className="text-xs text-gray-400">{orgCount?.toLocaleString()} organisations</div>
+                  <div className="text-xs text-gray-400">{sectorCount?.toLocaleString()} organisations</div>
                 </button>
               );
             })}
@@ -970,19 +729,66 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
         </div>
       )}
 
-      {/* CTA — narrative-driven */}
-      <div className="bg-[#1B3A4B] rounded-3xl p-8 sm:p-12 text-center text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#4A9B8E]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="relative z-10">
-          <p className="text-[#4A9B8E] text-xs font-bold uppercase tracking-[0.2em] mb-4">The money trail is back</p>
-          <h2 className="font-wordmark text-3xl sm:text-5xl text-white mb-4 leading-[1]">€14 billion deserves oversight.</h2>
-          <p className="text-white/80 max-w-2xl mx-auto mb-8 text-lg">Benefacts is gone. OpenBenefacts is here — with full financials, AI risk scores, funder mapping, and due diligence reports.</p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <button onClick={() => setPage("pricing")} className="px-8 py-4 bg-[#4A9B8E] text-[#1B3A4B] rounded-full font-bold hover:bg-white transition-colors">Start free trial</button>
-            <button onClick={() => setPage("orgs")} className="px-8 py-4 bg-white/10 text-white rounded-full font-semibold hover:bg-white/20 transition-colors border border-white/30">Browse {orgCount.toLocaleString()} organisations</button>
+      {/* Quick links — simple text grid */}
+      <div className="border-t border-gray-100">
+        <div className="max-w-5xl mx-auto px-4 py-12">
+          <div className="grid sm:grid-cols-3 gap-8">
+            <button onClick={() => setPage("funders")} className="text-left group">
+              <div className="flex items-center gap-2 mb-2">
+                <Landmark className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">Follow the Money</h3>
+              </div>
+              <p className="text-sm text-gray-500">Track state funding from {funderData.length || 14} government funders to {totalRecipients.toLocaleString()} recipient organisations.</p>
+            </button>
+            <button onClick={() => setPage("councils")} className="text-left group">
+              <div className="flex items-center gap-2 mb-2">
+                <Building2 className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">Council Finances</h3>
+              </div>
+              <p className="text-sm text-gray-500">Compare income, expenditure, and commercial rates across all 31 local authorities.</p>
+            </button>
+            <button onClick={() => setPage("trackers/emergency-accommodation")} className="text-left group">
+              <div className="flex items-center gap-2 mb-2">
+                <Home className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors">Housing Tracker</h3>
+              </div>
+              <p className="text-sm text-gray-500">Emergency accommodation usage and estimated spend across Irish local authorities.</p>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Watchlist (if any) */}
+      {watchlist.watchlist.length > 0 && (
+        <div className="border-t border-gray-100">
+          <div className="max-w-5xl mx-auto px-4 py-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Your Watchlist</h2>
+              <span className="text-sm text-gray-400">{watchlist.watchlist.length} saved</span>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {watchlist.watchlist.slice(0, 6).map(w => (
+                <div key={w.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow flex items-center justify-between">
+                  <button onClick={() => setPage(`org:${w.id}`)} className="text-left flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 text-sm truncate">{cleanName(w.name)}</h3>
+                    <div className="text-xs text-gray-400 mt-0.5">Added {new Date(w.added).toLocaleDateString()}</div>
+                  </button>
+                  <button onClick={() => watchlist.toggle(w.id, w.name)} className="p-1 ml-2 text-gray-300 hover:text-red-500"><X className="w-4 h-4" /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* The Story — compact, tasteful */}
+      <div className="border-t border-gray-100 bg-gray-50/50">
+        <div className="max-w-3xl mx-auto px-4 py-12 text-center">
+          <p className="text-xs font-semibold text-emerald-600 uppercase tracking-widest mb-3">Why this exists</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 leading-tight">Benefacts tracked Irish nonprofit funding for years. In 2022 it closed. OpenBenefacts picks up where they left off.</h2>
+          <p className="text-sm text-gray-500 mb-6 max-w-2xl mx-auto">Open, independent, and free to search. {orgCount.toLocaleString()} organisations and growing.</p>
+          <button onClick={() => setPage("about")} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium">Read the full story →</button>
+        </div>
       </div>
     </div>
   );
