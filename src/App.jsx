@@ -459,7 +459,7 @@ function AuthProvider({ children }) {
   const logout = () => { setUser(null); localStorage.removeItem("ob_user"); };
   const requirePro = (feature) => { if (!isPro) { setUpgradePrompt(feature); setShowPricing(true); return false; } return true; };
 
-  const ADMIN_EMAILS = ["mark@staydiasports.com", "mark@openbenefacts.com"];
+  const ADMIN_EMAILS = ["mark@staydiasports.com", "team@openbenefacts.com"];
   const handleSubmit = (e) => {
     e.preventDefault();
     const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase().trim());
@@ -3817,7 +3817,7 @@ function FoundationsPage({ orgCount = 36803 }) {
         <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8">Stop spending hours manually checking the Charities Register, CRO filings, and Revenue records. OpenBenefacts generates a comprehensive due diligence report on any Irish nonprofit in seconds — covering {formattedCount} organisations.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors">Start Free 30-Day Trial</button>
-          <a href="mailto:mark@openbenefacts.com?subject=Foundation%20Pilot%20Programme" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Request Pilot Access</a>
+          <a href="mailto:team@openbenefacts.com?subject=Foundation%20Pilot%20Programme" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Request Pilot Access</a>
         </div>
         <p className="text-sm text-gray-400 mt-3">No credit card required · Professional plan €1,499/year</p>
       </div>
@@ -3865,7 +3865,7 @@ function FoundationsPage({ orgCount = 36803 }) {
       <div className="bg-gray-900 rounded-2xl p-8 text-center text-white">
         <h2 className="text-2xl font-bold mb-3">Foundation Pilot Programme</h2>
         <p className="text-gray-300 max-w-xl mx-auto mb-6">We're offering five grant-making foundations free access to the Professional plan for 90 days — in exchange for feedback and a short case study.</p>
-        <a href="mailto:mark@openbenefacts.com?subject=Foundation%20Pilot%20Programme&body=Hi%20Mark%2C%0A%0AWe%27re%20interested%20in%20the%20Foundation%20Pilot%20Programme%20for%20OpenBenefacts.%0A%0AFoundation%20name%3A%20%0AApprox.%20grant%20applications%20reviewed%20per%20year%3A%20%0A%0AThanks" className="inline-block px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-400 transition-colors">Apply for the Pilot</a>
+        <a href="mailto:team@openbenefacts.com?subject=Foundation%20Pilot%20Programme&body=Hi%20Mark%2C%0A%0AWe%27re%20interested%20in%20the%20Foundation%20Pilot%20Programme%20for%20OpenBenefacts.%0A%0AFoundation%20name%3A%20%0AApprox.%20grant%20applications%20reviewed%20per%20year%3A%20%0A%0AThanks" className="inline-block px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-400 transition-colors">Apply for the Pilot</a>
         <p className="text-sm text-gray-500 mt-3">5 places available · 90-day free Professional access</p>
       </div>
     </div>
@@ -3967,8 +3967,8 @@ function MediaPage({ orgCount = 36803 }) {
       <div className="bg-gray-900 rounded-2xl p-8 text-center text-white">
         <h2 className="text-2xl font-bold mb-3">Working on a story?</h2>
         <p className="text-gray-300 max-w-xl mx-auto mb-6">If you're investigating a nonprofit and need deeper data, custom exports, or background context on how to read charity financials, reach out. We support journalists.</p>
-        <a href="mailto:mark@openbenefacts.com?subject=Media%20Enquiry" className="inline-block px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-400 transition-colors">Contact the Data Team</a>
-        <p className="text-sm text-gray-500 mt-3">mark@openbenefacts.com</p>
+        <a href="mailto:team@openbenefacts.com?subject=Media%20Enquiry" className="inline-block px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-400 transition-colors">Contact the Data Team</a>
+        <p className="text-sm text-gray-500 mt-3">team@openbenefacts.com</p>
       </div>
     </div>
   );
@@ -4007,7 +4007,7 @@ function CsrPage({ orgCount = 36803 }) {
         <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8">Since the Rehab Group and Console scandals, corporate Ireland knows the reputational cost of donating to a poorly governed charity. OpenBenefacts gives your CSR team instant financial and governance intelligence on {formattedCount} Irish nonprofits — so every donation is defensible.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors">Start Free 30-Day Trial</button>
-          <a href="mailto:mark@openbenefacts.com?subject=CSR%20Team%20Enquiry" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Talk to Us</a>
+          <a href="mailto:team@openbenefacts.com?subject=CSR%20Team%20Enquiry" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Talk to Us</a>
         </div>
         <p className="text-sm text-gray-400 mt-3">No credit card required · Pro plan from €299/year</p>
       </div>
@@ -4176,43 +4176,54 @@ function AboutPage({ orgCount = 36803 }) {
 
         {/* Title */}
         <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-gray-900 leading-tight mb-10">
-          About OpenBenefacts
+          Why we built this
         </h1>
+
+        {/* Independence statement */}
+        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 mb-10">
+          <p className="text-emerald-800 text-sm font-medium leading-relaxed">
+            OpenBenefacts is an independent civic data project. It receives no government funding, has no political affiliation, and no commercial agenda beyond covering its costs. It exists because Ireland's nonprofit sector deserves transparency.
+          </p>
+        </div>
 
         {/* Article body */}
         <div className="space-y-6 text-base text-gray-700 leading-relaxed">
           <p>
-            OpenBenefacts is an open-data platform that maps the funding relationships between Irish government bodies, philanthropic organisations, and Ireland's {orgCount.toLocaleString()} nonprofits. We are the successor to Benefacts, which closed in 2022 after government funding was pulled, leaving a four-year gap in Irish nonprofit transparency.
+            Every year, the Irish government distributes between €11 billion and €14 billion to nonprofits — charities, housing bodies, schools, sports clubs, and health agencies. For years, Benefacts was the only independent platform tracking where this money went. When government funding was pulled in 2022, Benefacts shut down. For four years, that oversight disappeared.
           </p>
 
           <p>
-            Our mission is to make nonprofit funding data accessible, searchable, and transparent — helping donors, researchers, journalists, policymakers, and the public understand where money flows in Ireland's charitable sector.
+            OpenBenefacts picks up where they left off. We aggregate data from public regulators and government funding bodies, structure it, and publish it here — free to search. Our goal is simple: make it possible for anyone to follow Irish nonprofit money.
           </p>
 
           <p>
-            We are independent, with no regulatory powers or responsibilities. We aggregate, structure, and publish data from many public sources in a way that makes nonprofit activity more accessible and transparent, mainly by publishing it on this free public website.
-          </p>
-
-          <p>
-            OpenBenefacts publishes information on all types of nonprofits — whether or not they are registered as charities. In many cases we have more data than any single regulator, because we combine information filed with the Charities Regulator, the Companies Registration Office, Revenue, and 14 government funding bodies.
+            OpenBenefacts publishes information on {orgCount.toLocaleString()} nonprofits — whether or not they are registered as charities. In many cases we have more data than any single regulator, because we combine information filed across multiple public sources.
           </p>
         </div>
 
         <hr className="my-10 border-gray-200" />
 
-        {/* Why this matters */}
-        <p className="text-emerald-600 font-medium text-sm mb-3">Why this matters</p>
+        {/* Data methodology */}
+        <p className="text-emerald-600 font-medium text-sm mb-3">Data methodology</p>
         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-10">
-          €14 billion deserves oversight
+          How we collect and verify data
         </h2>
 
         <div className="space-y-6 text-base text-gray-700 leading-relaxed">
           <p>
-            Every year, the Irish government distributes between €11 billion and €14 billion to nonprofits — charities, housing bodies, schools, sports clubs, and health agencies. For years, Benefacts was the only independent platform tracking where this money went. When it closed, that oversight disappeared.
+            All data on OpenBenefacts is sourced from official public datasets published by Irish government bodies and regulators. We do not create or estimate data — we aggregate, cross-reference, and structure what is already publicly available.
           </p>
 
           <p>
-            OpenBenefacts picks up where they left off — open, independent, and free to search. With full financials, funder mapping, AI risk scores, and due diligence reports, we give the public the tools to follow Irish nonprofit money.
+            Our data pipeline works in three stages: first, we ingest raw data from regulator APIs, published PDFs, and open data portals. Second, we normalise organisation names, addresses, and identifiers to link records across sources. Third, we run automated quality checks to flag anomalies, duplicates, and stale records.
+          </p>
+
+          <p>
+            Every organisation profile shows which sources contributed to its data. Financial figures come directly from filed accounts — we do not adjust or restate them. Where data is missing or incomplete, we say so.
+          </p>
+
+          <p>
+            The full data pipeline is open source on <a href="https://github.com/markcoachaifootball/openbenefacts" className="text-emerald-600 hover:text-emerald-700 underline font-medium" target="_blank" rel="noopener noreferrer">GitHub</a>. Anyone can inspect our scrapers, verify our methodology, and contribute improvements.
           </p>
         </div>
 
@@ -4256,7 +4267,7 @@ function AboutPage({ orgCount = 36803 }) {
         {/* Contact */}
         <div className="bg-emerald-50 rounded-xl p-6">
           <h3 className="font-bold text-emerald-900 mb-2">Contact</h3>
-          <p className="text-emerald-700 text-sm">Questions, data corrections, or partnership inquiries: <a href="mailto:mark@openbenefacts.com" className="underline font-medium">mark@openbenefacts.com</a></p>
+          <p className="text-emerald-700 text-sm">Questions, data corrections, or partnership inquiries: <a href="mailto:team@openbenefacts.com" className="underline font-medium">team@openbenefacts.com</a></p>
         </div>
 
         {/* Similar help topics */}
@@ -4391,7 +4402,8 @@ function InnerApp() {
               <div className="mb-4">
                 <span className="font-wordmark text-[28px] text-white leading-none">OpenBenefacts</span>
               </div>
-              <p className="text-sm text-white/65 leading-relaxed mb-4">Ireland's nonprofit transparency platform. Independent, open, free to search.</p>
+              <p className="text-sm text-white/65 leading-relaxed mb-3">Ireland's nonprofit transparency platform. Independent, open, free to search.</p>
+              <p className="text-xs text-white/40 leading-relaxed">An independent civic data project. No government funding.</p>
             </div>
 
             {/* Explore */}
@@ -4413,20 +4425,20 @@ function InnerApp() {
               <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">For nonprofits</h4>
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("claim")} className="text-sm text-white/70 hover:text-white">Claim your listing</button></li>
-                <li><a href="mailto:corrections@openbenefacts.com" className="text-sm text-white/70 hover:text-white">Request a correction</a></li>
+                <li><a href="mailto:data@openbenefacts.com" className="text-sm text-white/70 hover:text-white">Request a correction</a></li>
                 <li><button onClick={() => handleSetPage("sources")} className="text-sm text-white/70 hover:text-white">Data sources</button></li>
                 <li><button onClick={() => handleSetPage("api")} className="text-sm text-white/70 hover:text-white">Developer API</button></li>
               </ul>
             </div>
 
-            {/* Company */}
+            {/* Project */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">Company</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">Project</h4>
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("about")} className="text-sm text-white/70 hover:text-white">About</button></li>
-                <li><button onClick={() => handleSetPage("media")} className="text-sm text-white/70 hover:text-white">Media</button></li>
+                <li><a href="https://github.com/markcoachaifootball/openbenefacts" target="_blank" rel="noopener noreferrer" className="text-sm text-white/70 hover:text-white">GitHub</a></li>
                 <li><button onClick={() => handleSetPage("pricing")} className="text-sm text-white/70 hover:text-white">Pricing</button></li>
-                <li><a href="mailto:mark@openbenefacts.com" className="text-sm text-white/70 hover:text-white">Contact</a></li>
+                <li><a href="mailto:team@openbenefacts.com" className="text-sm text-white/70 hover:text-white">Contact</a></li>
               </ul>
             </div>
 
@@ -4487,7 +4499,7 @@ function PrivacyPage() {
       <p>Under the GDPR, you have the right to access, correct, or delete any personal data we hold about you. To exercise these rights, email <a href="mailto:privacy@openbenefacts.com" className="text-emerald-600 hover:underline">privacy@openbenefacts.com</a>.</p>
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Contact</h2>
-      <p>Questions about this policy? Email <a href="mailto:mark@openbenefacts.com" className="text-emerald-600 hover:underline">mark@openbenefacts.com</a>.</p>
+      <p>Questions about this policy? Email <a href="mailto:team@openbenefacts.com" className="text-emerald-600 hover:underline">team@openbenefacts.com</a>.</p>
     </StaticPageShell>
   );
 }
