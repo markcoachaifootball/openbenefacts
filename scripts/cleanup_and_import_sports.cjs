@@ -218,66 +218,75 @@ async function downloadSCEP2023() {
     }
   }
 
-  const rows = parseCSV(text);
-  console.log(`   ✓ Parsed ${rows.length} rows`);
+  // Strip BOM if present
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
 
-  if (rows.length === 0) return [];
+  // Use index-based parsing to avoid header key mismatch issues
+  const lines = text.split("\n").filter(l => l.trim());
+  if (lines.length < 2) return [];
 
-  const headers = Object.keys(rows[0]);
-  console.log(`   Headers: ${headers.join(" | ")}`);
+  const headerLine = parseCSVLine(lines[0]);
+  const headers = headerLine.map(h => h.trim());
+  console.log(`   ✓ ${lines.length - 1} data rows`);
+  console.log(`   Headers (${headers.length}): ${headers.join(" | ")}`);
 
-  // Show first row for debugging
-  console.log(`   Sample row: ${JSON.stringify(rows[0])}`);
-
-  // Smart column mapping — try multiple patterns
-  const nameCol = headers.find(h => /^(applicant|organisation|club|grantee|recipient|name)/i.test(h))
-    || headers.find(h => /applicant|organisation|club|name/i.test(h))
-    || headers[0];
-
-  const amountCol = headers.find(h => /^amount\s*(sought|requested|approved|allocated|granted)?$/i.test(h))
-    || headers.find(h => /allocation|approved|granted/i.test(h))
-    || headers.find(h => /amount|grant/i.test(h));
-
-  const countyCol = headers.find(h => /^county$/i.test(h))
-    || headers.find(h => /county|location|area/i.test(h));
-
-  const sportCol = headers.find(h => /sport/i.test(h));
-  const statusCol = headers.find(h => /status|outcome|decision|result/i.test(h));
+  // Find column INDICES
+  const nameIdx = headers.findIndex(h => /organisation|applicant|club|grantee|recipient|name/i.test(h));
+  const amountIdx = headers.findIndex(h => /amount|allocation|approved|granted/i.test(h));
+  const countyIdx = headers.findIndex(h => /county/i.test(h));
+  const sportIdx = headers.findIndex(h => /sport/i.test(h));
+  const statusIdx = headers.findIndex(h => /status|outcome|decision/i.test(h));
+  const grantCatIdx = headers.findIndex(h => /grant\s*category/i.test(h));
 
   console.log(`\n   Column mapping:`);
   console.log(`     Name:   "${nameCol}"`);
   console.log(`     Amount: "${amountCol}"`);
-  console.log(`     County: "${countyCol}"`);
-  console.log(`     Sport:  "${sportCol}"`);
-  console.log(`     Status: "${statusCol}"`);
+  console.log(`\n   Column indices:`);
+  console.log(`     Name [${nameIdx}]:    "${nameIdx >= 0 ? headers[nameIdx] : 'NOT FOUND'}"`);
+  console.log(`     Amount [${amountIdx}]: "${amountIdx >= 0 ? headers[amountIdx] : 'NOT FOUND'}"`);
+  console.log(`     County [${countyIdx}]: "${countyIdx >= 0 ? headers[countyIdx] : 'NOT FOUND'}"`);
+  console.log(`     Sport [${sportIdx}]:   "${sportIdx >= 0 ? headers[sportIdx] : 'NOT FOUND'}"`);
+  console.log(`     Status [${statusIdx}]: "${statusIdx >= 0 ? headers[statusIdx] : 'NOT FOUND'}"`);
+
+  // Show first row by index for debugging
+  const firstVals = parseCSVLine(lines[1]);
+  console.log(`\n   First data row by index:`);
+  if (nameIdx >= 0) console.log(`     Name:   "${(firstVals[nameIdx] || "").trim()}"`);
+  if (amountIdx >= 0) console.log(`     Amount: "${(firstVals[amountIdx] || "").trim()}" → parsed: ${parseAmount(firstVals[amountIdx])}`);
+  if (countyIdx >= 0) console.log(`     County: "${(firstVals[countyIdx] || "").trim()}"`);
 
   const grants = [];
   let skippedNoName = 0, skippedNoAmount = 0;
 
-  for (const row of rows) {
-    const name = row[nameCol];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = parseCSVLine(lines[i]);
+    if (vals.length < 2) continue;
+
+    const name = nameIdx >= 0 ? (vals[nameIdx] || "").trim() : "";
     if (!name || name.length < 3) { skippedNoName++; continue; }
 
-    // Try to get amount — check multiple columns
+    // Get amount by index
     let amount = 0;
-    if (amountCol) amount = parseAmount(row[amountCol]);
-    // If no amount from primary column, try others
+    if (amountIdx >= 0) amount = parseAmount(vals[amountIdx]);
+
+    // Fallback: try every column for a euro amount
     if (amount === 0) {
-      for (const h of headers) {
-        if (/amount|allocation|approved|granted|total|€/i.test(h)) {
-          const a = parseAmount(row[h]);
-          if (a > 100) { amount = a; break; }
+      for (let c = 0; c < vals.length; c++) {
+        const v = (vals[c] || "").trim();
+        if (v.includes("€") || /^\d[\d,]+(\.\d+)?$/.test(v)) {
+          const a = parseAmount(v);
+          if (a > 500) { amount = a; break; }
         }
       }
     }
     if (amount <= 0) { skippedNoAmount++; continue; }
 
-    const county = countyCol ? (row[countyCol] || "").trim() : "";
-    const sport = sportCol ? (row[sportCol] || "").trim() : "";
-    const status = statusCol ? (row[statusCol] || "").trim() : "";
+    const county = countyIdx >= 0 ? (vals[countyIdx] || "").trim() : "";
+    const sport = sportIdx >= 0 ? (vals[sportIdx] || "").trim() : "";
+    const status = statusIdx >= 0 ? (vals[statusIdx] || "").trim() : "";
 
     grants.push({
-      name: name.trim(),
+      name,
       amount,
       county,
       year: 2023,
