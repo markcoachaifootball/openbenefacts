@@ -18,9 +18,22 @@ const path = require("path");
 
 let pdfParse;
 try {
-  pdfParse = require("pdf-parse");
+  const pdfModule = require("pdf-parse");
+  // Handle both CommonJS default export and direct function export
+  console.log("pdf-parse type:", typeof pdfModule, "keys:", Object.keys(pdfModule || {}).join(","));
+  pdfParse = typeof pdfModule === "function" ? pdfModule : (pdfModule.default || pdfModule);
+  if (typeof pdfParse !== "function") {
+    // Fallback: try requiring the internal module directly
+    try { pdfParse = require("pdf-parse/lib/pdf-parse.js"); } catch {}
+  }
+  if (typeof pdfParse !== "function") {
+    // Last resort: use pdfjs-dist directly
+    console.log("pdf-parse function not found. Trying manual PDF text extraction...");
+    pdfParse = null;
+  }
 } catch (e) {
   console.error("Missing pdf-parse. Install with: npm install pdf-parse");
+  console.error("Error:", e.message);
   process.exit(1);
 }
 
@@ -218,10 +231,21 @@ async function downloadAndParsePDFs() {
 
       // Parse
       const dataBuffer = fs.readFileSync(filename);
-      const pdfData = await pdfParse(dataBuffer);
-      console.log(`   ✓ Extracted text (${pdfData.text.length} chars, ${pdfData.numpages} pages)`);
+      let pdfText = "";
+      if (pdfParse && typeof pdfParse === "function") {
+        const pdfData = await pdfParse(dataBuffer);
+        pdfText = pdfData.text;
+        console.log(`   ✓ Extracted text (${pdfText.length} chars, ${pdfData.numpages} pages)`);
+      } else {
+        // Fallback: raw text extraction from PDF binary
+        const rawStr = dataBuffer.toString("latin1");
+        // Extract text between BT/ET blocks (PDF text objects)
+        const textMatches = rawStr.match(/\(([^)]+)\)/g) || [];
+        pdfText = textMatches.map(m => m.slice(1, -1)).join("\n");
+        console.log(`   ✓ Raw extracted (${pdfText.length} chars)`);
+      }
 
-      const grants = extractGrantsFromText(pdfData.text, pdf.year);
+      const grants = extractGrantsFromText(pdfText, pdf.year);
       console.log(`   ✓ Found ${grants.length} grants`);
 
       if (grants.length > 0) {
@@ -243,15 +267,32 @@ async function downloadAndParsePDFs() {
       if (resp.ok) {
         const buffer = await resp.arrayBuffer();
         fs.writeFileSync(eqFilename, Buffer.from(buffer));
-        const pdfData = await pdfParse(Buffer.from(buffer));
-        const grants = extractGrantsFromText(pdfData.text, 2023);
+        const eqBuf = Buffer.from(buffer);
+        let eqText = "";
+        if (pdfParse && typeof pdfParse === "function") {
+          const pdfData = await pdfParse(eqBuf);
+          eqText = pdfData.text;
+        } else {
+          const rawStr = eqBuf.toString("latin1");
+          const textMatches = rawStr.match(/\(([^)]+)\)/g) || [];
+          eqText = textMatches.map(m => m.slice(1, -1)).join("\n");
+        }
+        const grants = extractGrantsFromText(eqText, 2023);
         console.log(`   ✓ Equipment allocations: ${grants.length} grants`);
         allGrants.push(...grants);
       }
     } else {
       const dataBuffer = fs.readFileSync(eqFilename);
-      const pdfData = await pdfParse(dataBuffer);
-      const grants = extractGrantsFromText(pdfData.text, 2023);
+      let eqText = "";
+      if (pdfParse && typeof pdfParse === "function") {
+        const pdfData = await pdfParse(dataBuffer);
+        eqText = pdfData.text;
+      } else {
+        const rawStr = dataBuffer.toString("latin1");
+        const textMatches = rawStr.match(/\(([^)]+)\)/g) || [];
+        eqText = textMatches.map(m => m.slice(1, -1)).join("\n");
+      }
+      const grants = extractGrantsFromText(eqText, 2023);
       console.log(`   ✓ Equipment allocations (cached): ${grants.length} grants`);
       allGrants.push(...grants);
     }
