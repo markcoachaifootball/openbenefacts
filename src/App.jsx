@@ -561,7 +561,7 @@ function Navbar({ page, setPage }) {
   }, []);
 
   const nav = (p) => { setPage(p); setMobileOpen(false); };
-  const links = [["home","Dashboard"],["orgs","Organisations"],["funders","Funders"],["councils","Council Finances"],["trackers/emergency-accommodation","Housing Tracker"],["knowledge","Knowledge Base"],["pricing","Pricing"],["api","API"],["about","About"]];
+  const links = [["home","Dashboard"],["orgs","Organisations"],["funders","Funders"],["councils","Council Finances"],["trackers/emergency-accommodation","Housing Tracker"],["knowledge","Knowledge Base"],["pricing","Pricing"],["api","API"],["open-data","Open Data"],["about","About"]];
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -4446,6 +4446,7 @@ function InnerApp() {
       case "media": return <MediaPage orgCount={orgCount} />;
       case "knowledge": return <KnowledgeBasePage setPage={handleSetPage} />;
       case "api": return <ApiPage />;
+      case "open-data": return <OpenDatasetsPage setPage={handleSetPage} />;
       case "about": return <AboutPage orgCount={orgCount} />;
       case "privacy": return <PrivacyPage />;
       case "terms": return <TermsPage />;
@@ -4548,6 +4549,141 @@ function StaticPageShell({ title, subtitle, children }) {
         {subtitle && <p className="text-lg text-gray-500">{subtitle}</p>}
       </div>
       <div className="prose prose-lg max-w-none text-gray-600 leading-relaxed">{children}</div>
+    </div>
+  );
+}
+
+function OpenDatasetsPage({ setPage }) {
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+
+  const fields = [
+    { name: "Organisation ID", desc: "Unique OpenBenefacts identifier (UUID)" },
+    { name: "Registered name", desc: "Official registered name and other trading names where applicable" },
+    { name: "Sector & subsector", desc: "OpenBenefacts classification (e.g. Social Services, Health, Education)" },
+    { name: "County", desc: "Primary county of operation" },
+    { name: "Governing form", desc: "Legal structure (CLG, DAC, Trust, etc.)" },
+    { name: "Regulatory numbers", desc: "Charity number (CRA), CRO number, Revenue CHY number" },
+    { name: "Latest financials", desc: "Gross income, expenditure, surplus/deficit, net assets, employees" },
+    { name: "Income breakdown", desc: "Government, donations, trading, and other income where reported" },
+    { name: "State funding received", desc: "Individual grants from government funders with programme and year" },
+    { name: "Board members", desc: "Directors and trustees with start dates and roles" },
+  ];
+
+  const otherFiles = [
+    { name: "State funders & programmes", desc: "All government funders tracked, with total funding amounts and recipient counts", format: "JSON" },
+    { name: "Sector breakdown", desc: "Organisation counts by sector and subsector", format: "CSV" },
+    { name: "County breakdown", desc: "Organisation counts by county", format: "CSV" },
+    { name: "Board cross-directorships", desc: "Directors who sit on multiple nonprofit boards", format: "CSV" },
+  ];
+
+  const handleDownloadCSV = async () => {
+    window.open(`${SUPABASE_URL}/rest/v1/org_summary?select=id,name,sector,subsector,county,governing_form,charity_number,cro_number,gross_income,gross_expenditure,net_assets,employees,total_grant_amount&limit=50000&apikey=${import.meta.env.VITE_SUPABASE_ANON_KEY}`, '_blank');
+  };
+
+  const handleDownloadJSON = async () => {
+    window.open(`${SUPABASE_URL}/rest/v1/org_summary?select=*&limit=50000&apikey=${import.meta.env.VITE_SUPABASE_ANON_KEY}`, '_blank');
+  };
+
+  return (
+    <div className="bg-white min-h-screen">
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-[#1B3A4B] to-[#0f2733] text-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+          <p className="text-emerald-400 font-medium text-sm mb-3 uppercase tracking-wider">Open Data</p>
+          <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold leading-tight mb-4">Open datasets</h1>
+          <p className="text-lg text-white/70 leading-relaxed">Free, structured data on Irish nonprofits — download it, build on it, hold power to account.</p>
+        </div>
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+        {/* Independence statement */}
+        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 mb-10">
+          <p className="text-emerald-800 text-sm font-medium leading-relaxed">
+            OpenBenefacts is an independent, open-data project. It has no government funding, no political affiliation, and no commercial agenda beyond covering its costs. It exists because Ireland's nonprofit sector deserves transparency.
+          </p>
+        </div>
+
+        {/* Intro */}
+        <div className="space-y-4 text-base text-gray-700 leading-relaxed mb-10">
+          <p>
+            OpenBenefacts routinely publishes open datasets covering Irish nonprofits. Our data is compiled from public regulators, government funding bodies, and official filings — then structured, deduplicated, and made available here for free.
+          </p>
+          <p>
+            Open data is available for over 36,000 Irish nonprofits, with information (where available) under these fields:
+          </p>
+        </div>
+
+        {/* Fields list */}
+        <div className="bg-gray-50 rounded-xl p-6 mb-10">
+          <div className="space-y-3">
+            {fields.map(f => (
+              <div key={f.name} className="flex items-start gap-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 flex-shrink-0" />
+                <div><span className="font-semibold text-gray-900">{f.name}</span> <span className="text-gray-500">— {f.desc}</span></div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Formats */}
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Download formats</h2>
+        <div className="space-y-4 text-base text-gray-700 leading-relaxed mb-8">
+          <p>
+            The dataset is available in two formats:
+          </p>
+          <p>
+            <strong className="text-gray-900">CSV</strong> — a convenient option if you would like to view the data in Excel. Simply download the dataset and open the file. Columns include organisation name, sector, county, registration numbers, income, expenditure, and funding totals.
+          </p>
+          <p>
+            <strong className="text-gray-900">JSON</strong> — a commonly used data storage and transfer format. This is human readable and can also be consumed automatically by third-party software. Includes all available fields including income breakdowns and grant details.
+          </p>
+        </div>
+
+        {/* Download buttons */}
+        <div className="flex flex-wrap gap-4 mb-16">
+          <button onClick={handleDownloadCSV}
+            className="px-8 py-3.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200">
+            Download as CSV
+          </button>
+          <button onClick={handleDownloadJSON}
+            className="px-8 py-3.5 bg-[#1B3A4B] text-white font-semibold rounded-xl hover:bg-[#142d3b] transition-colors shadow-lg shadow-gray-200">
+            Download as JSON
+          </button>
+        </div>
+
+        {/* API link */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mb-16">
+          <p className="text-gray-700 leading-relaxed">
+            If you would like to receive the dataset as a live API, we offer a REST API with endpoints for organisations, funders, grants, and search. <button onClick={() => setPage("api")} className="text-emerald-600 font-semibold hover:underline">View the API documentation →</button>
+          </p>
+        </div>
+
+        {/* Other data files */}
+        <h2 className="text-xl font-bold text-gray-900 mb-6">Other data files</h2>
+        <div className="space-y-3 mb-16">
+          {otherFiles.map(f => (
+            <div key={f.name} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div>
+                <div className="font-semibold text-gray-900">{f.name}</div>
+                <div className="text-sm text-gray-500">{f.desc}</div>
+              </div>
+              <span className="text-xs font-mono px-2 py-1 rounded bg-gray-200 text-gray-600">{f.format}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* GitHub / contribution */}
+        <div className="border-t border-gray-200 pt-10">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Contribute</h2>
+          <p className="text-base text-gray-700 leading-relaxed mb-4">
+            OpenBenefacts is open source. If you spot an error, want to suggest a new data source, or would like to contribute code, visit our GitHub repository.
+          </p>
+          <a href="https://github.com/markcoachifootball/openbenefacts" target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-emerald-600 font-semibold hover:underline">
+            <Code className="w-4 h-4" /> View on GitHub →
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
