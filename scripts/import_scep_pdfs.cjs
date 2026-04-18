@@ -184,6 +184,10 @@ function extractGrantsFromText(text, year) {
     if (!orgName || orgName.length < 4) continue;
     // Skip header-like lines
     if (/^(organisation|club|applicant|name|county|total|grant|amount|paid|approved)/i.test(orgName)) continue;
+    // Skip government programme names, schemes, and aggregate/subtotal lines
+    if (/\b(programme|scheme|fund|initiative|allocation|payment|subvention|exchequer|department|government|community\s+employment|sport\s+ireland|sub[\s-]?total|grand\s+total|appendix|schedule|summary|continued)\b/i.test(orgName)) continue;
+    // Skip names that are mostly numbers (page/row artifacts)
+    if ((orgName.match(/\d/g) || []).length > orgName.length * 0.5) continue;
 
     // Try to extract county if it appears between org name and amounts
     let county = "";

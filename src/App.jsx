@@ -2074,52 +2074,110 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                 );
               })()}
 
-              {/* Funding received — clickable to funder pages */}
+              {/* Funding received — detailed breakdown with clickable funders */}
               {org.grants && org.grants.length > 0 && (
-                <div className="mt-6">
+                <div className="mt-6" id="funding-detail-section">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">State Funding Received</h3>
-                    <div className="text-sm font-bold text-emerald-600">{fmt(org.grants.reduce((s, g) => s + (g.amount || 0), 0))} total</div>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Where the Money Comes From</h3>
+                    <div className="text-sm font-bold text-emerald-600">{fmt(org.grants.reduce((s, g) => s + (g.amount || 0), 0))} total tracked</div>
                   </div>
-                  {/* Funder pills — clickable */}
+
+                  {/* Funder summary cards — clickable to see all their grants */}
                   {(() => {
-                    const uniqueFunders = [...new Set(org.grants.map(g => g.funders?.name || g.funder_name || "Government"))];
-                    return uniqueFunders.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {uniqueFunders.slice(0, 6).map(fName => {
-                          const fGrants = org.grants.filter(g => (g.funders?.name || g.funder_name || "Government") === fName);
-                          const fTotal = fGrants.reduce((s, g) => s + (g.amount || 0), 0);
+                    const funderMap = {};
+                    org.grants.forEach(g => {
+                      const fName = g.funders?.name || g.funder_name || "Government";
+                      if (!funderMap[fName]) funderMap[fName] = { name: fName, total: 0, count: 0, years: new Set(), programmes: new Set() };
+                      funderMap[fName].total += g.amount || 0;
+                      funderMap[fName].count++;
+                      if (g.year) funderMap[fName].years.add(g.year);
+                      if (g.programme) funderMap[fName].programmes.add(g.programme);
+                    });
+                    const funderList = Object.values(funderMap).sort((a, b) => b.total - a.total);
+                    const grantTotal = org.grants.reduce((s, g) => s + (g.amount || 0), 0);
+
+                    return (
+                      <div className="space-y-2 mb-4">
+                        {funderList.map(f => {
+                          const pctShare = grantTotal > 0 ? (f.total / grantTotal * 100) : 0;
+                          const yearRange = f.years.size > 0 ? `${Math.min(...f.years)}–${Math.max(...f.years)}` : "";
                           return (
-                            <button key={fName} onClick={() => setPage(`funder:${fName}`)}
-                              className="text-xs px-3 py-1.5 rounded-full font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer transition-colors">
-                              {fName.length > 30 ? fName.substring(0, 28) + "…" : fName} · {fmt(fTotal)}
+                            <button key={f.name} onClick={() => setPage(`funder:${f.name}`)}
+                              className="w-full text-left bg-white border border-gray-100 rounded-xl p-4 hover:border-emerald-300 hover:shadow-md transition-all group">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-sm font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">{f.name}</span>
+                                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-emerald-500 flex-shrink-0" />
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                                    <span>{f.count} grant{f.count !== 1 ? "s" : ""}</span>
+                                    {yearRange && <span>{yearRange}</span>}
+                                    {f.programmes.size > 0 && <span>{f.programmes.size} programme{f.programmes.size !== 1 ? "s" : ""}</span>}
+                                  </div>
+                                  {f.programmes.size > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                      {[...f.programmes].slice(0, 3).map(p => (
+                                        <span key={p} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 truncate max-w-[180px]">{p}</span>
+                                      ))}
+                                      {f.programmes.size > 3 && <span className="text-[10px] text-gray-400">+{f.programmes.size - 3} more</span>}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <div className="text-sm font-bold text-emerald-600">{fmt(f.total)}</div>
+                                  <div className="text-[10px] text-gray-400">{pctShare.toFixed(0)}% of total</div>
+                                  <div className="w-16 h-1.5 bg-gray-100 rounded-full mt-1 ml-auto"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.max(3, pctShare)}%` }} /></div>
+                                </div>
+                              </div>
+                              <p className="text-[10px] text-emerald-600/70 mt-2 group-hover:text-emerald-700">Click to see all organisations this funder supports →</p>
                             </button>
                           );
                         })}
                       </div>
                     );
                   })()}
-                  <div className="space-y-2">
-                    {org.grants.slice(0, showAllFunding ? 999 : 10).map((g, i) => (
-                      <button key={i} onClick={() => setPage(`funder:${g.funders?.name || g.funder_name || "Government"}`)}
-                        className="w-full flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-emerald-50 transition-colors text-left group">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 group-hover:text-emerald-700">{g.funders?.name || g.funder_name || "Government"}</div>
-                          <div className="text-xs text-gray-400">{g.programme || ""} {g.year ? `· ${g.year}` : ""}</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {g.amount > 0 && <div className="text-sm font-semibold text-emerald-600">{fmt(g.amount)}</div>}
-                          <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-emerald-500" />
-                        </div>
-                      </button>
-                    ))}
+
+                  {/* Individual grant records table */}
+                  <div className="bg-gray-50 rounded-xl overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Individual Grant Records</h4>
+                      <span className="text-[10px] text-gray-400">{org.grants.length} records</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-[10px] text-gray-400 uppercase tracking-wider">
+                            <th className="px-4 py-2 font-semibold">Funder</th>
+                            <th className="px-4 py-2 font-semibold">Programme</th>
+                            <th className="px-4 py-2 font-semibold text-center">Year</th>
+                            <th className="px-4 py-2 font-semibold text-right">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {org.grants.slice(0, showAllFunding ? 999 : 10).map((g, i) => {
+                            const fName = g.funders?.name || g.funder_name || "Government";
+                            return (
+                              <tr key={i} className="border-t border-gray-100 hover:bg-emerald-50/50 transition-colors cursor-pointer" onClick={() => setPage(`funder:${fName}`)}>
+                                <td className="px-4 py-2.5">
+                                  <span className="font-medium text-emerald-700 hover:underline">{fName.length > 40 ? fName.substring(0, 38) + "…" : fName}</span>
+                                </td>
+                                <td className="px-4 py-2.5 text-gray-500 text-xs">{g.programme || "—"}</td>
+                                <td className="px-4 py-2.5 text-center text-gray-500">{g.year || "—"}</td>
+                                <td className="px-4 py-2.5 text-right font-semibold text-gray-900">{g.amount > 0 ? fmt(g.amount) : "—"}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                     {org.grants.length > 10 && !showAllFunding && (
-                      <button onClick={() => setShowAllFunding(true)} className="w-full text-center text-xs text-emerald-600 hover:text-emerald-800 font-medium py-2">
+                      <button onClick={() => setShowAllFunding(true)} className="w-full text-center text-xs text-emerald-600 hover:text-emerald-800 font-medium py-3 border-t border-gray-200">
                         Show all {org.grants.length} funding records ↓
                       </button>
                     )}
                     {showAllFunding && org.grants.length > 10 && (
-                      <button onClick={() => setShowAllFunding(false)} className="w-full text-center text-xs text-gray-400 hover:text-gray-600 font-medium py-2">
+                      <button onClick={() => setShowAllFunding(false)} className="w-full text-center text-xs text-gray-400 hover:text-gray-600 font-medium py-3 border-t border-gray-200">
                         Show fewer ↑
                       </button>
                     )}
@@ -2447,13 +2505,20 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                           <div className="flex-1 space-y-2 w-full">
                             {sources.map(s => {
                               const pctOfTotal = totalInc > 0 ? (s.value / totalInc * 100) : 0;
+                              const isGovernment = s.name === "Government";
+                              const hasGrants = org.grants && org.grants.length > 0;
                               return (
-                                <div key={s.name}>
+                                <div key={s.name} className={isGovernment && hasGrants ? "cursor-pointer group/src" : ""} onClick={isGovernment && hasGrants ? () => { setTab("overview"); setTimeout(() => { const el = document.getElementById("funding-detail-section"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 100); } : undefined}>
                                   <div className="flex items-center justify-between mb-0.5">
-                                    <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{ background: s.fill }} /><span className="text-sm font-medium text-gray-700">{s.name}</span></div>
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: s.fill }} />
+                                      <span className={`text-sm font-medium ${isGovernment && hasGrants ? "text-emerald-700 group-hover/src:underline" : "text-gray-700"}`}>{s.name}</span>
+                                      {isGovernment && hasGrants && <span className="text-[10px] text-emerald-500 font-medium">→ see details</span>}
+                                    </div>
                                     <span className="text-sm font-bold text-gray-900">{fmt(s.value)} <span className="text-[10px] font-normal text-gray-400">({pctOfTotal.toFixed(0)}%)</span></span>
                                   </div>
                                   <div className="w-full h-1.5 bg-gray-200 rounded-full"><div className="h-full rounded-full transition-all" style={{ width: `${pctOfTotal}%`, background: s.fill }} /></div>
+                                  {!isGovernment && <p className="text-[10px] text-gray-400 mt-0.5">Source: annual charity filing ({cur.year})</p>}
                                 </div>
                               );
                             })}
@@ -2485,8 +2550,12 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                             </ResponsiveContainer>
                           </div>
                           <div className="space-y-3 flex-1">
-                            <div><div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 rounded bg-emerald-600" /><span className="text-sm font-medium text-gray-700">State Funding</span><span className="text-sm font-bold text-gray-900 ml-auto">{statePct}%</span></div><div className="w-full h-2 bg-gray-200 rounded-full"><div className="h-2 bg-emerald-600 rounded-full" style={{ width: `${statePct}%` }} /></div><p className="text-xs text-gray-400 mt-0.5">{fmt(grantTotal)} from {org.grants?.length || 0} grants</p></div>
-                            <div><div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 rounded bg-indigo-500" /><span className="text-sm font-medium text-gray-700">Other Income</span><span className="text-sm font-bold text-gray-900 ml-auto">{otherPct}%</span></div><div className="w-full h-2 bg-gray-200 rounded-full"><div className="h-2 bg-indigo-500 rounded-full" style={{ width: `${otherPct}%` }} /></div></div>
+                            <div className="cursor-pointer group/sf" onClick={() => { setTab("overview"); setTimeout(() => { const el = document.getElementById("funding-detail-section"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 100); }}>
+                              <div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 rounded bg-emerald-600" /><span className="text-sm font-medium text-emerald-700 group-hover/sf:underline">State Funding</span><span className="text-[10px] text-emerald-500 font-medium">→ see details</span><span className="text-sm font-bold text-gray-900 ml-auto">{statePct}%</span></div>
+                              <div className="w-full h-2 bg-gray-200 rounded-full"><div className="h-2 bg-emerald-600 rounded-full" style={{ width: `${statePct}%` }} /></div>
+                              <p className="text-xs text-gray-400 mt-0.5">{fmt(grantTotal)} from {org.grants?.length || 0} grants — click to see full breakdown</p>
+                            </div>
+                            <div><div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 rounded bg-indigo-500" /><span className="text-sm font-medium text-gray-700">Other Income</span><span className="text-sm font-bold text-gray-900 ml-auto">{otherPct}%</span></div><div className="w-full h-2 bg-gray-200 rounded-full"><div className="h-2 bg-indigo-500 rounded-full" style={{ width: `${otherPct}%` }} /></div><p className="text-xs text-gray-400 mt-0.5">Source: annual charity filing</p></div>
                           </div>
                         </div>
                       </div>
