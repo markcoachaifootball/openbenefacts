@@ -24,9 +24,11 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
-const SUPABASE_URL = 'https://ilkwspvhqedzjreysuxu.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlsa3dzcHZocWVkempyZXlzdXh1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDEyMjQyMiwiZXhwIjoyMDg5Njk4NDIyfQ.lnA4FizzVkNHNJ7J-OlP_A4j7gXJxZXrfyZGXM2KbBc';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://ilkwspvhqedzjreysuxu.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
+if (!SUPABASE_KEY) { console.error('Missing SUPABASE_SERVICE_KEY in .env'); process.exit(1); }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1208,51 +1210,57 @@ async function main() {
   console.log(`Unmatched (will store name only): ${allGrants.filter(g => !g.org_id).length}`);
   console.log(`${'='.repeat(50)}`);
 
-  // Insert into Supabase in batches
-  console.log('\nClearing existing grants...');
-  const { error: delErr } = await supabase.from('funding_grants').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-  if (delErr) console.log('Note: Could not clear existing grants (table may be empty):', delErr.message);
-
-  console.log('Inserting grants...');
+  // Insert into Supabase in batches — UPSERT logic (skip duplicates, don't delete existing)
+  console.log('\nInserting grants (skipping duplicates)...');
   const batchSize = 50;
   let inserted = 0;
+  let skipped = 0;
   let errors = 0;
-  for (let i = 0; i < allGrants.length; i += batchSize) {
-    const batch = allGrants.slice(i, i + batchSize).map(g => ({
-      funder_id: g.funder_id,
-      org_id: g.org_id || null,
-      recipient_name_raw: g.recipient_name || 'Unknown',
-      programme: g.programme,
-      amount: g.amount,
-      year: g.year,
-      source: g.source,
-      match_confidence: g.org_id ? 0.8 : null,
-      match_method: g.org_id ? 'name_match' : null,
-    }));
 
-    const { data, error } = await supabase.from('funding_grants').insert(batch);
-    if (error) {
-      console.error(`Batch ${Math.floor(i/batchSize) + 1} error:`, error.message);
-      // Try one by one
-      for (const row of batch) {
-        const { error: rowErr } = await supabase.from('funding_grants').insert(row);
-        if (rowErr) {
-          errors++;
-          if (errors <= 5) console.error(`  Row error (${row.programme}):`, rowErr.message);
-        }
-        else inserted++;
+  for (let i = 0; i < allGrants.length; i += batchSize) {
+    const batch = allGrants.slice(i, i + batchSize);
+
+    for (const g of batch) {
+      // Check for existing grant with same funder + recipient + amount + year
+      const { data: existing } = await supabase
+        .from('funding_grants')
+        .select('id')
+        .eq('funder_id', g.funder_id)
+        .eq('recipient_name_raw', g.recipient_name || 'Unknown')
+        .eq('amount', g.amount)
+        .eq('year', g.year)
+        .maybeSingle();
+
+      if (existing) { skipped++; continue; }
+
+      const { error: rowErr } = await supabase.from('funding_grants').insert({
+        funder_id: g.funder_id,
+        org_id: g.org_id || null,
+        recipient_name_raw: g.recipient_name || 'Unknown',
+        programme: g.programme,
+        amount: g.amount,
+        year: g.year,
+        source: g.source,
+        match_confidence: g.org_id ? 0.8 : null,
+        match_method: g.org_id ? 'name_match' : null,
+      });
+
+      if (rowErr) {
+        errors++;
+        if (errors <= 5) console.error(`  Row error (${g.recipient_name}):`, rowErr.message);
+      } else {
+        inserted++;
       }
-    } else {
-      inserted += batch.length;
     }
 
     // Progress
-    if ((i + batchSize) % 100 === 0 || i + batchSize >= allGrants.length) {
-      console.log(`  Progress: ${Math.min(i + batchSize, allGrants.length)}/${allGrants.length} processed`);
+    if ((i + batchSize) % 200 === 0 || i + batchSize >= allGrants.length) {
+      console.log(`  Progress: ${Math.min(i + batchSize, allGrants.length)}/${allGrants.length} (${inserted} new, ${skipped} existing)`);
     }
   }
 
-  console.log(`\nInserted ${inserted} grants successfully!`);
+  console.log(`\nInserted ${inserted} new grants successfully!`);
+  console.log(`Skipped ${skipped} existing grants (already in database)`);
   if (errors > 0) console.log(`${errors} rows had errors`);
 
   // Print unmatched for manual review
