@@ -4251,7 +4251,7 @@ function AboutPage({ orgCount = 36803 }) {
         {/* Independence statement */}
         <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 mb-10">
           <p className="text-emerald-800 text-sm font-medium leading-relaxed">
-            OpenBenefacts is an independent civic data project. It receives no government funding, has no political affiliation, and no commercial agenda beyond covering its costs. It exists because Ireland's nonprofit sector deserves transparency.
+            OpenBenefacts is an independent, open-data project. It has no government funding, no political affiliation, and no commercial agenda beyond covering its costs. It exists because Ireland's nonprofit sector deserves transparency.
           </p>
         </div>
 
