@@ -459,7 +459,7 @@ function AuthProvider({ children }) {
   const logout = () => { setUser(null); localStorage.removeItem("ob_user"); };
   const requirePro = (feature) => { if (!isPro) { setUpgradePrompt(feature); setShowPricing(true); return false; } return true; };
 
-  const ADMIN_EMAILS = ["mark@staydiasports.com", "team@openbenefacts.com"];
+  const ADMIN_EMAILS = ["mark@staydiasports.com", "team@openbenefacts.ie"];
   const handleSubmit = (e) => {
     e.preventDefault();
     const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase().trim());
@@ -488,7 +488,7 @@ function AuthProvider({ children }) {
             <div className="text-center mb-6">
               <div className="font-wordmark text-[32px] text-[#1B3A4B] mb-4 text-center">OpenBenefacts</div>
               <h2 className="text-2xl font-bold text-gray-900">Welcome to OpenBenefacts!</h2>
-              <p className="text-gray-500 mt-2">Your 30-day Professional trial is now active. Here's how to get the most out of it:</p>
+              <p className="text-gray-500 mt-2">Your 30-day free trial is now active. Here's how to get the most out of it:</p>
             </div>
             <div className="space-y-3 mb-6">
               {[
@@ -504,7 +504,7 @@ function AuthProvider({ children }) {
               ))}
             </div>
             <button onClick={() => setShowOnboarding(false)} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700">Start exploring</button>
-            <p className="text-center text-xs text-gray-400 mt-3">Your Professional trial lasts 30 days. No credit card required.</p>
+            <p className="text-center text-xs text-gray-400 mt-3">Your free trial lasts 30 days. No credit card required.</p>
           </div>
         </div>
       )}
@@ -563,19 +563,21 @@ function Navbar({ page, setPage }) {
   const nav = (p) => { setPage(p); setMobileOpen(false); };
   const links = [["home","Dashboard"],["orgs","Organisations"],["funders","Funders"],["councils","Council Finances"],["trackers/emergency-accommodation","Housing Tracker"],["knowledge","Knowledge Base"],["pricing","Pricing"],["api","API"],["open-data","Open Data"],["about","About"]];
 
+  const linkPath = (key) => !key || key === "home" ? "/" : key.startsWith("trackers/") ? `/${key}` : `/${key}`;
+
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="w-full px-6 lg:px-10">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <nav className="w-full px-6 lg:px-10" aria-label="Main navigation">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center cursor-pointer flex-shrink-0" onClick={() => nav("home")}>
+          <a href="/" onClick={(e) => { e.preventDefault(); nav("home"); }} className="flex items-center flex-shrink-0">
             <div className="leading-none">
               <span className="font-wordmark text-[28px] text-emerald-700">Open</span>
               <span className="font-wordmark text-[28px] text-[#1a1a2e]">Benefacts</span>
             </div>
-          </div>
+          </a>
           <div className="hidden md:flex items-center gap-0.5">
             {links.map(([key, label]) => (
-              <button key={key} onClick={() => nav(key)} className={`px-3 py-1.5 text-sm font-medium transition-colors ${page === key ? "text-[#1B3A4B] border-b-2 border-[#1B3A4B]" : "text-gray-500 hover:text-[#1B3A4B]"}`}>{label}</button>
+              <a key={key} href={linkPath(key)} onClick={(e) => { e.preventDefault(); nav(key); }} className={`px-3 py-1.5 text-sm font-medium transition-colors ${page === key ? "text-[#1B3A4B] border-b-2 border-[#1B3A4B]" : "text-gray-500 hover:text-[#1B3A4B]"}`}>{label}</a>
             ))}
             {user ? (
               <div className="relative ml-4" ref={avatarRef}>
@@ -588,7 +590,7 @@ function Navbar({ page, setPage }) {
                       <p className="font-medium text-gray-900 text-sm">{user.name || user.email}</p>
                       <p className="text-xs text-gray-500">{user.email}</p>
                       {isTrialActive ? (
-                        <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">Professional Trial · {trialDaysLeft} days left</span>
+                        <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">Free Trial · {trialDaysLeft} days left</span>
                       ) : (
                         <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full capitalize">{user.tier}</span>
                       )}
@@ -605,16 +607,16 @@ function Navbar({ page, setPage }) {
               </div>
             )}
           </div>
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-gray-600">{mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 text-gray-600" aria-label={mobileOpen ? "Close menu" : "Open menu"}>{mobileOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}</button>
         </div>
-      </div>
-      {mobileOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white px-4 py-3 space-y-1">
-          {links.map(([key, label]) => (<button key={key} onClick={() => nav(key)} className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${page === key ? "bg-gray-100 text-[#1B3A4B] font-semibold" : "text-gray-600"}`}>{label}</button>))}
-          {user && <button onClick={() => { logout(); setMobileOpen(false); }} className="block w-full text-left px-3 py-2 rounded-lg text-sm text-red-600">Sign Out</button>}
-        </div>
-      )}
-    </nav>
+        {mobileOpen && (
+          <div className="md:hidden border-t border-gray-200 bg-white px-4 py-3 space-y-1">
+            {links.map(([key, label]) => (<a key={key} href={linkPath(key)} onClick={(e) => { e.preventDefault(); nav(key); }} className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${page === key ? "bg-gray-100 text-[#1B3A4B] font-semibold" : "text-gray-600"}`}>{label}</a>))}
+            {user && <button onClick={() => { logout(); setMobileOpen(false); }} className="block w-full text-left px-3 py-2 rounded-lg text-sm text-red-600">Sign Out</button>}
+          </div>
+        )}
+      </nav>
+    </header>
   );
 }
 
@@ -935,7 +937,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
                   <h3 className="font-semibold text-gray-900 text-sm truncate">{cleanName(w.name)}</h3>
                   <div className="text-xs text-gray-400 mt-0.5">Added {new Date(w.added).toLocaleDateString()}</div>
                 </button>
-                <button onClick={() => watchlist.toggle(w.id, w.name)} className="p-1 ml-2 text-gray-300 hover:text-red-500"><X className="w-4 h-4" /></button>
+                <button onClick={() => watchlist.toggle(w.id, w.name)} className="p-1 ml-2 text-gray-300 hover:text-red-500" aria-label="Remove from watchlist"><X className="w-4 h-4" aria-hidden="true" /></button>
               </div>
             ))}
           </div>
@@ -1502,6 +1504,16 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
       normaliseOrg(d);
       setOrg(d);
       setLoading(false);
+      // Update page title/meta for this org
+      if (d?.name) {
+        const sector = d.sector ? ` (${d.sector})` : "";
+        document.title = `${d.name}${sector} — OpenBenefacts`;
+        const descTag = document.querySelector('meta[name="description"]');
+        if (descTag) {
+          const income = d.financials?.[0]?.total_income ? ` Income: €${(d.financials[0].total_income/1e6).toFixed(1)}M.` : "";
+          descTag.setAttribute("content", `${d.name}${sector} — financials, governance, and funding data.${income} Free on OpenBenefacts.`);
+        }
+      }
       if (d?.sector) fetchSectorBenchmark(d.sector).then(setBenchmark).catch(() => {});
     }).catch(() => setLoading(false));
   }, [orgId]);
@@ -1615,7 +1627,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                       ${clean(org.cro_number) ? `<tr><td style="color:#999;width:160px">CRO (CORE)</td><td><a href="https://core.cro.ie/search?q=${org.cro_number}&type=companies" style="color:#059669">Constitution &amp; annual returns — ${org.cro_number}</a></td></tr>` : ""}
                       ${clean(org.revenue_chy) ? `<tr><td style="color:#999;width:160px">Revenue Commissioners</td><td><a href="https://www.revenue.ie/en/corporate/information-about-revenue/statistics/other-datasets/charities/resident-charities.aspx" style="color:#059669">Tax-exempt charity register — CHY ${org.revenue_chy}</a></td></tr>` : ""}
                     </table>` : ""}
-                    <div class="footer">${brandName ? `<p style="font-size:13px;font-weight:600;color:#333;margin-bottom:4px">Prepared by ${brandName}</p>` : ""}Generated by OpenBenefacts · openbenefacts.vercel.app · ${new Date().toLocaleDateString()}</div>
+                    <div class="footer">${brandName ? `<p style="font-size:13px;font-weight:600;color:#333;margin-bottom:4px">Prepared by ${brandName}</p>` : ""}Generated by OpenBenefacts · openbenefacts.ie · ${new Date().toLocaleDateString()}</div>
                   </body></html>`;
                   openReportWindow(pdfHtml);
                 }} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors">
@@ -1875,7 +1887,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     <div class="footer">
                       ${brandName ? `<p style="font-size:13px;font-weight:600;color:#333;margin-bottom:4px">Prepared by ${brandName}</p>` : ""}
                       <p><strong>OpenBenefacts Due Diligence Report</strong></p>
-                      <p>Generated on ${new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" })} · openbenefacts.vercel.app</p>
+                      <p>Generated on ${new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" })} · openbenefacts.ie</p>
                       <p style="margin-top:8px">This report is generated from publicly available data and does not constitute financial or legal advice. Users should verify all information independently.</p>
                     </div>
                   </body></html>`;
@@ -3347,7 +3359,7 @@ function FundingFlowWidget({ funder, grants, compact = false, onOrgClick, onProg
         })}
 
         {/* Watermark */}
-        <text x={svgW - 6} y={svgH - 6} textAnchor="end" fill="#ccc" fontSize="8" fontWeight="500">openbenefacts.vercel.app</text>
+        <text x={svgW - 6} y={svgH - 6} textAnchor="end" fill="#ccc" fontSize="8" fontWeight="500">openbenefacts.ie</text>
       </svg>
 
       {/* Floating tooltip */}
@@ -3579,22 +3591,22 @@ function ApiPage() {
 
   const endpoints = [
     { method: "GET", path: "/api/v1/organisations", desc: "List organisations with pagination, search, and filters", params: "page, pageSize, search, sector, county, governingForm, minIncome, maxIncome, sortBy, sortDir", example: `# Free tier — no API key needed
-curl "https://openbenefacts.vercel.app/api/v1/organisations?search=barnardos&pageSize=5"
+curl "https://www.openbenefacts.ie/api/v1/organisations?search=barnardos&pageSize=5"
 
 # Authenticated — higher limits
 curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://openbenefacts.vercel.app/api/v1/organisations?sector=Social+Services&pageSize=50"` },
-    { method: "GET", path: "/api/v1/organisations/:id", desc: "Get full organisation profile including financials, grants, and board members", params: "id (UUID)", example: `curl "https://openbenefacts.vercel.app/api/v1/organisations/abc123"` },
-    { method: "GET", path: "/api/v1/funders", desc: "List all state funders with total funding and recipient counts", params: "search", example: `curl "https://openbenefacts.vercel.app/api/v1/funders"` },
-    { method: "GET", path: "/api/v1/funders/:id/grants", desc: "List individual grants from a specific funder", params: "id, page, pageSize", example: `curl "https://openbenefacts.vercel.app/api/v1/funders/xyz789/grants?pageSize=100"` },
-    { method: "GET", path: "/api/v1/search", desc: "Fast autocomplete search across organisation names and registration numbers", params: "q, limit", example: `curl "https://openbenefacts.vercel.app/api/v1/search?q=focus+ireland&limit=5"` },
-    { method: "GET", path: "/api/v1/stats", desc: "Platform-wide statistics: total orgs, financials, funding relationships", params: "none", example: `curl "https://openbenefacts.vercel.app/api/v1/stats"` },
+  "https://www.openbenefacts.ie/api/v1/organisations?sector=Social+Services&pageSize=50"` },
+    { method: "GET", path: "/api/v1/organisations/:id", desc: "Get full organisation profile including financials, grants, and board members", params: "id (UUID)", example: `curl "https://www.openbenefacts.ie/api/v1/organisations/abc123"` },
+    { method: "GET", path: "/api/v1/funders", desc: "List all state funders with total funding and recipient counts", params: "search", example: `curl "https://www.openbenefacts.ie/api/v1/funders"` },
+    { method: "GET", path: "/api/v1/funders/:id/grants", desc: "List individual grants from a specific funder", params: "id, page, pageSize", example: `curl "https://www.openbenefacts.ie/api/v1/funders/xyz789/grants?pageSize=100"` },
+    { method: "GET", path: "/api/v1/search", desc: "Fast autocomplete search across organisation names and registration numbers", params: "q, limit", example: `curl "https://www.openbenefacts.ie/api/v1/search?q=focus+ireland&limit=5"` },
+    { method: "GET", path: "/api/v1/stats", desc: "Platform-wide statistics: total orgs, financials, funding relationships", params: "none", example: `curl "https://www.openbenefacts.ie/api/v1/stats"` },
   ];
 
   const tiers = [
     { name: "Free Developer", price: "Free", rateLimit: "5 req/min", pageSize: "25 max", auth: "No key needed", color: "gray" },
     { name: "Pro", price: "€29/mo", rateLimit: "20 req/min", pageSize: "50 max", auth: "API key", color: "blue" },
-    { name: "Professional", price: "€149/mo", rateLimit: "50 req/min", pageSize: "100 max", auth: "API key", color: "emerald" },
+    { name: "Business", price: "€149/mo", rateLimit: "50 req/min", pageSize: "100 max", auth: "API key", color: "emerald" },
     { name: "Enterprise", price: "Custom", rateLimit: "200 req/min", pageSize: "100 max", auth: "API key", color: "purple" },
   ];
 
@@ -3617,7 +3629,7 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \\
         <p className="text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">Quick Start</p>
         <h2 className="text-xl font-bold mb-3">Start querying in 30 seconds — no API key required</h2>
         <div className="bg-black/30 rounded-xl p-4 font-mono text-sm mb-4">
-          <span className="text-gray-400">$</span> <span className="text-emerald-400">curl</span> <span className="text-yellow-300">"https://openbenefacts.vercel.app/api/v1/search?q=barnardos"</span>
+          <span className="text-gray-400">$</span> <span className="text-emerald-400">curl</span> <span className="text-yellow-300">"https://www.openbenefacts.ie/api/v1/search?q=barnardos"</span>
         </div>
         <p className="text-gray-300 text-sm">The free developer tier gives you 5 requests/minute with no authentication. Add an API key to unlock higher limits.</p>
       </div>
@@ -3758,8 +3770,8 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \\
       {/* CTA */}
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-center text-white">
         <h2 className="text-2xl font-bold mb-2">{hasApi ? "You have full API access" : "Start building today"}</h2>
-        <p className="text-emerald-100 mb-4">{hasApi ? "Your Professional plan includes 50 requests/minute and 100 results per page." : "The free developer tier is available immediately — no signup required. Upgrade for higher limits."}</p>
-        {!hasApi && <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-6 py-3 bg-white text-emerald-700 rounded-xl font-semibold hover:bg-emerald-50">Start 30-Day Professional Trial</button>}
+        <p className="text-emerald-100 mb-4">{hasApi ? "Your Business plan includes 50 requests/minute and 100 results per page." : "The free developer tier is available immediately — no signup required. Upgrade for higher limits."}</p>
+        {!hasApi && <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-6 py-3 bg-white text-emerald-700 rounded-xl font-semibold hover:bg-emerald-50">Start 30-Day Free Trial</button>}
       </div>
     </div>
   );
@@ -3841,12 +3853,12 @@ function MoneyPage({ setPage, orgCount = 36803 }) {
         <h2 className="text-2xl font-bold mb-3">Share this. People should know.</h2>
         <p className="text-gray-300 max-w-xl mx-auto mb-6">Benefacts was shut down. This data almost disappeared. OpenBenefacts is rebuilding it — free, open, and independent. Help spread the word.</p>
         <div className="flex flex-wrap justify-center gap-3">
-          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Where does Ireland's €14 billion in nonprofit funding go? Track every euro at OpenBenefacts — free and open.")}&url=${encodeURIComponent("https://openbenefacts.vercel.app/#money")}`} target="_blank" rel="noopener" className="px-5 py-2.5 bg-white/10 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors">Share on X / Twitter</a>
-          <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://openbenefacts.vercel.app/#money")}`} target="_blank" rel="noopener" className="px-5 py-2.5 bg-white/10 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors">Share on LinkedIn</a>
-          <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://openbenefacts.vercel.app/#money")}`} target="_blank" rel="noopener" className="px-5 py-2.5 bg-white/10 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors">Share on Facebook</a>
-          <button onClick={() => { navigator.clipboard.writeText("https://openbenefacts.vercel.app/#money"); }} className="px-5 py-2.5 bg-emerald-500 rounded-xl text-sm font-medium hover:bg-emerald-400 transition-colors">Copy Link</button>
+          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Where does Ireland's €14 billion in nonprofit funding go? Track every euro at OpenBenefacts — free and open.")}&url=${encodeURIComponent("https://www.openbenefacts.ie/#money")}`} target="_blank" rel="noopener" className="px-5 py-2.5 bg-white/10 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors">Share on X / Twitter</a>
+          <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://www.openbenefacts.ie/#money")}`} target="_blank" rel="noopener" className="px-5 py-2.5 bg-white/10 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors">Share on LinkedIn</a>
+          <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://www.openbenefacts.ie/#money")}`} target="_blank" rel="noopener" className="px-5 py-2.5 bg-white/10 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors">Share on Facebook</a>
+          <button onClick={() => { navigator.clipboard.writeText("https://www.openbenefacts.ie/#money"); }} className="px-5 py-2.5 bg-emerald-500 rounded-xl text-sm font-medium hover:bg-emerald-400 transition-colors">Copy Link</button>
         </div>
-        <p className="text-xs text-gray-500 mt-4">openbenefacts.vercel.app · Built in Ireland · Open source</p>
+        <p className="text-xs text-gray-500 mt-4">openbenefacts.ie · Built in Ireland · Open source</p>
       </div>
     </div>
   );
@@ -3886,9 +3898,9 @@ function FoundationsPage({ orgCount = 36803 }) {
         <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8">Stop spending hours manually checking the Charities Register, CRO filings, and Revenue records. OpenBenefacts generates a comprehensive due diligence report on any Irish nonprofit in seconds — covering {formattedCount} organisations.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors">Start Free 30-Day Trial</button>
-          <a href="mailto:team@openbenefacts.com?subject=Foundation%20Pilot%20Programme" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Request Pilot Access</a>
+          <a href="mailto:team@openbenefacts.ie?subject=Foundation%20Pilot%20Programme" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Request Pilot Access</a>
         </div>
-        <p className="text-sm text-gray-400 mt-3">No credit card required · Professional plan €1,499/year</p>
+        <p className="text-sm text-gray-400 mt-3">No credit card required · Business plan €1,499/year</p>
       </div>
 
       {/* Before/After comparison */}
@@ -3933,9 +3945,9 @@ function FoundationsPage({ orgCount = 36803 }) {
       {/* Pilot programme CTA */}
       <div className="bg-gray-900 rounded-2xl p-8 text-center text-white">
         <h2 className="text-2xl font-bold mb-3">Foundation Pilot Programme</h2>
-        <p className="text-gray-300 max-w-xl mx-auto mb-6">We're offering five grant-making foundations free access to the Professional plan for 90 days — in exchange for feedback and a short case study.</p>
-        <a href="mailto:team@openbenefacts.com?subject=Foundation%20Pilot%20Programme&body=Hi%20Mark%2C%0A%0AWe%27re%20interested%20in%20the%20Foundation%20Pilot%20Programme%20for%20OpenBenefacts.%0A%0AFoundation%20name%3A%20%0AApprox.%20grant%20applications%20reviewed%20per%20year%3A%20%0A%0AThanks" className="inline-block px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-400 transition-colors">Apply for the Pilot</a>
-        <p className="text-sm text-gray-500 mt-3">5 places available · 90-day free Professional access</p>
+        <p className="text-gray-300 max-w-xl mx-auto mb-6">We're offering five grant-making foundations free access to the Business plan for 90 days — in exchange for feedback and a short case study.</p>
+        <a href="mailto:team@openbenefacts.ie?subject=Foundation%20Pilot%20Programme&body=Hi%20Mark%2C%0A%0AWe%27re%20interested%20in%20the%20Foundation%20Pilot%20Programme%20for%20OpenBenefacts.%0A%0AFoundation%20name%3A%20%0AApprox.%20grant%20applications%20reviewed%20per%20year%3A%20%0A%0AThanks" className="inline-block px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-400 transition-colors">Apply for the Pilot</a>
+        <p className="text-sm text-gray-500 mt-3">5 places available · 90-day free Business access</p>
       </div>
     </div>
   );
@@ -4036,8 +4048,8 @@ function MediaPage({ orgCount = 36803 }) {
       <div className="bg-gray-900 rounded-2xl p-8 text-center text-white">
         <h2 className="text-2xl font-bold mb-3">Working on a story?</h2>
         <p className="text-gray-300 max-w-xl mx-auto mb-6">If you're investigating a nonprofit and need deeper data, custom exports, or background context on how to read charity financials, reach out. We support journalists.</p>
-        <a href="mailto:team@openbenefacts.com?subject=Media%20Enquiry" className="inline-block px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-400 transition-colors">Contact the Data Team</a>
-        <p className="text-sm text-gray-500 mt-3">team@openbenefacts.com</p>
+        <a href="mailto:team@openbenefacts.ie?subject=Media%20Enquiry" className="inline-block px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-semibold text-lg hover:bg-emerald-400 transition-colors">Contact the Data Team</a>
+        <p className="text-sm text-gray-500 mt-3">team@openbenefacts.ie</p>
       </div>
     </div>
   );
@@ -4076,7 +4088,7 @@ function CsrPage({ orgCount = 36803 }) {
         <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8">Since the Rehab Group and Console scandals, corporate Ireland knows the reputational cost of donating to a poorly governed charity. OpenBenefacts gives your CSR team instant financial and governance intelligence on {formattedCount} Irish nonprofits — so every donation is defensible.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className="px-8 py-3.5 bg-emerald-600 text-white rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors">Start Free 30-Day Trial</button>
-          <a href="mailto:team@openbenefacts.com?subject=CSR%20Team%20Enquiry" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Talk to Us</a>
+          <a href="mailto:team@openbenefacts.ie?subject=CSR%20Team%20Enquiry" className="px-8 py-3.5 border-2 border-emerald-600 text-emerald-700 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-colors">Talk to Us</a>
         </div>
         <p className="text-sm text-gray-400 mt-3">No credit card required · Pro plan from €299/year</p>
       </div>
@@ -4158,8 +4170,8 @@ function PricingPage({ orgCount = 36803, setPage }) {
   const plans = [
     { name: "Free", price: 0, desc: "Genuinely useful transparency", features: [`Browse ${formattedCount} organisations`,"5-year financial trend charts","Year-by-year comparison tables","Board member & cross-directorships","State funding received","AI risk score (summary)","Full search & filters"], cta: "Get Started" },
     { name: "Pro", price: annual ? 299 : 29, period: annual ? "/year" : "/month", desc: "Know before you give", features: ["Everything in Free","Full AI risk assessment","Charity portfolio watchlist","Sector benchmarking","Income source breakdown","PDF profile downloads","ESG-ready compliance reports"], highlight: true, cta: "Start Free Trial", badge: annual ? "Save 15%" : null },
-    { name: "Professional", price: annual ? 1499 : 149, period: annual ? "/year" : "/month", desc: "Grant due diligence in one click", features: ["Everything in Pro","One-click due diligence reports","Grant readiness assessment","White-label branded reports","Bulk CSV/Excel export","API access (1,000 calls/mo)","Priority support"], cta: "Start Free Trial" },
-    { name: "Enterprise", price: null, desc: "Custom solutions", features: ["Everything in Professional","Unlimited API access","Custom dashboards","White-label reports","Dedicated account manager","Custom data integration","SLA guarantee"], cta: "Contact Sales" },
+    { name: "Business", price: annual ? 1499 : 149, period: annual ? "/year" : "/month", desc: "Grant due diligence in one click", features: ["Everything in Pro","One-click due diligence reports","Grant readiness assessment","White-label branded reports","Bulk CSV/Excel export","API access (1,000 calls/mo)","Priority support"], cta: "Start Free Trial" },
+    { name: "Enterprise", price: null, desc: "Custom solutions", features: ["Everything in Business","Unlimited API access","Custom dashboards","White-label reports","Dedicated account manager","Custom data integration","SLA guarantee"], cta: "Contact Sales" },
   ];
 
   return (
@@ -4167,14 +4179,14 @@ function PricingPage({ orgCount = 36803, setPage }) {
       <div className="text-center mb-10">
         <h1 className="text-4xl font-bold text-gray-900 mb-3">Simple, Transparent Pricing</h1>
         <p className="text-gray-500 mb-2">Choose the plan that fits your needs. Cancel anytime.</p>
-        <p className="text-sm text-emerald-600 font-medium mb-4">All paid plans include a 30-day free Professional trial. No credit card required.</p>
+        <p className="text-sm text-emerald-600 font-medium mb-4">Pro and Business plans include a 30-day free trial. No credit card required.</p>
         <div className="flex items-center justify-center gap-3">
           <span className={`text-sm ${!annual ? "text-gray-900 font-medium" : "text-gray-400"}`}>Monthly</span>
           <button onClick={() => setAnnual(!annual)} className={`relative w-12 h-6 rounded-full transition-colors ${annual ? "bg-emerald-600" : "bg-gray-300"}`}>
             <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${annual ? "translate-x-6" : "translate-x-0.5"}`} />
           </button>
           <span className={`text-sm ${annual ? "text-gray-900 font-medium" : "text-gray-400"}`}>Annual</span>
-          {annual && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Save 15%</span>}
+          {annual && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Best value</span>}
         </div>
       </div>
 
@@ -4336,7 +4348,7 @@ function AboutPage({ orgCount = 36803 }) {
         {/* Contact */}
         <div className="bg-emerald-50 rounded-xl p-6">
           <h3 className="font-bold text-emerald-900 mb-2">Contact</h3>
-          <p className="text-emerald-700 text-sm">Questions, data corrections, or partnership inquiries: <a href="mailto:team@openbenefacts.com" className="underline font-medium">team@openbenefacts.com</a></p>
+          <p className="text-emerald-700 text-sm">Questions, data corrections, or partnership inquiries: <a href="mailto:team@openbenefacts.ie" className="underline font-medium">team@openbenefacts.ie</a></p>
         </div>
 
         {/* Similar help topics */}
@@ -4410,6 +4422,43 @@ function InnerApp() {
   useEffect(() => { fetchStats().then(setGlobalStats).catch(() => {}); }, []);
   const orgCount = globalStats?.total_orgs || siteStats.totalOrgs || 36803;
 
+  // Per-page SEO: update title, meta description, and canonical
+  useEffect(() => {
+    const BASE = "https://www.openbenefacts.ie";
+    const pageMeta = {
+      home: { title: "OpenBenefacts — Irish Nonprofit Transparency", desc: `Ireland's nonprofit transparency platform. Search ${orgCount.toLocaleString()}+ charities, track government funding, and follow the money.` },
+      orgs: { title: "Organisations — OpenBenefacts", desc: `Browse ${orgCount.toLocaleString()}+ Irish nonprofits. Filter by sector, county, income, and governing form. Free financial records and governance data.` },
+      funders: { title: "Funders — OpenBenefacts", desc: "Explore government funders, grant programmes, and funding flows to Irish nonprofits. See who funds what and how much." },
+      councils: { title: "Council Finances — OpenBenefacts", desc: "Local authority spending across Ireland. Compare council budgets, housing output, and financial performance." },
+      "trackers/emergency-accommodation": { title: "Emergency Accommodation Tracker — OpenBenefacts", desc: "Track Ireland's emergency accommodation numbers, trends, and spending over time." },
+      knowledge: { title: "Knowledge Base — OpenBenefacts", desc: "Guides, explainers, and resources for understanding Ireland's nonprofit sector, charity regulation, and public funding." },
+      pricing: { title: "Pricing — OpenBenefacts", desc: "Free to search. Pro plans for donors, funders, and researchers. Transparent pricing with no hidden fees." },
+      api: { title: "API Documentation — OpenBenefacts", desc: "Programmatic access to Irish nonprofit data. REST API with free tier, no signup required." },
+      "open-data": { title: "Open Data — OpenBenefacts", desc: "Download Irish nonprofit data in CSV and JSON. Free bulk datasets for researchers, journalists, and developers." },
+      about: { title: "About — OpenBenefacts", desc: "OpenBenefacts is an independent, open-data project for Irish nonprofit transparency. No government funding, no political affiliation." },
+      privacy: { title: "Privacy Policy — OpenBenefacts", desc: "How OpenBenefacts handles your data. GDPR-compliant privacy policy." },
+      terms: { title: "Terms of Use — OpenBenefacts", desc: "Terms and conditions for using OpenBenefacts." },
+      sources: { title: "Data Sources — OpenBenefacts", desc: "Where OpenBenefacts data comes from: Charities Regulator, Revenue, CRO, government grants, and more." },
+      claim: { title: "Claim Your Listing — OpenBenefacts", desc: "Nonprofit leaders: claim and update your organisation's profile on OpenBenefacts." },
+      money: { title: "Follow the Money — OpenBenefacts", desc: "Track billions in government funding to Irish nonprofits. See where public money flows." },
+      foundations: { title: "Foundations — OpenBenefacts", desc: "Irish philanthropic foundations and their grant-making. Due diligence tools for funders." },
+      media: { title: "For Journalists — OpenBenefacts", desc: "Citation-ready nonprofit data for Irish journalists. Search, verify, and cite with confidence." },
+      csr: { title: "For CSR Teams — OpenBenefacts", desc: "Corporate giving intelligence. Find and vet Irish nonprofits for your CSR programme." },
+    };
+    const meta = pageMeta[page] || pageMeta.home;
+    document.title = meta.title;
+    const descTag = document.querySelector('meta[name="description"]');
+    if (descTag) descTag.setAttribute("content", meta.desc);
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute("href", BASE + (page === "home" ? "/" : "/" + page.replace(":", "/")));
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) ogUrl.setAttribute("content", BASE + (page === "home" ? "/" : "/" + page.replace(":", "/")));
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute("content", meta.title);
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute("content", meta.desc);
+  }, [page, orgCount]);
+
   const handleSetPage = (p) => {
     setPage(p);
     window.scrollTo(0, 0);
@@ -4461,8 +4510,9 @@ function InnerApp() {
 
   return (
     <div className="min-h-screen bg-[#FFFFFF]">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-emerald-600 focus:text-white focus:rounded focus:text-sm focus:font-medium">Skip to content</a>
       <Navbar page={page} setPage={handleSetPage} />
-      {renderPage()}
+      <main id="main-content">{renderPage()}</main>
       <DonationPopup />
       <footer className="bg-[#1B3A4B] text-white mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -4472,8 +4522,8 @@ function InnerApp() {
               <div className="mb-4">
                 <span className="font-wordmark text-[28px] text-white leading-none">OpenBenefacts</span>
               </div>
-              <p className="text-sm text-white/65 leading-relaxed mb-3">Ireland's nonprofit transparency platform. Independent, open, free to search.</p>
-              <p className="text-xs text-white/40 leading-relaxed">An independent civic data project. No government funding.</p>
+              <p className="text-sm text-[#B8C8D0] leading-relaxed mb-3">Ireland's nonprofit transparency platform. Independent, open, free to search.</p>
+              <p className="text-sm text-[#8FA3AE] leading-relaxed">An independent civic data project. No government funding.</p>
             </div>
 
             {/* Explore */}
@@ -4495,7 +4545,7 @@ function InnerApp() {
               <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">For nonprofits</h4>
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("claim")} className="text-sm text-white/70 hover:text-white">Claim your listing</button></li>
-                <li><a href="mailto:data@openbenefacts.com" className="text-sm text-white/70 hover:text-white">Request a correction</a></li>
+                <li><a href="mailto:data@openbenefacts.ie" className="text-sm text-white/70 hover:text-white">Request a correction</a></li>
                 <li><button onClick={() => handleSetPage("sources")} className="text-sm text-white/70 hover:text-white">Data sources</button></li>
                 <li><button onClick={() => handleSetPage("api")} className="text-sm text-white/70 hover:text-white">Developer API</button></li>
               </ul>
@@ -4508,7 +4558,7 @@ function InnerApp() {
                 <li><button onClick={() => handleSetPage("about")} className="text-sm text-white/70 hover:text-white">About</button></li>
                 <li><a href="https://github.com/markcoachaifootball/openbenefacts" target="_blank" rel="noopener noreferrer" className="text-sm text-white/70 hover:text-white">GitHub</a></li>
                 <li><button onClick={() => handleSetPage("pricing")} className="text-sm text-white/70 hover:text-white">Pricing</button></li>
-                <li><a href="mailto:team@openbenefacts.com" className="text-sm text-white/70 hover:text-white">Contact</a></li>
+                <li><a href="mailto:team@openbenefacts.ie" className="text-sm text-white/70 hover:text-white">Contact</a></li>
               </ul>
             </div>
 
@@ -4518,7 +4568,7 @@ function InnerApp() {
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("privacy")} className="text-sm text-white/70 hover:text-white">Privacy policy</button></li>
                 <li><button onClick={() => handleSetPage("terms")} className="text-sm text-white/70 hover:text-white">Terms of use</button></li>
-                <li><a href="mailto:privacy@openbenefacts.com" className="text-sm text-white/70 hover:text-white">GDPR requests</a></li>
+                <li><a href="mailto:privacy@openbenefacts.ie" className="text-sm text-white/70 hover:text-white">GDPR requests</a></li>
               </ul>
             </div>
           </div>
@@ -4692,7 +4742,7 @@ function PrivacyPage() {
   return (
     <StaticPageShell title="Privacy Policy" subtitle="Last updated: 10 April 2026">
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">What we collect</h2>
-      <p>OpenBenefacts is a public transparency platform. We do not require an account to browse organisations, funders, or financial data. When you sign up for a Professional or Enterprise plan, we collect your email address and billing information (processed securely by Stripe — we never store payment details).</p>
+      <p>OpenBenefacts is a public transparency platform. We do not require an account to browse organisations, funders, or financial data. When you sign up for a Business or Enterprise plan, we collect your email address and billing information (processed securely by Stripe — we never store payment details).</p>
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Analytics</h2>
       <p>We use privacy-respecting analytics to understand which pages are popular and whether the service is working. We do not track you across other sites and we do not sell or share your data with advertisers.</p>
@@ -4701,10 +4751,10 @@ function PrivacyPage() {
       <p>All organisation, funder, and financial data on OpenBenefacts is sourced from publicly available government and regulator datasets (Charities Regulator, Revenue Commissioners, data.gov.ie, and others). Publishing this data is in the public interest and is lawful under GDPR Article 6(1)(e) and Article 6(1)(f).</p>
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Your rights</h2>
-      <p>Under the GDPR, you have the right to access, correct, or delete any personal data we hold about you. To exercise these rights, email <a href="mailto:privacy@openbenefacts.com" className="text-emerald-600 hover:underline">privacy@openbenefacts.com</a>.</p>
+      <p>Under the GDPR, you have the right to access, correct, or delete any personal data we hold about you. To exercise these rights, email <a href="mailto:privacy@openbenefacts.ie" className="text-emerald-600 hover:underline">privacy@openbenefacts.ie</a>.</p>
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Contact</h2>
-      <p>Questions about this policy? Email <a href="mailto:team@openbenefacts.com" className="text-emerald-600 hover:underline">team@openbenefacts.com</a>.</p>
+      <p>Questions about this policy? Email <a href="mailto:team@openbenefacts.ie" className="text-emerald-600 hover:underline">team@openbenefacts.ie</a>.</p>
     </StaticPageShell>
   );
 }
@@ -4725,7 +4775,7 @@ function TermsPage() {
       <p>We work hard to keep data accurate and up to date, but OpenBenefacts is provided <em>as is</em> with no warranty. Financial and governance data is derived from regulator filings and may contain errors, omissions, or outdated entries. Always verify important decisions against primary sources.</p>
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Corrections</h2>
-      <p>If you spot an error on your organisation's listing, see the <button onClick={() => { window.history.pushState({}, "", "/claim"); window.dispatchEvent(new PopStateEvent("popstate")); }} className="text-emerald-600 hover:underline">Claim your listing</button> page or email <a href="mailto:corrections@openbenefacts.com" className="text-emerald-600 hover:underline">corrections@openbenefacts.com</a>.</p>
+      <p>If you spot an error on your organisation's listing, see the <button onClick={() => { window.history.pushState({}, "", "/claim"); window.dispatchEvent(new PopStateEvent("popstate")); }} className="text-emerald-600 hover:underline">Claim your listing</button> page or email <a href="mailto:corrections@openbenefacts.ie" className="text-emerald-600 hover:underline">corrections@openbenefacts.ie</a>.</p>
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Limitation of liability</h2>
       <p>OpenBenefacts shall not be liable for any indirect, incidental, or consequential damages arising from use of the platform or its data.</p>
@@ -4773,7 +4823,7 @@ function DataSourcesPage() {
       <p>Each month, our data analysts pull the latest data from CKAN APIs, regulator websites, and open data portals. They normalise organisation names (e.g. "CHILDANDFAMILY AGENCY" → "Child And Family Agency"), cross-reference identifiers (charity numbers, CHY numbers, CRO numbers), and link financial records to the organisations they describe. All raw downloads are archived to cold storage with SHA-256 hashes so researchers can verify that data hasn't been altered.</p>
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Missing a source?</h2>
-      <p>If you know of a public dataset we should be ingesting, email <a href="mailto:data@openbenefacts.com" className="text-emerald-600 hover:underline">data@openbenefacts.com</a>. We prioritise sources by coverage, update frequency, and public interest value.</p>
+      <p>If you know of a public dataset we should be ingesting, email <a href="mailto:data@openbenefacts.ie" className="text-emerald-600 hover:underline">data@openbenefacts.ie</a>. We prioritise sources by coverage, update frequency, and public interest value.</p>
     </StaticPageShell>
   );
 }
@@ -4787,7 +4837,7 @@ function ClaimListingPage() {
       <ol className="list-decimal pl-6 space-y-2">
         <li>Find your organisation in the <button onClick={() => { window.history.pushState({}, "", "/orgs"); window.dispatchEvent(new PopStateEvent("popstate")); }} className="text-emerald-600 hover:underline">directory</button>.</li>
         <li>Copy the URL of your profile page.</li>
-        <li>Email <a href="mailto:claims@openbenefacts.com" className="text-emerald-600 hover:underline">claims@openbenefacts.com</a> from an address matching your organisation's domain, with the URL and the correction you'd like to make.</li>
+        <li>Email <a href="mailto:claims@openbenefacts.ie" className="text-emerald-600 hover:underline">claims@openbenefacts.ie</a> from an address matching your organisation's domain, with the URL and the correction you'd like to make.</li>
         <li>We verify your authority and update the listing — usually within 5 working days.</li>
       </ol>
 
@@ -4805,7 +4855,7 @@ function ClaimListingPage() {
       <div className="not-prose mt-10 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-8 text-center">
         <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to claim?</h3>
         <p className="text-gray-600 mb-5">Email us from your organisation's verified domain.</p>
-        <a href="mailto:claims@openbenefacts.com?subject=Claim%20listing%20request" className="inline-block px-6 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-colors">Email claims@openbenefacts.com</a>
+        <a href="mailto:claims@openbenefacts.ie?subject=Claim%20listing%20request" className="inline-block px-6 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-colors">Email claims@openbenefacts.ie</a>
       </div>
     </StaticPageShell>
   );
@@ -4837,7 +4887,7 @@ function DonationPopup() {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={dismiss}>
       <div onClick={e => e.stopPropagation()} className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-in">
-        <button onClick={dismiss} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+        <button onClick={dismiss} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600" aria-label="Close"><X className="w-5 h-5" aria-hidden="true" /></button>
 
         <div className="flex justify-center mb-5">
           <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center">

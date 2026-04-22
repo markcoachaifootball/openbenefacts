@@ -529,7 +529,7 @@ Data on OpenBenefacts is derived from public government sources. Our aggregated 
     summary: "REST API endpoints for accessing OpenBenefacts data programmatically.",
     content: `The OpenBenefacts API provides free, programmatic access to our database of Irish nonprofit organisations.
 
-**Base URL:** https://openbenefacts.vercel.app/api/v1/
+**Base URL:** https://www.openbenefacts.ie/api/v1/
 
 **Authentication:**
 Basic search and read operations are available without authentication. Write operations and higher rate limits require an API key, available with Professional and Institutional plans.

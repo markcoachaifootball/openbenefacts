@@ -24,6 +24,6 @@
   <text x="660" y="490" font-family="-apple-system,sans-serif" font-size="44" fill="#6ee7b7" font-weight="700">11 Years</text>
   <text x="660" y="520" font-family="-apple-system,sans-serif" font-size="18" fill="rgba(255,255,255,0.5)">FINANCIAL HISTORY</text>
   <!-- URL -->
-  <text x="60" y="590" font-family="-apple-system,sans-serif" font-size="20" fill="rgba(255,255,255,0.4)">openbenefacts.vercel.app</text>
+  <text x="60" y="590" font-family="-apple-system,sans-serif" font-size="20" fill="rgba(255,255,255,0.4)">openbenefacts.ie</text>
   <text x="1140" y="590" font-family="-apple-system,sans-serif" font-size="20" fill="rgba(255,255,255,0.4)" text-anchor="end">Free &amp; Open Source</text>
 </svg>
