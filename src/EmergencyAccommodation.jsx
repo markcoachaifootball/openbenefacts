@@ -340,7 +340,7 @@ function Leaderboard({ data, onLaClick }) {
   const SortIcon = ({ k }) => (
     sortKey === k
       ? <span className="text-emerald-600">{sortDir === "desc" ? "↓" : "↑"}</span>
-      : <ArrowUpDown className="w-3 h-3 text-gray-300 inline ml-0.5" />
+      : <ArrowUpDown className="w-3 h-3 text-gray-300 inline ml-0.5" aria-hidden="true" />
   );
 
   const maxPersons = Math.max(...data.map(d => d.total_persons || 0));
@@ -466,7 +466,7 @@ function EmbedWidget({ embed }) {
   return (
     <div className="bg-gradient-to-br from-[#1B3A4B] to-teal-800 rounded-2xl p-6 text-white">
       <div className="flex items-center gap-2 mb-3">
-        <Share2 className="w-4 h-4 text-[#4A9B8E]" />
+        <Share2 className="w-4 h-4 text-[#4A9B8E]" aria-hidden="true" />
         <h3 className="font-bold text-sm">Embed this tracker</h3>
       </div>
       <p className="text-xs text-white/70 mb-4 leading-relaxed">
@@ -477,7 +477,7 @@ function EmbedWidget({ embed }) {
       </div>
       <button onClick={copy}
         className="flex items-center gap-2 px-4 py-2 bg-[#4A9B8E] text-[#1B3A4B] rounded-lg font-semibold text-xs hover:bg-white transition-colors">
-        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+        {copied ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
         {copied ? "Copied!" : "Copy embed code"}
       </button>
       <p className="text-xs text-white/40 mt-3">
@@ -618,7 +618,7 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
       {!embed && (
         <button onClick={() => setPage("home")}
           className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
-          <ArrowLeft className="w-4 h-4" /> Back
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back
         </button>
       )}
 
@@ -627,7 +627,7 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Home className="w-5 h-5 text-[#4A9B8E]" />
+              <Home className="w-5 h-5 text-[#4A9B8E]" aria-hidden="true" />
               <span className="text-xs font-bold uppercase tracking-widest text-[#4A9B8E]">OpenBenefacts Tracker</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold leading-tight mb-2">
@@ -643,7 +643,7 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
             <a href="https://data.gov.ie/dataset/homelessness-report"
               target="_blank" rel="noopener noreferrer"
               className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-semibold transition-colors border border-white/20">
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
               Source data
             </a>
           )}
@@ -670,7 +670,7 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
 
       {/* ── Info note ── */}
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-3 mb-6">
-        <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+        <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
         <p className="text-xs text-blue-700 leading-relaxed">
           <strong>About these figures:</strong> Person and household counts are from official DHLGH monthly homelessness reports.
           Weekly spend estimates use published per-night rates (PEA €130, STA €90, TEA €70) multiplied by average household size.
@@ -793,7 +793,7 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
                 a.download = `emergency-accommodation-${reportDate || "latest"}.csv`; a.click();
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors">
-              <Download className="w-3.5 h-3.5" /> Export CSV
+              <Download className="w-3.5 h-3.5" aria-hidden="true" /> Export CSV
             </button>
           </div>
           <Leaderboard
@@ -901,7 +901,7 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
               {/* Framework value warning banner */}
               <div className="max-w-xl mx-auto mt-4 bg-amber-900/30 border border-amber-500/30 rounded-lg p-3 text-left">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <p className="text-xs text-amber-200">
                     <strong className="text-amber-100">About contract values:</strong> Some providers show large framework agreement ceilings (e.g. €700M) — these are shared multi-year maximums across many providers, not actual payments received. Where possible, we separate actual spend from framework ceilings.
                   </p>
@@ -972,7 +972,7 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
                     )}
                     {p.registered_address && (
                       <div className="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5" />
+                        <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
                         {p.registered_address}
                       </div>
                     )}
@@ -1228,13 +1228,13 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
                           <div className="flex items-center gap-3 mt-2 flex-wrap">
                             {p.registered_address && (
                               <div className="text-xs text-gray-400 truncate max-w-md flex items-center gap-1">
-                                <MapPin className="w-3 h-3 flex-shrink-0" />
+                                <MapPin className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
                                 {p.registered_address}
                               </div>
                             )}
                             {dirs.length > 0 && (
                               <div className="text-xs text-gray-500 flex items-center gap-1">
-                                <Users className="w-3 h-3 flex-shrink-0" />
+                                <Users className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
                                 {dirs.length} director{dirs.length !== 1 ? "s" : ""}
                                 {dirs.length <= 3 && (
                                   <span className="text-gray-400 ml-0.5">

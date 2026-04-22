@@ -1,12 +1,16 @@
-import { useState, useMemo, useEffect, useRef, useCallback, createContext, useContext } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, createContext, useContext, lazy, Suspense } from "react";
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { Search, Building2, Users, TrendingUp, DollarSign, ChevronRight, ArrowLeft, Eye, Star, Shield, Menu, X, MapPin, Hash, Landmark, GraduationCap, Heart, Briefcase, Globe, Filter, ChevronDown, ExternalLink, Info, BarChart3, FileText, Award, Zap, Database, ArrowRight, Layers, Check, CreditCard, LogIn, UserPlus, Crown, Sparkles, LogOut, AlertTriangle, Lock, ArrowUpDown, Bookmark, Share2, Copy, Code, Download, Home } from "lucide-react";
 import { supabase, fetchStats, fetchFunders, fetchOrganisations, fetchOrganisationsAdvanced, fetchOrganisation, searchOrganisations, fetchSectorCounts, fetchCountyCounts, fetchSubsectorCounts, fetchGovFormCounts, fetchDirectorBoards, fetchFunderGrants, fetchFunderGrantsByName, fetchSectorBenchmark } from "./supabase.js";
 import { DATA } from "./data.js";
-import CouncilFinancesPage from "./CouncilFinances.jsx";
-import FollowTheMoneyPage from "./FollowTheMoney.jsx";
-import EmergencyAccommodationPage from "./EmergencyAccommodation.jsx";
-import KnowledgeBasePage from "./KnowledgeBase.jsx";
+
+// Route-based code-splitting — these pages are only loaded when the user
+// navigates to them. Significant bundle-size win on first paint, especially
+// for the Sankey / recharts-heavy pages below.
+const CouncilFinancesPage = lazy(() => import("./CouncilFinances.jsx"));
+const FollowTheMoneyPage = lazy(() => import("./FollowTheMoney.jsx"));
+const EmergencyAccommodationPage = lazy(() => import("./EmergencyAccommodation.jsx"));
+const KnowledgeBasePage = lazy(() => import("./KnowledgeBase.jsx"));
 
 // ===========================================================
 // ERROR BOUNDARY
@@ -59,6 +63,61 @@ const fmt = (n) => {
   if (n >= 1e3) return `€${(n/1e3).toFixed(0)}K`;
   return `€${n.toLocaleString()}`;
 };
+// ===========================================================
+// SLUG HELPER — turns an organisation / funder name into a URL-safe slug.
+// Used to make /org/{uuid} URLs display /org/{uuid}/{slug} after the page
+// loads, so shared links contain keywords the audit flagged as missing.
+// Kept deliberately conservative so slugs stay short and stable across
+// name-casing quirks.
+// ===========================================================
+function slugify(input) {
+  if (!input) return "";
+  return String(input)
+    .toLowerCase()
+    .normalize("NFKD").replace(/[\u0300-\u036f]/g, "") // strip accents
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+// ===========================================================
+// SEO HELPER — applies per-page metadata (title, description, canonical,
+// Open Graph, Twitter card) to the <head> tags declared in index.html.
+// Called from InnerApp on page change, and from OrgProfilePage / FlowPage
+// once the page's data has loaded, so server-side HTML stays identical
+// across routes but the in-app DOM gets the correct per-route tags for
+// tab titles, history, and client-side share previews.
+// ===========================================================
+const SEO_BASE_URL = "https://www.openbenefacts.ie";
+const SEO_DEFAULT_IMAGE = `${SEO_BASE_URL}/og-image.png`;
+
+function applyPageMeta({ title, description, path, image, type = "website" }) {
+  if (typeof document === "undefined") return;
+
+  const fullUrl = `${SEO_BASE_URL}${path || "/"}`;
+  const ogImage = image || SEO_DEFAULT_IMAGE;
+
+  if (title) document.title = title;
+
+  const setAttr = (selector, attr, value) => {
+    if (value == null) return;
+    const el = document.querySelector(selector);
+    if (el) el.setAttribute(attr, value);
+  };
+
+  setAttr('meta[name="description"]', "content", description);
+  setAttr('link[rel="canonical"]', "href", fullUrl);
+  setAttr('meta[property="og:url"]', "content", fullUrl);
+  setAttr('meta[property="og:title"]', "content", title);
+  setAttr('meta[property="og:description"]', "content", description);
+  setAttr('meta[property="og:image"]', "content", ogImage);
+  setAttr('meta[property="og:type"]', "content", type);
+  setAttr('meta[name="twitter:title"]', "content", title);
+  setAttr('meta[name="twitter:description"]', "content", description);
+  setAttr('meta[name="twitter:image"]', "content", ogImage);
+}
+
 // ===========================================================
 // ENTITY CLASSIFIER — routes orgs to the correct canonical sources
 // ===========================================================
@@ -518,7 +577,7 @@ function AuthProvider({ children }) {
               <input type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)} required className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" />
               <input type="password" placeholder="Password" value={pass} onChange={e => setPass(e.target.value)} required className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" />
               <button type="submit" className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 flex items-center justify-center gap-2">
-                {authMode === "login" ? <><LogIn className="w-4 h-4" /> Sign In</> : <><UserPlus className="w-4 h-4" /> Sign Up Free</>}
+                {authMode === "login" ? <><LogIn className="w-4 h-4" aria-hidden="true" /> Sign In</> : <><UserPlus className="w-4 h-4" aria-hidden="true" /> Sign Up Free</>}
               </button>
             </form>
             <p className="text-center text-sm text-gray-500 mt-4">
@@ -536,7 +595,7 @@ function AuthProvider({ children }) {
 // SHARED COMPONENTS
 // ===========================================================
 function ErrorState({ message, onRetry }) {
-  return (<div className="text-center py-16"><AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" /><h3 className="text-lg font-semibold text-gray-700 mb-2">Something went wrong</h3><p className="text-gray-500 mb-4">{message}</p>{onRetry && <button onClick={onRetry} className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Try Again</button>}</div>);
+  return (<div className="text-center py-16"><AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" aria-hidden="true" /><h3 className="text-lg font-semibold text-gray-700 mb-2">Something went wrong</h3><p className="text-gray-500 mb-4">{message}</p>{onRetry && <button onClick={onRetry} className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Try Again</button>}</div>);
 }
 function EmptyState({ icon: Icon, title, sub }) {
   return (<div className="text-center py-16">{Icon && <Icon className="w-12 h-12 text-gray-300 mx-auto mb-4" />}<h3 className="text-lg font-semibold text-gray-600 mb-1">{title}</h3>{sub && <p className="text-sm text-gray-400">{sub}</p>}</div>);
@@ -595,8 +654,8 @@ function Navbar({ page, setPage }) {
                         <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full capitalize">{user.tier}</span>
                       )}
                     </div>
-                    {!isTrialActive && <button onClick={() => { setAvatarOpen(false); nav("pricing"); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Crown className="w-4 h-4" /> Upgrade</button>}
-                    <button onClick={() => { logout(); setAvatarOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut className="w-4 h-4" /> Sign Out</button>
+                    {!isTrialActive && <button onClick={() => { setAvatarOpen(false); nav("pricing"); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Crown className="w-4 h-4" aria-hidden="true" /> Upgrade</button>}
+                    <button onClick={() => { logout(); setAvatarOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut className="w-4 h-4" aria-hidden="true" /> Sign Out</button>
                   </div>
                 )}
               </div>
@@ -707,11 +766,11 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
               <form onSubmit={e => { e.preventDefault(); doSearch(); }} className="mb-6">
                 <div className="flex items-center bg-white rounded-lg shadow-xl overflow-hidden">
                   <div className="flex-1 flex items-center">
-                    <Search className="w-5 h-5 text-gray-400 ml-4 flex-shrink-0" />
+                    <Search className="w-5 h-5 text-gray-400 ml-4 flex-shrink-0" aria-hidden="true" />
                     <input type="text" placeholder={`Search ${orgCount.toLocaleString()} Organisations`} value={heroSearch} onChange={e => setHeroSearch(e.target.value)} className="flex-1 px-3 py-4 text-base text-gray-900 placeholder:text-gray-400 outline-none border-0" />
                   </div>
-                  <button type="submit" className="px-8 py-4 bg-[#c0392b] text-white font-semibold hover:bg-[#a93226] transition-colors flex-shrink-0">
-                    <Search className="w-5 h-5" />
+                  <button type="submit" aria-label="Search organisations" className="px-8 py-4 bg-[#c0392b] text-white font-semibold hover:bg-[#a93226] transition-colors flex-shrink-0">
+                    <Search className="w-5 h-5" aria-hidden="true" />
                   </button>
                 </div>
               </form>
@@ -777,14 +836,14 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
             <button key={i} onClick={() => setPage(svc.page)} className="group text-left bg-white rounded-2xl border border-[#1B3A4B]/10 p-7 hover:border-[#1B3A4B] hover:shadow-xl hover:-translate-y-1 transition-all">
               <div className="flex items-start justify-between mb-5">
                 <div className="w-12 h-12 bg-[#4A9B8E] rounded-xl flex items-center justify-center group-hover:bg-[#1B3A4B] transition-colors">
-                  <svc.icon className="w-6 h-6 text-[#1B3A4B] group-hover:text-[#4A9B8E] transition-colors" />
+                  <svc.icon className="w-6 h-6 text-[#1B3A4B] group-hover:text-[#6EC5B5] transition-colors" />
                 </div>
-                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${svc.tag === "Pro" ? "bg-[#1B3A4B] text-[#4A9B8E]" : "bg-[#1B3A4B]/10 text-[#1B3A4B]"}`}>{svc.tag}</span>
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${svc.tag === "Pro" ? "bg-[#1B3A4B] text-[#6EC5B5]" : "bg-[#1B3A4B]/10 text-[#1B3A4B]"}`}>{svc.tag}</span>
               </div>
               <h3 className="font-wordmark text-2xl text-[#1a1a2e] mb-3 leading-tight">{svc.title}</h3>
               <p className="text-sm text-[#1B3A4B]/70 leading-relaxed mb-5">{svc.desc}</p>
               <div className="inline-flex items-center gap-1.5 text-sm font-bold text-[#1B3A4B] group-hover:gap-3 transition-all">
-                {svc.cta} <ArrowRight className="w-4 h-4" />
+                {svc.cta} <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </div>
             </button>
           ))}
@@ -810,7 +869,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
           ].map((a, i) => (
             <div key={i} className="text-center">
               <div className="w-14 h-14 bg-[#1B3A4B] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <a.icon className="w-7 h-7 text-[#4A9B8E]" />
+                <a.icon className="w-7 h-7 text-[#6EC5B5]" />
               </div>
               <h3 className="font-wordmark text-xl text-[#1a1a2e] mb-2">{a.title}</h3>
               <p className="text-sm text-[#1B3A4B]/70 leading-relaxed">{a.desc}</p>
@@ -836,7 +895,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
             { n: "03", title: "Export or cite", desc: "Download a due diligence PDF, grab a shareable URL, pull data through the API, or embed a live widget." },
           ].map((s, i) => (
             <div key={i} className="bg-[#FFFFFF] rounded-2xl p-7 border border-[#1B3A4B]/10">
-              <div className="font-wordmark text-5xl text-[#4A9B8E] mb-3 leading-none">{s.n}</div>
+              <div className="font-wordmark text-5xl text-[#6EC5B5] mb-3 leading-none">{s.n}</div>
               <h3 className="font-wordmark text-2xl text-[#1a1a2e] mb-2">{s.title}</h3>
               <p className="text-sm text-[#1B3A4B]/70 leading-relaxed">{s.desc}</p>
             </div>
@@ -957,7 +1016,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
               <div key={i} onClick={() => setPage(`follow/${getFunderSlug(funderIdx >= 0 ? funderIdx : i)}`)} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer group">
                 <div className="flex items-start justify-between mb-2 gap-2">
                   <h3 className="font-semibold text-gray-900 text-sm">{f.name}</h3>
-                  <Layers className="w-4 h-4 text-gray-300 group-hover:text-emerald-600 flex-shrink-0 transition-colors" />
+                  <Layers className="w-4 h-4 text-gray-300 group-hover:text-emerald-600 flex-shrink-0 transition-colors" aria-hidden="true" />
                 </div>
                 <div className="flex items-center gap-4 text-sm mb-3">
                   <span className="font-bold text-gray-900">{fmt(f.total)}</span>
@@ -965,7 +1024,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
                   <span className="text-gray-400">{(f.programmes?.length || 0)} programmes</span>
                 </div>
                 <div className="text-xs font-medium text-emerald-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  View funding flow <ArrowRight className="w-3 h-3" />
+                  View funding flow <ArrowRight className="w-3 h-3" aria-hidden="true" />
                 </div>
               </div>
             );
@@ -998,7 +1057,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
       <div className="bg-[#1B3A4B] rounded-3xl p-8 sm:p-12 text-center text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#4A9B8E]/20 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="relative z-10">
-          <p className="text-[#4A9B8E] text-xs font-bold uppercase tracking-[0.2em] mb-4">The money trail is back</p>
+          <p className="text-[#6EC5B5] text-xs font-bold uppercase tracking-[0.2em] mb-4">The money trail is back</p>
           <h2 className="font-wordmark text-3xl sm:text-5xl text-white mb-4 leading-[1]">€14 billion deserves oversight.</h2>
           <p className="text-white/80 max-w-2xl mx-auto mb-8 text-lg">Benefacts is gone. OpenBenefacts is here — with full financials, AI risk scores, funder mapping, and due diligence reports.</p>
           <div className="flex flex-wrap gap-3 justify-center">
@@ -1026,7 +1085,7 @@ function FilterSection({ title, icon: Icon, open, onToggle, count, children }) {
           <span className="text-sm font-medium text-gray-700">{title}</span>
           {count > 0 && <span className="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium">{count}</span>}
         </div>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
       {open && <div className="px-3 pb-3">{children}</div>}
     </div>
@@ -1272,11 +1331,11 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
               a.href = url; a.download = `openbenefacts-export-${new Date().toISOString().slice(0,10)}.csv`;
               a.click(); URL.revokeObjectURL(url);
             }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800">
-              <Database className="w-3.5 h-3.5" /> Export CSV
+              <Database className="w-3.5 h-3.5" aria-hidden="true" /> Export CSV
             </button>
           ) : (
             <button onClick={() => requirePro("CSV Export")} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-500 text-sm rounded-lg hover:bg-gray-200">
-              <Lock className="w-3.5 h-3.5" /> Export
+              <Lock className="w-3.5 h-3.5" aria-hidden="true" /> Export
             </button>
           )}
         </div>
@@ -1299,7 +1358,7 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
           )}
         </div>
         <button onClick={() => setShowFilters(!showFilters)} className={`px-4 py-3 rounded-xl border font-medium text-sm flex items-center gap-2 whitespace-nowrap ${showFilters ? "border-emerald-500 text-emerald-700 bg-emerald-50" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
-          <Filter className="w-4 h-4" /> {showFilters ? "Hide Filters" : "Show Filters"} {activeFilterCount > 0 && <span className="bg-emerald-500 text-white text-xs px-1.5 py-0.5 rounded-full">{activeFilterCount}</span>}
+          <Filter className="w-4 h-4" aria-hidden="true" /> {showFilters ? "Hide Filters" : "Show Filters"} {activeFilterCount > 0 && <span className="bg-emerald-500 text-white text-xs px-1.5 py-0.5 rounded-full">{activeFilterCount}</span>}
         </button>
       </div>
 
@@ -1426,9 +1485,9 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
                       {org.gross_income > 0 && <div><div className="text-sm font-semibold text-gray-900">{fmt(org.gross_income)}</div><div className="text-xs text-gray-400">Income</div></div>}
                       {org.total_grant_amount > 0 && <div><div className="text-sm font-semibold text-emerald-600">{fmt(org.total_grant_amount)}</div><div className="text-xs text-gray-400">State funding</div></div>}
                       <button onClick={(e) => { e.stopPropagation(); watchlist.toggle(org.id, org.name); }} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title={watchlist.isWatched(org.id) ? "Remove from watchlist" : "Add to watchlist"}>
-                        <Bookmark className={`w-4 h-4 ${watchlist.isWatched(org.id) ? "fill-emerald-500 text-emerald-500" : "text-gray-300"}`} />
+                        <Bookmark className={`w-4 h-4 ${watchlist.isWatched(org.id) ? "fill-emerald-500 text-emerald-500" : "text-gray-300"}`} aria-hidden="true" />
                       </button>
-                      <ChevronRight className="w-5 h-5 text-gray-300" />
+                      <ChevronRight className="w-5 h-5 text-gray-300" aria-hidden="true" />
                     </div>
                   </div>
                 ))}
@@ -1504,15 +1563,31 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
       normaliseOrg(d);
       setOrg(d);
       setLoading(false);
-      // Update page title/meta for this org
+      // Per-org SEO — title, description, canonical, OG and Twitter tags.
+      // Also upgrade the URL in-place from /org/{uuid} to /org/{uuid}/{slug}
+      // so shared links are human-readable. UUID-only URLs still resolve
+      // because pathToPage only reads the first path segment after /org/.
       if (d?.name) {
-        const sector = d.sector ? ` (${d.sector})` : "";
-        document.title = `${d.name}${sector} — OpenBenefacts`;
-        const descTag = document.querySelector('meta[name="description"]');
-        if (descTag) {
-          const income = d.financials?.[0]?.total_income ? ` Income: €${(d.financials[0].total_income/1e6).toFixed(1)}M.` : "";
-          descTag.setAttribute("content", `${d.name}${sector} — financials, governance, and funding data.${income} Free on OpenBenefacts.`);
-        }
+        const sectorSuffix = d.sector ? ` — ${d.sector}` : "";
+        const countyStr = d.county ? ` based in ${d.county}` : "";
+        const incomeStr = d.financials?.[0]?.total_income
+          ? ` Latest reported income €${(d.financials[0].total_income / 1e6).toFixed(1)}M.`
+          : "";
+        const rcnStr = d.charity_number ? ` Charity number ${d.charity_number}.` : "";
+        const title = `${d.name}${sectorSuffix} — Financials & Governance | OpenBenefacts`.slice(0, 70);
+        const description = `${d.name}${d.sector ? " is a registered " + d.sector.toLowerCase() + " organisation" : ""}${countyStr}.${incomeStr}${rcnStr} Free financial records, board, state funding and risk score on OpenBenefacts.`.slice(0, 200);
+
+        const slug = slugify(d.name);
+        const canonicalPath = slug ? `/org/${orgId}/${slug}` : `/org/${orgId}`;
+
+        // Rewrite the displayed URL without triggering a navigation.
+        try {
+          if (typeof window !== "undefined" && window.location.pathname !== canonicalPath && !embed) {
+            window.history.replaceState(window.history.state, "", canonicalPath + window.location.search);
+          }
+        } catch { /* noop */ }
+
+        applyPageMeta({ title, description, path: canonicalPath, type: "article" });
       }
       if (d?.sector) fetchSectorBenchmark(d.sector).then(setBenchmark).catch(() => {});
     }).catch(() => setLoading(false));
@@ -1578,7 +1653,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <button onClick={() => setPage("orgs")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6"><ArrowLeft className="w-4 h-4" /> Back to directory</button>
+      <button onClick={() => setPage("orgs")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6"><ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to directory</button>
 
       <div className="bg-white rounded-2xl border border-[#1B3A4B]/10 overflow-hidden">
         <div className="bg-[#1B3A4B] px-6 py-8 relative overflow-hidden">
@@ -1586,7 +1661,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
           <div className="relative z-10 flex items-start justify-between">
             <div>
               <h1 className="font-wordmark text-3xl sm:text-4xl text-white leading-[1.05]">{cleanName(org.name)}</h1>
-              <p className="text-[#4A9B8E] mt-2 font-semibold">{[clean(org.county), clean(org.sector)].filter(Boolean).join(" · ")}</p>
+              <p className="text-[#6EC5B5] mt-2 font-semibold">{[clean(org.county), clean(org.sector)].filter(Boolean).join(" · ")}</p>
               <div className="flex flex-wrap gap-2 mt-3">
                 {clean(org.charity_number) && <span className="text-xs bg-white/15 text-white px-2.5 py-1 rounded-full font-medium">RCN {org.charity_number}</span>}
                 {clean(org.cro_number) && <span className="text-xs bg-white/15 text-white px-2.5 py-1 rounded-full font-medium">CRO {org.cro_number}</span>}
@@ -1631,7 +1706,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   </body></html>`;
                   openReportWindow(pdfHtml);
                 }} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-white/20 text-white hover:bg-white/30 transition-colors">
-                  <FileText className="w-4 h-4" /> PDF
+                  <FileText className="w-4 h-4" aria-hidden="true" /> PDF
                 </button>
               )}
               {(tier === "professional" || tier === "enterprise") && (
@@ -1893,11 +1968,11 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   </body></html>`;
                   openReportWindow(ddHtml);
                 }} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-white text-emerald-700 hover:bg-emerald-50 transition-colors">
-                  <Shield className="w-4 h-4" /> Due Diligence
+                  <Shield className="w-4 h-4" aria-hidden="true" /> Due Diligence
                 </button>
               )}
               <button onClick={() => watchlist.toggle(org.id, org.name)} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${watchlist.isWatched(org.id) ? "bg-white text-emerald-700" : "bg-white/20 text-white hover:bg-white/30"}`}>
-                <Bookmark className={`w-4 h-4 ${watchlist.isWatched(org.id) ? "fill-emerald-600" : ""}`} />
+                <Bookmark className={`w-4 h-4 ${watchlist.isWatched(org.id) ? "fill-emerald-600" : ""}`} aria-hidden="true" />
                 {watchlist.isWatched(org.id) ? "Watching" : "Watch"}
               </button>
             </div>
@@ -1912,15 +1987,15 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
           return (
             <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex flex-wrap gap-2">
               <button onClick={() => { navigator.clipboard.writeText(orgUrl); setCopied("link"); setTimeout(() => setCopied(null), 2000); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                {copied === "link" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+                {copied === "link" ? <Check className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" /> : <Share2 className="w-3.5 h-3.5" aria-hidden="true" />}
                 {copied === "link" ? "Copied!" : "Share link"}
               </button>
               <button onClick={() => { navigator.clipboard.writeText(citation); setCopied("cite"); setTimeout(() => setCopied(null), 2000); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                {copied === "cite" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <FileText className="w-3.5 h-3.5" />}
+                {copied === "cite" ? <Check className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" /> : <FileText className="w-3.5 h-3.5" aria-hidden="true" />}
                 {copied === "cite" ? "Citation copied!" : "Cite this"}
               </button>
               <button onClick={() => { navigator.clipboard.writeText(orgEmbed); setCopied("embed"); setTimeout(() => setCopied(null), 2000); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                {copied === "embed" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Code className="w-3.5 h-3.5" />}
+                {copied === "embed" ? <Check className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" /> : <Code className="w-3.5 h-3.5" aria-hidden="true" />}
                 {copied === "embed" ? "Embed code copied!" : "Embed"}
               </button>
             </div>
@@ -2013,7 +2088,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                 return (
                   <div className="mt-6 p-5 rounded-xl border border-[#1B3A4B]/10 bg-white">
                     <div className="flex items-center gap-2 mb-3">
-                      <ExternalLink className="w-4 h-4 text-[#1B3A4B]" />
+                      <ExternalLink className="w-4 h-4 text-[#1B3A4B]" aria-hidden="true" />
                       <h3 className="text-xs font-bold text-[#1B3A4B] uppercase tracking-[0.15em]">Verify with the source</h3>
                     </div>
                     <p className="text-xs text-[#1B3A4B]/60 mb-4">OpenBenefacts mirrors public regulator data. For the canonical record, go to the source.</p>
@@ -2024,7 +2099,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                             <div className="text-sm font-semibold text-[#1a1a2e]">{src.label}</div>
                             <div className="text-xs text-[#1B3A4B]/60">{src.note}</div>
                           </div>
-                          <ArrowRight className="w-4 h-4 text-[#1B3A4B] group-hover:translate-x-1 transition-transform" />
+                          <ArrowRight className="w-4 h-4 text-[#1B3A4B] group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                         </a>
                       ))}
                       <button onClick={() => setPage("claim")} className="w-full flex items-center justify-between p-3 rounded-lg bg-[#1B3A4B]/5 hover:bg-[#1B3A4B]/10 border border-dashed border-[#1B3A4B]/30 transition-colors group text-left">
@@ -2032,7 +2107,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                           <div className="text-sm font-semibold text-[#1B3A4B]">Something missing? Claim or correct this listing</div>
                           <div className="text-xs text-[#1B3A4B]/60">Verified orgs can add descriptions, contact details, and upload reports</div>
                         </div>
-                        <ArrowRight className="w-4 h-4 text-[#1B3A4B] group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="w-4 h-4 text-[#1B3A4B] group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -2048,7 +2123,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                 return isPro ? (
                   <div className={`mt-6 p-4 rounded-xl border ${c.border} ${c.bg}`}>
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Sparkles className="w-4 h-4" /> AI Risk Assessment</h3>
+                      <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Sparkles className="w-4 h-4" aria-hidden="true" /> AI Risk Assessment</h3>
                       <div className="flex items-center gap-2">
                         <span className={`text-2xl font-bold ${c.text}`}>{risk.score}</span>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${c.bg} ${c.text} capitalize`}>{risk.level} risk</span>
@@ -2058,7 +2133,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                       <div className={`h-2 rounded-full ${c.bar} transition-all`} style={{ width: `${risk.score}%` }} />
                     </div>
                     <div className="flex items-center gap-3 mb-3 text-[10px] text-gray-500">
-                      <span className="flex items-center gap-1"><Database className="w-3 h-3" /> {risk.yearsAnalysed} year{risk.yearsAnalysed !== 1 ? "s" : ""} analysed</span>
+                      <span className="flex items-center gap-1"><Database className="w-3 h-3" aria-hidden="true" /> {risk.yearsAnalysed} year{risk.yearsAnalysed !== 1 ? "s" : ""} analysed</span>
                       <span className={`px-1.5 py-0.5 rounded ${risk.confidence === "high" ? "bg-emerald-100 text-emerald-700" : risk.confidence === "moderate" ? "bg-amber-100 text-amber-700" : "bg-gray-200 text-gray-600"}`}>
                         {risk.confidence} confidence
                       </span>
@@ -2075,10 +2150,10 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                 ) : (
                   <div className="mt-6 p-4 rounded-xl border border-gray-200 bg-gray-50 relative overflow-hidden">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-gray-500 flex items-center gap-2"><Sparkles className="w-4 h-4" /> AI Risk Assessment</h3>
+                      <h3 className="text-sm font-semibold text-gray-500 flex items-center gap-2"><Sparkles className="w-4 h-4" aria-hidden="true" /> AI Risk Assessment</h3>
                       <div className="flex items-center gap-2">
                         <span className="text-2xl font-bold text-gray-300">{risk.score}</span>
-                        <Lock className="w-4 h-4 text-gray-400" />
+                        <Lock className="w-4 h-4 text-gray-400" aria-hidden="true" />
                       </div>
                     </div>
                     <p className="text-xs text-gray-400 mt-2">Upgrade to Pro to see the full risk breakdown and contributing factors.</p>
@@ -2120,7 +2195,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-sm font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">{f.name}</span>
-                                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-emerald-500 flex-shrink-0" />
+                                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-emerald-500 flex-shrink-0" aria-hidden="true" />
                                   </div>
                                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                                     <span>{f.count} grant{f.count !== 1 ? "s" : ""}</span>
@@ -2213,7 +2288,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     if (!hasFeeData) return null;
                     return (
                       <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/50 rounded-xl p-5 mb-2">
-                        <h4 className="text-sm font-semibold text-amber-900 mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4" /> Board Remuneration</h4>
+                        <h4 className="text-sm font-semibold text-amber-900 mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4" aria-hidden="true" /> Board Remuneration</h4>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           <div className="bg-white/70 rounded-lg p-3 text-center"><div className="text-[10px] text-amber-700/60 font-medium uppercase">Total Board Fees</div><div className="text-lg font-bold text-amber-900">{fmt(totalFees)}</div><div className="text-[10px] text-amber-700/50">per annum</div></div>
                           <div className="bg-white/70 rounded-lg p-3 text-center"><div className="text-[10px] text-amber-700/60 font-medium uppercase">Paid Members</div><div className="text-lg font-bold text-amber-900">{paidMembers.length}</div><div className="text-[10px] text-amber-700/50">of {org.boardMembers.length} total</div></div>
@@ -2268,7 +2343,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                               <div className="text-[9px] text-emerald-600/60">no fee</div>
                             </div>
                           ) : null}
-                          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? "rotate-180" : ""}`} />
+                          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? "rotate-180" : ""}`} aria-hidden="true" />
                         </button>
                         {isExpanded && (
                           <div className="px-3 pb-3 border-t border-gray-50">
@@ -2282,7 +2357,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                                         <div className="text-sm text-gray-900">{cleanName(ob.organisations?.name) || "Unknown"}</div>
                                         <div className="text-xs text-gray-400">{ob.role || "Trustee"}{ob.organisations?.sector ? ` · ${ob.organisations.sector}` : ""}</div>
                                       </div>
-                                      <ChevronRight className="w-3 h-3 text-gray-300" />
+                                      <ChevronRight className="w-3 h-3 text-gray-300" aria-hidden="true" />
                                     </button>
                                   ))}
                                 </div>
@@ -2340,7 +2415,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
 
                     return (
                       <div className="mt-6 bg-gray-50 rounded-xl p-6">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2"><Users className="w-4 h-4" /> Board Network Graph</h4>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2"><Users className="w-4 h-4" aria-hidden="true" /> Board Network Graph</h4>
                         <p className="text-[11px] text-gray-400 mb-3">{directors.length} directors{hasConnections ? ` · ${outerNodes.length} connected organisations via cross-directorships` : " · No cross-directorships detected yet — click names above to load"}</p>
                         <div className="overflow-x-auto">
                           <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full" style={{ maxWidth: svgW, minHeight: 400 }}>
@@ -2418,7 +2493,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     <div className="bg-[#FFFFFF] border border-[#1B3A4B]/10 rounded-xl p-6">
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 bg-[#4A9B8E] rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Users className="w-6 h-6 text-[#1B3A4B]" />
+                          <Users className="w-6 h-6 text-[#1B3A4B]" aria-hidden="true" />
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -2430,7 +2505,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                           <p className="text-sm text-[#1B3A4B]/70 mb-4 leading-relaxed">{contextBlurb}</p>
                           <div className="flex flex-wrap gap-2">
                             {sources.map((src, i) => (
-                              <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#1B3A4B]/20 text-[#1B3A4B] text-xs font-semibold rounded-lg hover:bg-[#4A9B8E]/20 hover:border-[#1B3A4B] transition-colors">{src.label} <ExternalLink className="w-3 h-3" /></a>
+                              <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#1B3A4B]/20 text-[#1B3A4B] text-xs font-semibold rounded-lg hover:bg-[#4A9B8E]/20 hover:border-[#1B3A4B] transition-colors">{src.label} <ExternalLink className="w-3 h-3" aria-hidden="true" /></a>
                             ))}
                           </div>
                         </div>
@@ -2773,7 +2848,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   <div className="relative">
                     {!isPro && (
                       <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-10">
-                        <Lock className="w-8 h-8 text-gray-400 mb-2" />
+                        <Lock className="w-8 h-8 text-gray-400 mb-2" aria-hidden="true" />
                         <p className="font-semibold text-gray-700">Sector benchmarking & ranking</p>
                         <p className="text-sm text-gray-500 mb-3">See how this org compares — available on Pro</p>
                         <button onClick={() => requirePro("Sector Benchmarking")} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700">Upgrade to Pro — €29/mo</button>
@@ -2823,12 +2898,12 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   return (
                     <div className="bg-[#FFFFFF] border border-[#1B3A4B]/10 rounded-xl p-6 mb-6">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-[#4A9B8E] rounded-xl flex items-center justify-center flex-shrink-0"><FileText className="w-6 h-6 text-[#1B3A4B]" /></div>
+                        <div className="w-12 h-12 bg-[#4A9B8E] rounded-xl flex items-center justify-center flex-shrink-0"><FileText className="w-6 h-6 text-[#1B3A4B]" aria-hidden="true" /></div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap"><h4 className="font-wordmark text-xl text-[#1a1a2e]">No financial filings on record yet</h4>{entity.type !== "unknown" && <span className="text-[10px] font-bold uppercase tracking-wider bg-[#4A9B8E]/30 text-[#1B3A4B] px-2 py-1 rounded-full">{entity.label}</span>}</div>
                           <p className="text-sm text-[#1B3A4B]/70 mb-4 leading-relaxed">{contextBlurb}</p>
                           <div className="flex flex-wrap gap-2">
-                            {sources.map((src, i) => <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#1B3A4B]/20 text-[#1B3A4B] text-xs font-semibold rounded-lg hover:bg-[#4A9B8E]/20 hover:border-[#1B3A4B] transition-colors">{src.label} <ExternalLink className="w-3 h-3" /></a>)}
+                            {sources.map((src, i) => <a key={i} href={src.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#1B3A4B]/20 text-[#1B3A4B] text-xs font-semibold rounded-lg hover:bg-[#4A9B8E]/20 hover:border-[#1B3A4B] transition-colors">{src.label} <ExternalLink className="w-3 h-3" aria-hidden="true" /></a>)}
                             <button onClick={() => setPage("claim")} className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1B3A4B] text-white text-xs font-semibold rounded-lg hover:bg-[#0f2b3a] transition-colors">Upload financials</button>
                           </div>
                         </div>
@@ -2860,49 +2935,49 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     {clean(org.charity_number) && (
                       <a href={`https://www.charitiesregulator.ie/en/information-for-the-public/search-the-register-of-charities/charity-detail?regid=${org.charity_number}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 hover:bg-emerald-50 border border-gray-100 hover:border-emerald-200 transition-colors group">
                         <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                          <Shield className="w-5 h-5 text-emerald-600" />
+                          <Shield className="w-5 h-5 text-emerald-600" aria-hidden="true" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-gray-900 group-hover:text-emerald-700">Charities Regulator</div>
                           <div className="text-xs text-gray-500">Annual reports, governance code, financial filings · RCN {org.charity_number}</div>
                         </div>
-                        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 flex-shrink-0" />
+                        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 flex-shrink-0" aria-hidden="true" />
                       </a>
                     )}
                     {clean(org.cro_number) && (
                       <a href={`https://core.cro.ie/search?q=${org.cro_number}&type=companies`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 hover:bg-blue-50 border border-gray-100 hover:border-blue-200 transition-colors group">
                         <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                          <Building2 className="w-5 h-5 text-blue-600" />
+                          <Building2 className="w-5 h-5 text-blue-600" aria-hidden="true" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-gray-900 group-hover:text-blue-700">Companies Registration Office (CORE)</div>
                           <div className="text-xs text-gray-500">Constitution, annual returns, directors, company filings · CRO {org.cro_number}</div>
                         </div>
-                        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0" />
+                        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0" aria-hidden="true" />
                       </a>
                     )}
                     {clean(org.revenue_chy) && (
                       <a href={`https://www.revenue.ie/en/corporate/information-about-revenue/statistics/other-datasets/charities/resident-charities.aspx`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 hover:bg-amber-50 border border-gray-100 hover:border-amber-200 transition-colors group">
                         <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                          <Landmark className="w-5 h-5 text-amber-600" />
+                          <Landmark className="w-5 h-5 text-amber-600" aria-hidden="true" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-gray-900 group-hover:text-amber-700">Revenue Commissioners</div>
                           <div className="text-xs text-gray-500">Tax-exempt charity status register · CHY {org.revenue_chy}</div>
                         </div>
-                        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-amber-600 flex-shrink-0" />
+                        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-amber-600 flex-shrink-0" aria-hidden="true" />
                       </a>
                     )}
                     {clean(org.charity_number) && (
                       <a href={`https://data.gov.ie/dataset/register-of-charities-in-ireland`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 hover:bg-purple-50 border border-gray-100 hover:border-purple-200 transition-colors group">
                         <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
-                          <Database className="w-5 h-5 text-purple-600" />
+                          <Database className="w-5 h-5 text-purple-600" aria-hidden="true" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-gray-900 group-hover:text-purple-700">Open Data Portal (data.gov.ie)</div>
                           <div className="text-xs text-gray-500">Bulk data download — full register and annual reports CSV</div>
                         </div>
-                        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-600 flex-shrink-0" />
+                        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-600 flex-shrink-0" aria-hidden="true" />
                       </a>
                     )}
                   </div>
@@ -3071,7 +3146,7 @@ function FundersPage({ setPage, setInitialSearch }) {
           ]);
           downloadCSV(rows, ["Funder","Type","Total Funding","Recipients","Programmes Count","Programmes"], "ireland-state-funders.csv");
         }} className="flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors whitespace-nowrap">
-          <Download className="w-4 h-4" /> Download CSV
+          <Download className="w-4 h-4" aria-hidden="true" /> Download CSV
         </button>
       </div>
 
@@ -3104,10 +3179,10 @@ function FundersPage({ setPage, setInitialSearch }) {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button onClick={() => { const idx = funderData.indexOf(f); setPage(`follow/${getFunderSlug(idx >= 0 ? idx : sorted.indexOf(f))}`); }} className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 shadow-sm hover:shadow transition-all">
-                  <Layers className="w-4 h-4" /> View Funding Flow
+                  <Layers className="w-4 h-4" aria-hidden="true" /> View Funding Flow
                 </button>
                 <button onClick={() => handleFunderClick(f)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:border-emerald-300 hover:text-emerald-700 transition-colors">
-                  {selectedFunder?.name === f.name ? "Hide" : "View"} Recipients <ChevronDown className={`w-3 h-3 transition-transform ${selectedFunder?.name === f.name ? "rotate-180" : ""}`} />
+                  {selectedFunder?.name === f.name ? "Hide" : "View"} Recipients <ChevronDown className={`w-3 h-3 transition-transform ${selectedFunder?.name === f.name ? "rotate-180" : ""}`} aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -3406,6 +3481,21 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
 
   const slug = getFunderSlug(funderIndex);
   const shareUrl = `${window.location.origin}/follow/${slug}`;
+
+  // Per-funder SEO — title, description, canonical, OG, Twitter.
+  useEffect(() => {
+    if (!funder || embed) return;
+    const totalStr = funder.total ? `€${(funder.total / 1e9).toFixed(1)}B` : null;
+    const recipStr = funder.recipients ? `${funder.recipients.toLocaleString()} recipients` : null;
+    const title = `${funder.name} — State Funding Flow | OpenBenefacts`.slice(0, 70);
+    const parts = [
+      `Follow the money from ${funder.name}`,
+      totalStr ? `${totalStr} distributed` : null,
+      recipStr,
+    ].filter(Boolean);
+    const description = `${parts.join(" · ")}. Interactive Sankey diagram, full grant list, and recipient search on OpenBenefacts.`.slice(0, 200);
+    applyPageMeta({ title, description, path: `/follow/${slug}`, type: "article" });
+  }, [funder, slug, embed]);
   const embedCode = `<iframe src="${shareUrl}?embed=true" width="100%" height="500" frameborder="0" style="border:1px solid #e5e7eb;border-radius:12px"></iframe>`;
 
   const copyToClip = (text, type) => {
@@ -3432,7 +3522,7 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <button onClick={() => setPage("funders")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6"><ArrowLeft className="w-4 h-4" /> Back to funders</button>
+      <button onClick={() => setPage("funders")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6"><ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to funders</button>
 
       {/* Header */}
       <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 rounded-2xl p-6 sm:p-8 mb-8 text-white">
@@ -3444,11 +3534,11 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
       {/* Share / Embed / Download bar */}
       <div className="flex flex-wrap gap-3 mb-6">
         <button onClick={() => copyToClip(shareUrl, "link")} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-          {copied === "link" ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4" />}
+          {copied === "link" ? <Check className="w-4 h-4 text-emerald-500" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
           {copied === "link" ? "Link copied!" : "Share link"}
         </button>
         <button onClick={() => copyToClip(embedCode, "embed")} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-          {copied === "embed" ? <Check className="w-4 h-4 text-emerald-500" /> : <Code className="w-4 h-4" />}
+          {copied === "embed" ? <Check className="w-4 h-4 text-emerald-500" aria-hidden="true" /> : <Code className="w-4 h-4" aria-hidden="true" />}
           {copied === "embed" ? "Embed code copied!" : "Copy embed code"}
         </button>
         <button onClick={() => {
@@ -3465,7 +3555,7 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
           ]);
           downloadCSV(rows, ["Funder","Programme","Recipient","County","Sector","Year","Amount","RCN"], `${slug}-funding-data.csv`);
         }} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
-          <Download className="w-4 h-4" /> Download CSV
+          <Download className="w-4 h-4" aria-hidden="true" /> Download CSV
         </button>
       </div>
 
@@ -3482,12 +3572,12 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
 
       {/* Embed preview */}
       <div className="bg-gray-50 rounded-2xl border border-gray-100 p-6 mb-8">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><Code className="w-4 h-4" /> Embed this widget</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"><Code className="w-4 h-4" aria-hidden="true" /> Embed this widget</h3>
         <p className="text-xs text-gray-500 mb-3">Copy the code below to embed this funding flow in any website or article.</p>
         <div className="bg-gray-900 rounded-xl p-4 relative">
           <pre className="text-xs text-emerald-400 font-mono whitespace-pre-wrap break-all">{embedCode}</pre>
           <button onClick={() => copyToClip(embedCode, "embed")} className="absolute top-3 right-3 p-1.5 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
-            {copied === "embed" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+            {copied === "embed" ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -3636,7 +3726,7 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \\
 
       {/* Try it live */}
       <div className="bg-gray-50 rounded-2xl p-6 mb-8">
-        <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2"><Zap className="w-5 h-5 text-emerald-600" /> Try It Live</h2>
+        <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2"><Zap className="w-5 h-5 text-emerald-600" aria-hidden="true" /> Try It Live</h2>
         <div className="flex gap-2 mb-3">
           <input type="text" value={tryItQuery} onChange={e => setTryItQuery(e.target.value)} placeholder="Search organisations..." className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none" onKeyDown={e => e.key === "Enter" && runTryIt()} />
           <button onClick={runTryIt} disabled={tryItLoading} className="px-5 py-2.5 bg-emerald-600 text-white text-sm rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50">{tryItLoading ? "..." : "Search"}</button>
@@ -3656,9 +3746,9 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \\
             <h3 className="font-bold text-gray-900 text-sm">{t.name}</h3>
             <div className="text-lg font-bold text-gray-900 mt-1">{t.price}</div>
             <div className="mt-3 space-y-1.5 text-xs text-gray-500">
-              <div className="flex items-center gap-2"><Zap className="w-3 h-3" /> {t.rateLimit}</div>
-              <div className="flex items-center gap-2"><Database className="w-3 h-3" /> {t.pageSize}</div>
-              <div className="flex items-center gap-2"><Shield className="w-3 h-3" /> {t.auth}</div>
+              <div className="flex items-center gap-2"><Zap className="w-3 h-3" aria-hidden="true" /> {t.rateLimit}</div>
+              <div className="flex items-center gap-2"><Database className="w-3 h-3" aria-hidden="true" /> {t.pageSize}</div>
+              <div className="flex items-center gap-2"><Shield className="w-3 h-3" aria-hidden="true" /> {t.auth}</div>
             </div>
           </div>
         ))}
@@ -3840,7 +3930,7 @@ function MoneyPage({ setPage, orgCount = 36803 }) {
                   <div className="font-bold text-gray-900 text-sm">{fmt(f.total)}</div>
                   <div className="text-[10px] text-gray-400">{pct.toFixed(1)}%</div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-500 flex-shrink-0" />
+                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-500 flex-shrink-0" aria-hidden="true" />
               </button>
             );
           })}
@@ -3924,7 +4014,7 @@ function FoundationsPage({ orgCount = 36803 }) {
         <div className="grid sm:grid-cols-2 gap-3">
           {checks.map((c, i) => (
             <div key={i} className="flex items-start gap-2">
-              <Check className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+              <Check className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" aria-hidden="true" />
               <span className="text-sm text-gray-700">{c}</span>
             </div>
           ))}
@@ -4004,7 +4094,7 @@ function MediaPage({ orgCount = 36803 }) {
         <div className="bg-gray-800 rounded-xl p-4 relative mb-4">
           <pre className="text-xs text-emerald-400 font-mono whitespace-pre-wrap">{embedExample}</pre>
           <button onClick={() => copySnippet(embedExample, "embed")} className="absolute top-3 right-3 p-1.5 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
-            {copiedSnippet === "embed" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+            {copiedSnippet === "embed" ? <Check className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />}
           </button>
         </div>
         <p className="text-xs text-gray-500">The embed renders a compact, branded widget with a link back to the full profile. Responsive, mobile-friendly, loads fast.</p>
@@ -4017,7 +4107,7 @@ function MediaPage({ orgCount = 36803 }) {
         <div className="bg-white rounded-xl p-4 relative border border-blue-200">
           <pre className="text-xs text-gray-700 font-mono whitespace-pre-wrap">{citationExample}</pre>
           <button onClick={() => copySnippet(citationExample, "cite")} className="absolute top-3 right-3 p-1.5 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors">
-            {copiedSnippet === "cite" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-blue-500" />}
+            {copiedSnippet === "cite" ? <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5 text-blue-500" aria-hidden="true" />}
           </button>
         </div>
         <p className="text-xs text-gray-500 mt-3">All data is sourced from the Charities Regulator, Companies Registration Office, and Revenue Commissioners. OpenBenefacts normalises, cross-references, and presents this public data — it does not generate or modify the underlying figures.</p>
@@ -4115,7 +4205,7 @@ function CsrPage({ orgCount = 36803 }) {
         <div className="grid sm:grid-cols-2 gap-3">
           {features.map((f, i) => (
             <div key={i} className="flex items-start gap-2">
-              <Check className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+              <Check className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" aria-hidden="true" />
               <span className="text-sm text-gray-700">{f}</span>
             </div>
           ))}
@@ -4200,7 +4290,7 @@ function PricingPage({ orgCount = 36803, setPage }) {
               {plan.price !== null ? <><span className="text-3xl font-bold text-gray-900">€{plan.price}</span><span className="text-gray-400 text-sm">{plan.period}</span></> : <span className="text-3xl font-bold text-gray-900">Custom</span>}
             </div>
             <ul className="space-y-2 mb-6">
-              {plan.features.map((f, j) => <li key={j} className="flex items-start gap-2 text-sm text-gray-600"><Check className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />{f}</li>)}
+              {plan.features.map((f, j) => <li key={j} className="flex items-start gap-2 text-sm text-gray-600"><Check className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" aria-hidden="true" />{f}</li>)}
             </ul>
             <button onClick={() => { setShowAuth(true); setAuthMode("signup"); }} className={`w-full py-2.5 rounded-xl text-sm font-semibold ${plan.highlight ? "bg-emerald-600 text-white hover:bg-emerald-700" : plan.price === 0 ? "bg-gray-100 text-gray-600 hover:bg-gray-200" : "bg-gray-900 text-white hover:bg-gray-800"}`}>{plan.cta}</button>
           </div>
@@ -4422,41 +4512,37 @@ function InnerApp() {
   useEffect(() => { fetchStats().then(setGlobalStats).catch(() => {}); }, []);
   const orgCount = globalStats?.total_orgs || siteStats.totalOrgs || 36803;
 
-  // Per-page SEO: update title, meta description, and canonical
+  // Per-page SEO — title, meta description, canonical, OG, Twitter.
+  // Org and funder detail pages set their own metadata once data loads;
+  // this hook handles everything else. If a detail page is active, we
+  // skip here so the detail component's own effect isn't overwritten
+  // after its data has arrived.
   useEffect(() => {
-    const BASE = "https://www.openbenefacts.ie";
+    if (page.startsWith("org:") || page.startsWith("funder:") || page.startsWith("follow/") || page.startsWith("flow:")) return;
+
     const pageMeta = {
-      home: { title: "OpenBenefacts — Irish Nonprofit Transparency", desc: `Ireland's nonprofit transparency platform. Search ${orgCount.toLocaleString()}+ charities, track government funding, and follow the money.` },
-      orgs: { title: "Organisations — OpenBenefacts", desc: `Browse ${orgCount.toLocaleString()}+ Irish nonprofits. Filter by sector, county, income, and governing form. Free financial records and governance data.` },
-      funders: { title: "Funders — OpenBenefacts", desc: "Explore government funders, grant programmes, and funding flows to Irish nonprofits. See who funds what and how much." },
-      councils: { title: "Council Finances — OpenBenefacts", desc: "Local authority spending across Ireland. Compare council budgets, housing output, and financial performance." },
-      "trackers/emergency-accommodation": { title: "Emergency Accommodation Tracker — OpenBenefacts", desc: "Track Ireland's emergency accommodation numbers, trends, and spending over time." },
-      knowledge: { title: "Knowledge Base — OpenBenefacts", desc: "Guides, explainers, and resources for understanding Ireland's nonprofit sector, charity regulation, and public funding." },
-      pricing: { title: "Pricing — OpenBenefacts", desc: "Free to search. Pro plans for donors, funders, and researchers. Transparent pricing with no hidden fees." },
-      api: { title: "API Documentation — OpenBenefacts", desc: "Programmatic access to Irish nonprofit data. REST API with free tier, no signup required." },
-      "open-data": { title: "Open Data — OpenBenefacts", desc: "Download Irish nonprofit data in CSV and JSON. Free bulk datasets for researchers, journalists, and developers." },
-      about: { title: "About — OpenBenefacts", desc: "OpenBenefacts is an independent, open-data project for Irish nonprofit transparency. No government funding, no political affiliation." },
+      home: { title: "OpenBenefacts — Irish Nonprofit Transparency & Finances", desc: `Search ${orgCount.toLocaleString()}+ Irish charities, AHBs, schools and clubs. Track €14 billion in government funding with financial records, governance data, and Follow the Money visualisations.` },
+      orgs: { title: `Search ${orgCount.toLocaleString()}+ Irish Charities & Nonprofits — OpenBenefacts`, desc: `Advanced search across ${orgCount.toLocaleString()}+ Irish nonprofits. Filter by sector, county, income, and governing form. Free financial records and governance data.` },
+      funders: { title: "Irish State Funders — Grant Profiles & Recipients | OpenBenefacts", desc: "Explore government funders, grant programmes, and funding flows to Irish nonprofits. See who funds what and how much." },
+      councils: { title: "Council Finances — 31 Irish Local Authorities | OpenBenefacts", desc: "Local authority spending across Ireland. Compare council budgets, housing output, and financial performance." },
+      "trackers/emergency-accommodation": { title: "Emergency Accommodation Tracker — Ireland | OpenBenefacts", desc: "Track Ireland's emergency accommodation numbers, trends, and spending month by month across all 31 local authorities." },
+      knowledge: { title: "Knowledge Base — How Irish Nonprofit Funding Works | OpenBenefacts", desc: "Plain-language explainers on Irish charity regulation, AHB funding, governance, and how to read nonprofit financials." },
+      pricing: { title: "Pricing — Free, Pro, Business & Enterprise | OpenBenefacts", desc: "Free to search. Pro plans for donors, funders, and researchers. Transparent pricing with no hidden fees. Cancel anytime." },
+      api: { title: "API & Bulk Data Access | OpenBenefacts", desc: "Programmatic access to Irish nonprofit data. REST API with free tier, CSV exports, and JSON endpoints for developers and researchers." },
+      "open-data": { title: "Open Data — CSV & JSON Downloads | OpenBenefacts", desc: "Download the full OpenBenefacts dataset as CSV or JSON. CC-BY 4.0. Citable, machine-readable Irish nonprofit data." },
+      about: { title: "About OpenBenefacts — Independent Civic Data for Ireland", desc: "OpenBenefacts is an independent, open-data project for Irish nonprofit transparency. No government funding, no political affiliation." },
       privacy: { title: "Privacy Policy — OpenBenefacts", desc: "How OpenBenefacts handles your data. GDPR-compliant privacy policy." },
       terms: { title: "Terms of Use — OpenBenefacts", desc: "Terms and conditions for using OpenBenefacts." },
-      sources: { title: "Data Sources — OpenBenefacts", desc: "Where OpenBenefacts data comes from: Charities Regulator, Revenue, CRO, government grants, and more." },
+      sources: { title: "Data Sources — Charities Regulator, Revenue, CRO, HSE | OpenBenefacts", desc: "Where OpenBenefacts data comes from: Charities Regulator, Revenue, CRO, Department of Education, HSE, Pobal, Arts Council, and more." },
       claim: { title: "Claim Your Listing — OpenBenefacts", desc: "Nonprofit leaders: claim and update your organisation's profile on OpenBenefacts." },
-      money: { title: "Follow the Money — OpenBenefacts", desc: "Track billions in government funding to Irish nonprofits. See where public money flows." },
-      foundations: { title: "Foundations — OpenBenefacts", desc: "Irish philanthropic foundations and their grant-making. Due diligence tools for funders." },
-      media: { title: "For Journalists — OpenBenefacts", desc: "Citation-ready nonprofit data for Irish journalists. Search, verify, and cite with confidence." },
-      csr: { title: "For CSR Teams — OpenBenefacts", desc: "Corporate giving intelligence. Find and vet Irish nonprofits for your CSR programme." },
+      money: { title: "Follow the Money — €14 Billion in Irish State Funding | OpenBenefacts", desc: "Interactive Sankey diagrams showing where €14 billion of government money flows — from Irish government departments to recipient nonprofits." },
+      foundations: { title: "Irish Foundations & Grantmakers — OpenBenefacts", desc: "Profiles, grant histories and funding patterns for Irish philanthropic foundations and grantmaking trusts." },
+      media: { title: "For Journalists — Citation-Ready Nonprofit Data | OpenBenefacts", desc: "Citation-ready nonprofit data for Irish journalists. Search, verify, and cite with confidence. Every URL is shareable." },
+      csr: { title: "For CSR Teams — Grant Due Diligence | OpenBenefacts", desc: "Corporate giving intelligence. Find and vet Irish nonprofits for your CSR programme. AI risk scores included." },
     };
     const meta = pageMeta[page] || pageMeta.home;
-    document.title = meta.title;
-    const descTag = document.querySelector('meta[name="description"]');
-    if (descTag) descTag.setAttribute("content", meta.desc);
-    const canonical = document.querySelector('link[rel="canonical"]');
-    if (canonical) canonical.setAttribute("href", BASE + (page === "home" ? "/" : "/" + page.replace(":", "/")));
-    const ogUrl = document.querySelector('meta[property="og:url"]');
-    if (ogUrl) ogUrl.setAttribute("content", BASE + (page === "home" ? "/" : "/" + page.replace(":", "/")));
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) ogTitle.setAttribute("content", meta.title);
-    const ogDesc = document.querySelector('meta[property="og:description"]');
-    if (ogDesc) ogDesc.setAttribute("content", meta.desc);
+    const path = page === "home" ? "/" : "/" + page.replace(":", "/");
+    applyPageMeta({ title: meta.title, description: meta.desc, path });
   }, [page, orgCount]);
 
   const handleSetPage = (p) => {
@@ -4505,14 +4591,24 @@ function InnerApp() {
     }
   };
 
+  // Fallback shown while a lazy-loaded route chunk is fetching.
+  const suspenseFallback = (
+    <div className="flex items-center justify-center py-24" role="status" aria-live="polite">
+      <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" aria-hidden="true" />
+      <span className="sr-only">Loading…</span>
+    </div>
+  );
+
   // Embed mode: no navbar/footer chrome
-  if (isEmbed) return <div className="min-h-screen bg-white">{renderPage()}</div>;
+  if (isEmbed) return <div className="min-h-screen bg-white"><Suspense fallback={suspenseFallback}>{renderPage()}</Suspense></div>;
 
   return (
     <div className="min-h-screen bg-[#FFFFFF]">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-emerald-600 focus:text-white focus:rounded focus:text-sm focus:font-medium">Skip to content</a>
       <Navbar page={page} setPage={handleSetPage} />
-      <main id="main-content">{renderPage()}</main>
+      <main id="main-content">
+        <Suspense fallback={suspenseFallback}>{renderPage()}</Suspense>
+      </main>
       <DonationPopup />
       <footer className="bg-[#1B3A4B] text-white mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -4528,7 +4624,7 @@ function InnerApp() {
 
             {/* Explore */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">Explore</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#6EC5B5] mb-4">Explore</h4>
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("orgs")} className="text-sm text-white/70 hover:text-white">Organisations</button></li>
                 <li><button onClick={() => handleSetPage("funders")} className="text-sm text-white/70 hover:text-white">Funders</button></li>
@@ -4542,7 +4638,7 @@ function InnerApp() {
 
             {/* For nonprofits */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">For nonprofits</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#6EC5B5] mb-4">For nonprofits</h4>
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("claim")} className="text-sm text-white/70 hover:text-white">Claim your listing</button></li>
                 <li><a href="mailto:data@openbenefacts.ie" className="text-sm text-white/70 hover:text-white">Request a correction</a></li>
@@ -4553,7 +4649,7 @@ function InnerApp() {
 
             {/* Project */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">Project</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#6EC5B5] mb-4">Project</h4>
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("about")} className="text-sm text-white/70 hover:text-white">About</button></li>
                 <li><a href="https://github.com/markcoachaifootball/openbenefacts" target="_blank" rel="noopener noreferrer" className="text-sm text-white/70 hover:text-white">GitHub</a></li>
@@ -4564,7 +4660,7 @@ function InnerApp() {
 
             {/* Legal */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#4A9B8E] mb-4">Legal</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#6EC5B5] mb-4">Legal</h4>
               <ul className="space-y-3">
                 <li><button onClick={() => handleSetPage("privacy")} className="text-sm text-white/70 hover:text-white">Privacy policy</button></li>
                 <li><button onClick={() => handleSetPage("terms")} className="text-sm text-white/70 hover:text-white">Terms of use</button></li>
@@ -4730,7 +4826,7 @@ function OpenDatasetsPage({ setPage }) {
           </p>
           <a href="https://github.com/markcoachifootball/openbenefacts" target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-emerald-600 font-semibold hover:underline">
-            <Code className="w-4 h-4" /> View on GitHub →
+            <Code className="w-4 h-4" aria-hidden="true" /> View on GitHub →
           </a>
         </div>
       </div>
@@ -4891,7 +4987,7 @@ function DonationPopup() {
 
         <div className="flex justify-center mb-5">
           <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center">
-            <Heart className="w-8 h-8 text-emerald-600" />
+            <Heart className="w-8 h-8 text-emerald-600" aria-hidden="true" />
           </div>
         </div>
 

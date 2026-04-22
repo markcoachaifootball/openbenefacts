@@ -78,7 +78,7 @@ function ChangeIndicator({ value }) {
   const isUp = num > 0;
   return (
     <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${isUp ? "text-amber-600" : "text-emerald-600"}`}>
-      {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+      {isUp ? <TrendingUp className="w-3 h-3" aria-hidden="true" /> : <TrendingDown className="w-3 h-3" aria-hidden="true" />}
       {Math.abs(num)}%
     </span>
   );
@@ -153,7 +153,7 @@ function NumberPopover({ value, label, prevValue, totalValue, rank, totalCouncil
           <div className="flex items-center justify-between">
             <span className="text-gray-500">National Rank</span>
             <span className="inline-flex items-center gap-1 font-medium">
-              <Hash className="w-3 h-3 text-gray-400" />{rank} of {totalCouncils}
+              <Hash className="w-3 h-3 text-gray-400" aria-hidden="true" />{rank} of {totalCouncils}
             </span>
           </div>
         )}
@@ -259,19 +259,19 @@ function IncomeBreakdown({ row, prevRow }) {
               {fmt(row.surplus_deficit_before_transfers)}
             </p>
           </div>
-          <ArrowRight className="w-4 h-4 text-gray-300" />
+          <ArrowRight className="w-4 h-4 text-gray-300" aria-hidden="true" />
           <div className="bg-gray-50 rounded-lg px-3 py-1.5">
             <span className="text-gray-500 text-xs">Transfers</span>
             <p className="font-medium tabular-nums">{fmt(row.transfers_from_to_reserves)}</p>
           </div>
-          <ArrowRight className="w-4 h-4 text-gray-300" />
+          <ArrowRight className="w-4 h-4 text-gray-300" aria-hidden="true" />
           <div className={`rounded-lg px-3 py-1.5 ${(row.overall_surplus_deficit || 0) < 0 ? "bg-red-50" : "bg-emerald-50"}`}>
             <span className="text-gray-500 text-xs">Overall</span>
             <p className={`font-bold tabular-nums ${(row.overall_surplus_deficit || 0) < 0 ? "text-red-700" : "text-emerald-700"}`}>
               {fmt(row.overall_surplus_deficit)}
             </p>
           </div>
-          <ArrowRight className="w-4 h-4 text-gray-300" />
+          <ArrowRight className="w-4 h-4 text-gray-300" aria-hidden="true" />
           <div className="bg-blue-50 rounded-lg px-3 py-1.5">
             <span className="text-gray-500 text-xs">Reserve Opening → Closing</span>
             <p className="font-medium tabular-nums text-blue-700">{fmt(row.general_reserve_opening)} → {fmt(row.general_reserve_closing)}</p>
@@ -311,7 +311,7 @@ function ExpandableYearRow({ row, prevRow, divs, allCouncilIe, isExpanded, onTog
       >
         <td className="py-2.5 px-2 font-medium">
           <span className="inline-flex items-center gap-1.5">
-            {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-emerald-600" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />}
             {row.year}
           </span>
         </td>
@@ -387,7 +387,7 @@ function ExpandableYearRow({ row, prevRow, divs, allCouncilIe, isExpanded, onTog
                         <div className="flex items-center gap-2 mb-1">
                           <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: DIV_COLORS[d.division_code] || EMERALD }} />
                           <span className="text-sm text-gray-700 font-medium flex-1 truncate">{d.division_name}</span>
-                          <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                          <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" aria-hidden="true" />
                         </div>
                         <div className="flex items-center justify-between text-xs mb-1.5">
                           <span className="text-gray-500">Gross: <span className="font-medium text-gray-900">{fmt(d.gross_expenditure)}</span></span>
@@ -560,7 +560,7 @@ function ExpandableBSRow({ row, prevRow, isExpanded, onToggle }) {
       >
         <td className="py-2.5 px-2 font-medium">
           <span className="inline-flex items-center gap-1.5">
-            {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-emerald-600" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />}
             {row.year}
           </span>
         </td>
@@ -753,7 +753,7 @@ function ComparePanel({ councils, ieData, compareIds, onRemove, onClose }) {
     <div className="bg-white rounded-xl border-2 border-blue-200 shadow-lg p-6 mb-6 relative">
       <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
       <div className="flex items-center gap-2 mb-6">
-        <GitCompare className="w-5 h-5 text-blue-600" />
+        <GitCompare className="w-5 h-5 text-blue-600" aria-hidden="true" />
         <h3 className="text-lg font-semibold text-gray-900">Council Comparison</h3>
       </div>
       <div className="overflow-x-auto">
@@ -907,7 +907,7 @@ function CouncilOverview({ councils, ieData, setSelectedCouncil }) {
             <input type="text" placeholder="Search councils..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
               className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-emerald-200" />
             <div className="flex items-center gap-1">
-              <Filter className="w-4 h-4 text-gray-400" />
+              <Filter className="w-4 h-4 text-gray-400" aria-hidden="true" />
               <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-1.5">
                 <option value="all">All types</option>
                 <option value="county">County</option>
@@ -917,7 +917,7 @@ function CouncilOverview({ councils, ieData, setSelectedCouncil }) {
             </div>
             <button onClick={() => { setCompareMode(!compareMode); if (compareMode) setCompareIds([]); }}
               className={`text-sm px-3 py-1.5 rounded-lg border transition-colors inline-flex items-center gap-1.5 ${compareMode ? "bg-blue-50 border-blue-300 text-blue-700" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
-              <GitCompare className="w-3.5 h-3.5" />{compareMode ? `Compare (${compareIds.length}/4)` : "Compare"}
+              <GitCompare className="w-3.5 h-3.5" aria-hidden="true" />{compareMode ? `Compare (${compareIds.length}/4)` : "Compare"}
             </button>
           </div>
         </div>
@@ -930,7 +930,7 @@ function CouncilOverview({ councils, ieData, setSelectedCouncil }) {
                 {[["total_gross_expenditure","Gross Exp."],["total_income","Income"],["total_net_expenditure","Net Exp."],["general_reserve_closing","Reserve"]].map(([key, label]) => (
                   <th key={key} className="text-right py-3 px-2 text-gray-500 font-medium cursor-pointer hover:text-gray-700" onClick={() => toggleSort(key)}>
                     <span className="inline-flex items-center gap-1">{label}
-                      {sortField === key ? (sortDir === "desc" ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
+                      {sortField === key ? (sortDir === "desc" ? <ChevronDown className="w-3 h-3" aria-hidden="true" /> : <ChevronUp className="w-3 h-3" aria-hidden="true" />) : <ArrowUpDown className="w-3 h-3 opacity-40" aria-hidden="true" />}
                     </span>
                   </th>
                 ))}
@@ -955,11 +955,11 @@ function CouncilOverview({ councils, ieData, setSelectedCouncil }) {
                     <td className="py-3 px-2 font-medium text-gray-900">
                       <span className="flex items-center gap-2">
                         <span className="text-xs text-gray-400 w-5 text-right tabular-nums">{idx + 1}.</span>
-                        <MapPin className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                        <MapPin className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" aria-hidden="true" />
                         <span className="hover:text-emerald-700 transition-colors">
                           {r.name.replace(" County Council", "").replace(" City Council", " City").replace(" City and County Council", "")}
                         </span>
-                        {!compareMode && <ChevronRight className="w-3.5 h-3.5 text-gray-300 ml-auto flex-shrink-0" />}
+                        {!compareMode && <ChevronRight className="w-3.5 h-3.5 text-gray-300 ml-auto flex-shrink-0" aria-hidden="true" />}
                       </span>
                     </td>
                     <td className="text-right py-3 px-2 tabular-nums">{fmt(r.latest.total_gross_expenditure)}</td>
@@ -1035,17 +1035,17 @@ function CouncilDetail({ council, councils, ieData, bsData, divData, onBack, onN
       {/* Header with prev/next navigation */}
       <div className="flex items-center justify-between mb-4">
         <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-emerald-600 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> All councils
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" /> All councils
         </button>
         <div className="flex items-center gap-2">
           {prevCouncil && (
             <button onClick={() => onNavigate(prevCouncil)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-50">
-              <ChevronLeft className="w-3.5 h-3.5" /> {shortName(prevCouncil)}
+              <ChevronLeft className="w-3.5 h-3.5" aria-hidden="true" /> {shortName(prevCouncil)}
             </button>
           )}
           {nextCouncil && (
             <button onClick={() => onNavigate(nextCouncil)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-50">
-              {shortName(nextCouncil)} <ChevronRight className="w-3.5 h-3.5" />
+              {shortName(nextCouncil)} <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -1206,7 +1206,7 @@ function CouncilDetail({ council, councils, ieData, bsData, divData, onBack, onN
                         <span className="text-gray-700 font-medium inline-flex items-center gap-2">
                           <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: DIV_COLORS[d.division_code] || EMERALD }} />
                           {d.division_name}
-                          <ChevronRight className="w-3 h-3 text-gray-300" />
+                          <ChevronRight className="w-3 h-3 text-gray-300" aria-hidden="true" />
                         </span>
                         <span className="inline-flex items-center gap-2">
                           {ch && <ChangeIndicator value={ch} />}
@@ -1392,7 +1392,7 @@ export default function CouncilFinancesPage({ setPage }) {
 
   if (error) return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <Card><div className="flex items-center gap-3 text-red-600"><AlertTriangle className="w-5 h-5" /><p>Error loading data: {error}</p></div></Card>
+      <Card><div className="flex items-center gap-3 text-red-600"><AlertTriangle className="w-5 h-5" aria-hidden="true" /><p>Error loading data: {error}</p></div></Card>
     </div>
   );
 
@@ -1403,7 +1403,7 @@ export default function CouncilFinancesPage({ setPage }) {
         <p className="text-gray-500 mt-2">Annual Financial Statements from {councils.length} Irish local authorities · Parsed from official AFS PDFs</p>
         <div className="flex items-center gap-2 mt-3">
           <span className="inline-flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full">
-            <Info className="w-3 h-3" /> {ieData.length} council-year records · {divData.length} division records
+            <Info className="w-3 h-3" aria-hidden="true" /> {ieData.length} council-year records · {divData.length} division records
           </span>
         </div>
       </div>

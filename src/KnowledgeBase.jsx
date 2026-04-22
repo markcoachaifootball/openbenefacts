@@ -648,14 +648,14 @@ export default function KnowledgeBasePage({ setPage }) {
           >
             Knowledge Base
           </button>
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
           <button
             onClick={() => { setActiveArticle(null); setActiveCategory(currentArticle.category); }}
             className="hover:text-gray-700"
           >
             {cat?.title}
           </button>
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
           <span className="text-gray-900 font-medium">{currentArticle.title}</span>
         </div>
 
@@ -767,7 +767,7 @@ export default function KnowledgeBasePage({ setPage }) {
             onClick={() => { setActiveArticle(null); setActiveCategory(null); }}
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Knowledge Base
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to Knowledge Base
           </button>
         </div>
       </div>
@@ -786,7 +786,7 @@ export default function KnowledgeBasePage({ setPage }) {
           <button onClick={() => setActiveCategory(null)} className="hover:text-gray-700">
             Knowledge Base
           </button>
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
           <span className="text-gray-900 font-medium">{currentCategory.title}</span>
         </div>
 
@@ -813,7 +813,7 @@ export default function KnowledgeBasePage({ setPage }) {
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">{a.summary}</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-500 flex-shrink-0 mt-1 transition-colors" />
+              <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-500 flex-shrink-0 mt-1 transition-colors" aria-hidden="true" />
             </button>
           ))}
         </div>
@@ -823,7 +823,7 @@ export default function KnowledgeBasePage({ setPage }) {
             onClick={() => setActiveCategory(null)}
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Knowledge Base
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to Knowledge Base
           </button>
         </div>
       </div>
@@ -836,7 +836,7 @@ export default function KnowledgeBasePage({ setPage }) {
       {/* Header */}
       <div className="text-center mb-10">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold mb-4">
-          <BookOpen className="w-3.5 h-3.5" />
+          <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />
           Knowledge Base
         </div>
         <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight mb-3">
@@ -877,7 +877,7 @@ export default function KnowledgeBasePage({ setPage }) {
           </p>
           {filteredArticles.length === 0 ? (
             <div className="text-center py-12">
-              <HelpCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <HelpCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" aria-hidden="true" />
               <p className="text-gray-500">No articles match your search. Try different keywords.</p>
               <p className="text-sm text-gray-400 mt-2">
                 Can't find what you need? Email{" "}

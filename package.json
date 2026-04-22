@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/generate-sitemap.cjs && vite build",
+    "build:sitemap": "node scripts/generate-sitemap.cjs",
     "preview": "vite preview",
     "data:fetch": "python3 scripts/data-pipeline.py",
     "data:enrich": "python3 scripts/ai-enrichment.py",
