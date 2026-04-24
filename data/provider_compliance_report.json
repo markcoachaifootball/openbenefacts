@@ -1,0 +1,1352 @@
+{
+  "generated": "2026-04-23T10:18:34.266Z",
+  "total_providers": 286,
+  "matched": 38,
+  "unmatched": 248,
+  "flags": {
+    "no_cro": 198,
+    "large_unmatched": 149,
+    "dissolved": 0
+  },
+  "top_earners": [
+    {
+      "name": "Anns Homecare Ltd",
+      "revenue": 700000007,
+      "type": "Company",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Ashdale Care Limited",
+      "revenue": 700000007,
+      "type": "Company",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Compass Childrens Residential Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Galtee Clinic Ltd",
+      "revenue": 700000007,
+      "type": "Company",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Harmony Residential Care",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Kildare Community Kare T/A Pathways Ireland",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "New Beginnings Childcare Residential Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Odyssey Social Care Limited",
+      "revenue": 700000007,
+      "type": "Company",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Rainbow Community Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Teach Nua Care Services Ltd.",
+      "revenue": 700000007,
+      "type": "Company",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Terraglen Residential Care Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Three Steps Ltd.",
+      "revenue": 700000007,
+      "type": "Company",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Solis EMC Children's Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null,
+      "cro": "683000"
+    },
+    {
+      "name": "Double Property Services LImited",
+      "revenue": 500000000,
+      "type": "Company",
+      "la": null,
+      "cro": "666551"
+    },
+    {
+      "name": "East Coast Catering (Ireland) Trading ULC",
+      "revenue": 500000000,
+      "type": "Unknown",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Firebreak Hospitality",
+      "revenue": 500000000,
+      "type": "Unknown",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Wild Way Hotels Ltd",
+      "revenue": 500000000,
+      "type": "Company",
+      "la": null,
+      "cro": "590204"
+    },
+    {
+      "name": "Didean Dóchas Eireann Teo T/A Dídean",
+      "revenue": 500000000,
+      "type": "Unknown",
+      "la": null,
+      "cro": null
+    },
+    {
+      "name": "Coolebridge Ltd",
+      "revenue": 500000000,
+      "type": "Company",
+      "la": null,
+      "cro": "653559"
+    },
+    {
+      "name": "ABM ABM Design and Build / Construction",
+      "revenue": 250000000,
+      "type": "Unknown",
+      "la": null,
+      "cro": null
+    }
+  ],
+  "large_unmatched": [
+    {
+      "name": "Anns Homecare Ltd",
+      "revenue": 700000007,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Compass Childrens Residential Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "New Beginnings Childcare Residential Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Terraglen Residential Care Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Solis EMC Children's Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Double Property Services LImited",
+      "revenue": 500000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "East Coast Catering (Ireland) Trading ULC",
+      "revenue": 500000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Firebreak Hospitality",
+      "revenue": 500000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Wild Way Hotels Ltd",
+      "revenue": 500000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Didean Dóchas Eireann Teo T/A Dídean",
+      "revenue": 500000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Coolebridge Ltd",
+      "revenue": 500000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "ABM ABM Design and Build / Construction",
+      "revenue": 250000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Carey Group PLC",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "FORRME Ltd",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "JJ Rhatigan and Company Unlimited Company",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "John Sisk and Son (Holdings) Ltd",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Manley Construction Ltd.",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Glanua Civils Ltd.",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Sammon Contracting Ltd",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Andrews Construction Ltd.",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Mythen Construction Ltd",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": "Wexford County Council"
+    },
+    {
+      "name": "Western Building Systems Ltd",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Glenman Corporation Ltd.",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Horizon House / FCI (Sorcha Homes Ltd)",
+      "revenue": 230000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Orchard Childrens Service",
+      "revenue": 230000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "ANTARES WAY LIMITED",
+      "revenue": 160000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Excellent Choice",
+      "revenue": 160000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Pastures New Accommodation",
+      "revenue": 160000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "World Travel Centre / Selective Travel Management",
+      "revenue": 110000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Arora Management Services Limited",
+      "revenue": 100000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Club Travel Limited",
+      "revenue": 80000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Sidetracks ULC",
+      "revenue": 50533672,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Keldesso Limited",
+      "revenue": 50533672,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Maplestar limited",
+      "revenue": 50533672,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Tattonward",
+      "revenue": 46210194,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Fazyard Limited",
+      "revenue": 42462764,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Peachport LTD",
+      "revenue": 42462764,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Millstreet Equestrian Services Ltd.",
+      "revenue": 36917670,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Ocean View Accommodation Unlimited",
+      "revenue": 36917670,
+      "type": "Company",
+      "la": "Tipperary County Council"
+    },
+    {
+      "name": "D and A Ltd",
+      "revenue": 36917670,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Atlantic Blue Ltd.",
+      "revenue": 36917670,
+      "type": "Company",
+      "la": "Tipperary County Council"
+    },
+    {
+      "name": "Bridgestock Care Limited",
+      "revenue": 30000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Clonea Strand Hotel Ltd",
+      "revenue": 30000000,
+      "type": "Hotel",
+      "la": null
+    },
+    {
+      "name": "MOSNEY VILLAGE",
+      "revenue": 30000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Oscar Dawn limited",
+      "revenue": 30000000,
+      "type": "Company",
+      "la": "Kildare County Council"
+    },
+    {
+      "name": "onsite facilities management limited",
+      "revenue": 27743706,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Aramark",
+      "revenue": 27743706,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Mint Horizon Limited",
+      "revenue": 27661174,
+      "type": "Company",
+      "la": "Meath County Council"
+    },
+    {
+      "name": "Flodale Limited",
+      "revenue": 27661174,
+      "type": "Company",
+      "la": "Meath County Council"
+    },
+    {
+      "name": "Daffodil Care Services",
+      "revenue": 23616000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Next Week and Co. Ltd",
+      "revenue": 22164497,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Birch Rentals Ltd",
+      "revenue": 12044255,
+      "type": "Company",
+      "la": "Limerick City & County Council"
+    },
+    {
+      "name": "The Merryman Ltd",
+      "revenue": 4500000,
+      "type": "Company",
+      "la": "Tipperary County Council"
+    },
+    {
+      "name": "harry farrell and sons ltd",
+      "revenue": 4000000,
+      "type": "Company",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "eloitte Ireland LLP",
+      "revenue": 3600000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "OCS One Complete Solution Limited",
+      "revenue": 2597000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Grosvenor Services",
+      "revenue": 2397934,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Coláiste UISCE",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": "Meath County Council"
+    },
+    {
+      "name": "Coláiste Árainn Mhóir",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": "Meath County Council"
+    },
+    {
+      "name": "Coláiste Sheosaimh",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": "Meath County Council"
+    },
+    {
+      "name": "House of Beds",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "AandD Wejchert and Partners Architects Ltd T/A Wejchert Architects",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "AtkinsRéalis",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "BDP",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Brock McClure Consultants",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Chancery Group",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Ciarán Mac Mathúna Architects",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Cogent Associates",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Black and White",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Clifton Scannell Emerson Associates",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Cronin and Sutton Consulting",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "D L Martin and Partners",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Donnachadh O' Brien and Associates",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Doran Consulting",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Ernst and Young",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "GDCL Consulting Engineers Ltd",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Gravis Planning (Ireland) Ltd.",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "JWHA Limited",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Keenan Lynch Architects",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "KPMG",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "KPMG Future Analytics",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Lafferty Design Group t/a Lafferty",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Leonard and Williams",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Long O'Donnell Technical Services",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "McCullagh Lupton Quinn",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "McGahon Surveyors Ltd.",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Newenham Mulligan and Associates",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "O'Reilly Hyland Tierney and Associates (DON'T USE)",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "SAMMON PM+QS",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Savills (UK) Ltd",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Seamus Monahan and Partners",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "TOBIN Consulting Engineers",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "MOLA Architecture",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "T5 Partnership Ltd",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Cunnane Stratton Reynolds",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "WKN Real Estate Advisors Limited",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Keys and Monaghan",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Oppermann Associates",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Atherden Fuller Leng Architects",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "CHPR Limited trading as John J. Casey and Co.",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "FaulknerBrowns LLP trading as FaulknerBrowns Architects",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "KSN Construction Consultants",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Scott Tallon Walker Architects",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Mitchell McDermott Construction Consultants",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Malone O'Regan",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Butler Cammoranesi architects Ltd.",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Curtins Consulting Limited",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "O'Connor Sutton Cronin",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Kelly and O'Callaghan",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "AECOM Ireland Limited",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Cooney Architects Ltd",
+      "revenue": 2000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Tim Murphy Chartered Surveyors",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Arup",
+      "revenue": 2000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "SFP REDBRICK LIMITED",
+      "revenue": 1831935,
+      "type": "Company",
+      "la": "Sligo County Council"
+    },
+    {
+      "name": "White Sand Consultancy",
+      "revenue": 1831935,
+      "type": "Unknown",
+      "la": "Sligo County Council"
+    },
+    {
+      "name": "G.M.Electrical and Security",
+      "revenue": 1200000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Aoife Harrington Design",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "brand engine",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "carolcousins",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Celtar. business and management consultants",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "CP Quality Management",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Ed Flanagan",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "EQity",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "John O'Dea Consultant",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Kate Hickey Consultancy",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Lar Burke and Associates Ltd",
+      "revenue": 1000000,
+      "type": "Company",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "LARRY MAC HALE",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Lorraine Egan Design Management",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Marie Keegan",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "McCB",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Michael Gough",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Rooska Mamagement and Financial Services Ltd",
+      "revenue": 1000000,
+      "type": "Company",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Sam Pearson",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Siobhan Riordan",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "SME Connect",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "sole trader",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Strategic Business Hub Ireland",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Una Mc Goey t/a Anu Change",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Yvonne Scully and Associates",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Karan Thompson Consulting Limited",
+      "revenue": 1000000,
+      "type": "Company",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Brand Innovation Ireland",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Engage Content Limited",
+      "revenue": 1000000,
+      "type": "Company",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "PV Sheridan and Associates",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Susan A Moran and Associates",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Aisling Foley Marketing",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "DICUIL ENTERPRISES",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Spark Digital",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Accelerating Performance",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    },
+    {
+      "name": "Carrig Infrastructure Solutions",
+      "revenue": 1000000,
+      "type": "Unknown",
+      "la": "Dublin City Council"
+    }
+  ],
+  "no_cro": [
+    {
+      "name": "Anns Homecare Ltd",
+      "revenue": 700000007,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Compass Childrens Residential Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "New Beginnings Childcare Residential Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Terraglen Residential Care Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Solis EMC Children's Services",
+      "revenue": 700000007,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Double Property Services LImited",
+      "revenue": 500000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "East Coast Catering (Ireland) Trading ULC",
+      "revenue": 500000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Firebreak Hospitality",
+      "revenue": 500000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Wild Way Hotels Ltd",
+      "revenue": 500000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Didean Dóchas Eireann Teo T/A Dídean",
+      "revenue": 500000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Coolebridge Ltd",
+      "revenue": 500000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "ABM ABM Design and Build / Construction",
+      "revenue": 250000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Carey Group PLC",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "FORRME Ltd",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "JJ Rhatigan and Company Unlimited Company",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "John Sisk and Son (Holdings) Ltd",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Manley Construction Ltd.",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Glanua Civils Ltd.",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Sammon Contracting Ltd",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Andrews Construction Ltd.",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Mythen Construction Ltd",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": "Wexford County Council"
+    },
+    {
+      "name": "Western Building Systems Ltd",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Glenman Corporation Ltd.",
+      "revenue": 250000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Horizon House / FCI (Sorcha Homes Ltd)",
+      "revenue": 230000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Orchard Childrens Service",
+      "revenue": 230000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "ANTARES WAY LIMITED",
+      "revenue": 160000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Excellent Choice",
+      "revenue": 160000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Pastures New Accommodation",
+      "revenue": 160000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "World Travel Centre / Selective Travel Management",
+      "revenue": 110000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Arora Management Services Limited",
+      "revenue": 100000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Club Travel Limited",
+      "revenue": 80000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Sidetracks ULC",
+      "revenue": 50533672,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Keldesso Limited",
+      "revenue": 50533672,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Maplestar limited",
+      "revenue": 50533672,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Tattonward",
+      "revenue": 46210194,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Fazyard Limited",
+      "revenue": 42462764,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Peachport LTD",
+      "revenue": 42462764,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Millstreet Equestrian Services Ltd.",
+      "revenue": 36917670,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Ocean View Accommodation Unlimited",
+      "revenue": 36917670,
+      "type": "Company",
+      "la": "Tipperary County Council"
+    },
+    {
+      "name": "D and A Ltd",
+      "revenue": 36917670,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Atlantic Blue Ltd.",
+      "revenue": 36917670,
+      "type": "Company",
+      "la": "Tipperary County Council"
+    },
+    {
+      "name": "Bridgestock Care Limited",
+      "revenue": 30000000,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Clonea Strand Hotel Ltd",
+      "revenue": 30000000,
+      "type": "Hotel",
+      "la": null
+    },
+    {
+      "name": "MOSNEY VILLAGE",
+      "revenue": 30000000,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Oscar Dawn limited",
+      "revenue": 30000000,
+      "type": "Company",
+      "la": "Kildare County Council"
+    },
+    {
+      "name": "onsite facilities management limited",
+      "revenue": 27743706,
+      "type": "Company",
+      "la": null
+    },
+    {
+      "name": "Aramark",
+      "revenue": 27743706,
+      "type": "Unknown",
+      "la": null
+    },
+    {
+      "name": "Mint Horizon Limited",
+      "revenue": 27661174,
+      "type": "Company",
+      "la": "Meath County Council"
+    },
+    {
+      "name": "Flodale Limited",
+      "revenue": 27661174,
+      "type": "Company",
+      "la": "Meath County Council"
+    },
+    {
+      "name": "Daffodil Care Services",
+      "revenue": 23616000,
+      "type": "Unknown",
+      "la": null
+    }
+  ],
+  "dissolved": []
+}
