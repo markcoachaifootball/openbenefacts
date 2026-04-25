@@ -23,6 +23,7 @@
 
 const fs   = require("fs");
 const path = require("path");
+const http  = require("http");
 const https = require("https");
 const { createClient } = require("@supabase/supabase-js");
 
@@ -36,6 +37,10 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const DATA_DIR = path.join(__dirname, "..", "data", "homelessness_monthly");
+
+// Rate limiting — data.gov.ie returns 429 if you hit it too fast
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const DELAY_MS = 8000; // 8 seconds between requests (data.gov.ie is aggressive with 429s)
 
 // ─── Known CSV download URLs from data.gov.ie ────────────────
 // The DHLGH publishes monthly homelessness reports as CSVs.
@@ -77,8 +82,9 @@ const REGION_MAP = {
 
 // ─── Download helper ─────────────────────────────────────────
 function download(url) {
+  const client = url.startsWith("https") ? https : http;
   return new Promise((resolve, reject) => {
-    https.get(url, {
+    client.get(url, {
       headers: { "User-Agent": "OpenBenefacts research bot (team@openbenefacts.ie)" },
     }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
@@ -146,55 +152,97 @@ async function fetchCSVFromDataset(datasetUrl) {
 }
 
 // ─── Upsert emergency accommodation row ──────────────────────
+// The data.gov.ie CSVs provide REGIONAL aggregates with these columns:
+//   Region, Total Adults, Male Adults, Female Adults,
+//   Adults Aged 18-24, Adults Aged 25-44, Adults Aged 45-64, Adults Aged 65+,
+//   Number of people who accessed Private Emergency Accommodation (PEA persons),
+//   Number of people who accessed Supported Temporary Accommodation (STA persons),
+//   Number of people who accessed Temporary Emergency Accommodation (TEA persons),
+//   Number of people who accessed Other Accommodation,
+//   Number of people with citizenship Irish/EEA/Non-EEA,
+//   Number of Families (≈ households), Number of Adults in Families,
+//   Number of Single-Parent families, Number of Dependants in Families (≈ children)
+//
+// We map region → local_authority (using "{Region} (Regional)" label),
+// and store person-level counts where the table expects household counts.
+// The table's unique key is (report_date, local_authority).
+
 async function upsertRow(row, reportMonth) {
-  const la = row["Local Authority"] || row["local_authority"] || row["LA"] || "";
-  if (!la || la.length < 3) return "skipped";
+  const regionRaw = row["Region"] || "";
+  if (!regionRaw || regionRaw.length < 3) return "skipped";
 
-  const region = REGION_MAP[row["Region"] || row["region"] || ""] || "Other";
+  const region = REGION_MAP[regionRaw] || regionRaw;
+  // Use region as local_authority since data.gov.ie only publishes regional aggregates
+  const localAuthority = `${region} (Regional)`;
 
-  const peaHH  = parseInt(row["PEA Households"]  || row["pea_households"]  || "0") || 0;
-  const staHH  = parseInt(row["STA Households"]  || row["sta_households"]  || "0") || 0;
-  const teaHH  = parseInt(row["TEA Households"]  || row["tea_households"]  || "0") || 0;
-  const totalHH = parseInt(row["Total Households"] || row["total_households"] || "0") || (peaHH + staHH + teaHH);
-  const totalPersons = parseInt(row["Total Persons"] || row["total_persons"] || row["Persons"] || "0") || 0;
+  const int = (v) => parseInt(v || "0") || 0;
 
-  if (totalPersons === 0 && totalHH === 0) return "skipped";
+  const totalAdults    = int(row["Total Adults"]);
+  const peaPersons     = int(row["Number of people who accessed Private Emergency Accommodation"]);
+  const staPersons     = int(row["Number of people who accessed Supported Temporary Accommodation"]);
+  const teaPersons     = int(row["Number of people who accessed Temporary Emergency Accommodation"]);
+  const otherPersons   = int(row["Number of people who accessed Other Accommodation"]);
+  const numFamilies    = int(row["Number of Families"]);
+  const dependants     = int(row["Number of Dependants in Families"]);
+  const totalPersons   = totalAdults + dependants;
+
+  if (totalPersons === 0) return "skipped";
+
+  // report_date is first of the month
+  const reportDate = `${reportMonth}-01`;
+
+  // Estimate weekly cost: PEA €130/night, STA €90/night, TEA €70/night
+  // Use person-level estimates: PEA ~€93/person/night, STA ~€69/person/night, TEA ~€49/person/night
+  const estWeeklyCost = Math.round(
+    (peaPersons * 93 + staPersons * 69 + teaPersons * 49) * 7
+  );
+
+  const record = {
+    report_date: reportDate,
+    local_authority: localAuthority,
+    region,
+    pea_adults: peaPersons,       // CSV gives person counts, not split adults/children
+    pea_households: 0,            // Not available at regional level
+    pea_children: 0,
+    sta_adults: staPersons,
+    sta_households: 0,
+    sta_children: 0,
+    tea_adults: teaPersons,
+    tea_households: 0,
+    tea_children: 0,
+    other_adults: otherPersons,
+    other_households: 0,
+    other_children: 0,
+    total_households: numFamilies, // "Number of Families" is closest proxy
+    total_adults: totalAdults,
+    total_children: dependants,
+    total_persons: totalPersons,
+    estimated_weekly_cost_eur: estWeeklyCost,
+    data_source: "data.gov.ie / DHLGH Monthly Homelessness Report",
+  };
 
   // Check for existing record
   const { data: existing } = await supabase
     .from("emergency_accommodation")
     .select("id")
-    .eq("local_authority", la)
-    .eq("report_month", reportMonth)
+    .eq("local_authority", localAuthority)
+    .eq("report_date", reportDate)
     .maybeSingle();
 
   if (existing) {
-    // Update
-    await supabase.from("emergency_accommodation").update({
-      region,
-      pea_households: peaHH,
-      sta_households: staHH,
-      tea_households: teaHH,
-      total_households: totalHH,
-      total_persons: totalPersons,
-    }).eq("id", existing.id);
+    const { error } = await supabase.from("emergency_accommodation")
+      .update(record)
+      .eq("id", existing.id);
+    if (error) {
+      console.log(`   ⚠ Update failed for ${region}: ${error.message}`);
+      return "error";
+    }
     return "updated";
   }
 
-  // Insert
-  const { error } = await supabase.from("emergency_accommodation").insert({
-    local_authority: la,
-    region,
-    report_month: reportMonth,
-    pea_households: peaHH,
-    sta_households: staHH,
-    tea_households: teaHH,
-    total_households: totalHH,
-    total_persons: totalPersons,
-  });
-
+  const { error } = await supabase.from("emergency_accommodation").insert(record);
   if (error) {
-    console.log(`   ⚠ Insert failed for ${la}: ${error.message}`);
+    console.log(`   ⚠ Insert failed for ${region}: ${error.message}`);
     return "error";
   }
   return "inserted";
@@ -209,7 +257,8 @@ async function main() {
 
   let totalInserted = 0, totalUpdated = 0, totalSkipped = 0, totalErrors = 0;
 
-  for (const report of MONTHLY_REPORTS) {
+  for (let ri = 0; ri < MONTHLY_REPORTS.length; ri++) {
+    const report = MONTHLY_REPORTS[ri];
     console.log(`\n📥 ${report.month}`);
 
     const cacheFile = path.join(DATA_DIR, `homelessness-${report.month}.csv`);
@@ -220,6 +269,11 @@ async function main() {
       csvText = fs.readFileSync(cacheFile, "utf-8");
     } else {
       try {
+        // Rate limit: wait between requests to avoid 429
+        if (ri > 0) {
+          console.log(`   ⏳ Waiting ${DELAY_MS/1000}s (rate limit)...`);
+          await sleep(DELAY_MS);
+        }
         console.log(`   ⬇ Fetching from data.gov.ie...`);
         csvText = await fetchCSVFromDataset(report.url);
         fs.writeFileSync(cacheFile, csvText);
@@ -227,6 +281,11 @@ async function main() {
       } catch (e) {
         console.log(`   ✗ ${e.message}`);
         totalErrors++;
+        // If rate limited, wait longer before next attempt
+        if (e.message.includes("429")) {
+          console.log("   ⏳ Rate limited — waiting 20s...");
+          await sleep(20000);
+        }
         continue;
       }
     }
