@@ -6,6 +6,8 @@ import {
 import {
   fetchFunders, fetchAllFunderGrants, resolveFunderByName,
 } from "./supabase";
+import { getOverriddenSector } from "./sectorOverrides.js";
+import { getOverriddenCounty } from "./countyOverrides.js";
 
 // ============================================================
 // UTILITIES
@@ -278,13 +280,13 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
     const map = {};
     let base = filteredGrants;
     if (progFilter) base = base.filter(g => (g.programme || "General") === progFilter);
-    if (sectorFilter) base = base.filter(g => (g.organisations?.sector || "Unclassified") === sectorFilter);
-    if (countyFilter) base = base.filter(g => (g.organisations?.county || "Unknown") === countyFilter);
+    if (sectorFilter) base = base.filter(g => (getOverriddenSector(g.organisations?.name, g.organisations?.sector)) === sectorFilter);
+    if (countyFilter) base = base.filter(g => getOverriddenCounty(g.organisations?.name, g.organisations?.county) === countyFilter);
     if (grantSizeBand) base = base.filter(g => (g.amount || 0) >= grantSizeBand[0] && (g.amount || 0) < grantSizeBand[1]);
     base.forEach(g => {
       const name = cleanName(g.organisations?.name || g.recipient_name_raw) || "Unknown";
       const id = g.organisations?.id || name;
-      if (!map[id]) map[id] = { id, name, total: 0, count: 0, programmes: new Set(), county: g.organisations?.county || "", sector: g.organisations?.sector || "", charityNumber: g.organisations?.charity_number || "", orgId: g.organisations?.id || null, grants: [] };
+      if (!map[id]) map[id] = { id, name, total: 0, count: 0, programmes: new Set(), county: getOverriddenCounty(g.organisations?.name, g.organisations?.county) || "", sector: getOverriddenSector(g.organisations?.name, g.organisations?.sector) || "", charityNumber: g.organisations?.charity_number || "", orgId: g.organisations?.id || null, grants: [] };
       map[id].total += (g.amount || 0);
       map[id].count++;
       map[id].programmes.add(g.programme || "General");
@@ -306,7 +308,7 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
   const byCounty = useMemo(() => {
     const map = {};
     filteredGrants.forEach(g => {
-      const county = g.organisations?.county || "Unknown";
+      const county = getOverriddenCounty(g.organisations?.name, g.organisations?.county);
       if (!map[county]) map[county] = { name: county, total: 0, count: 0, orgs: new Set() };
       map[county].total += (g.amount || 0);
       map[county].count++;
@@ -319,7 +321,7 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
   const bySector = useMemo(() => {
     const map = {};
     filteredGrants.forEach(g => {
-      const sector = g.organisations?.sector || "Unclassified";
+      const sector = getOverriddenSector(g.organisations?.name, g.organisations?.sector);
       if (!map[sector]) map[sector] = { name: sector, total: 0, count: 0, orgs: new Set() };
       map[sector].total += (g.amount || 0);
       map[sector].count++;
@@ -427,13 +429,19 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
       {/* Download + Share bar */}
       <div className="flex flex-wrap gap-2 mb-5">
         <button onClick={() => {
-          const rows = filteredGrants.map(g => [
-            funder.name, g.programme || "", cleanName(g.organisations?.name || g.recipient_name_raw), g.organisations?.county || "", g.organisations?.sector || "", g.year || "", g.amount || 0, g.organisations?.charity_number || "",
+          const isBusiness = tier === "business" || tier === "enterprise" || tier === "professional";
+          const grantSlice = isBusiness ? filteredGrants : filteredGrants.slice(0, 10);
+          const rows = grantSlice.map(g => [
+            funder.name, g.programme || "", cleanName(g.organisations?.name || g.recipient_name_raw), getOverriddenCounty(g.organisations?.name, g.organisations?.county) || "", getOverriddenSector(g.organisations?.name, g.organisations?.sector) || "", g.year || "", g.amount || 0, g.organisations?.charity_number || "",
           ]);
-          downloadCSV(rows, ["Funder","Programme","Recipient","County","Sector","Year","Amount","RCN"], `${funder.name.replace(/\s+/g, "-").toLowerCase()}-${selectedYear === "all" ? "all-years" : selectedYear}-grants.csv`);
+          const suffix = isBusiness ? "" : "-top10";
+          downloadCSV(rows, ["Funder","Programme","Recipient","County","Sector","Year","Amount","RCN"], `${funder.name.replace(/\s+/g, "-").toLowerCase()}-${selectedYear === "all" ? "all-years" : selectedYear}-grants${suffix}.csv`);
+          if (!isBusiness && filteredGrants.length > 10 && onUpgrade) onUpgrade();
         }} className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          {selectedYear === "all" ? "Download All Grants CSV" : `Download ${selectedYear} Grants CSV`}
+          {(tier === "business" || tier === "enterprise" || tier === "professional")
+            ? (selectedYear === "all" ? "Download All Grants CSV" : `Download ${selectedYear} Grants CSV`)
+            : "Download Top 10 Recipients CSV"}
         </button>
         <button onClick={() => { navigator.clipboard.writeText(window.location.href); }} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
@@ -853,13 +861,17 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
               )}
             </div>
             <button onClick={() => {
-              const rows = filteredGrants.map(g => [
-                funder.name, g.programme || "", cleanName(g.organisations?.name || g.recipient_name_raw), g.organisations?.county || "", g.organisations?.sector || "", g.year || "", g.amount || 0, g.organisations?.charity_number || "",
+              const isBusiness = tier === "business" || tier === "enterprise" || tier === "professional";
+              const grantSlice = isBusiness ? filteredGrants : filteredGrants.slice(0, 10);
+              const rows = grantSlice.map(g => [
+                funder.name, g.programme || "", cleanName(g.organisations?.name || g.recipient_name_raw), getOverriddenCounty(g.organisations?.name, g.organisations?.county) || "", getOverriddenSector(g.organisations?.name, g.organisations?.sector) || "", g.year || "", g.amount || 0, g.organisations?.charity_number || "",
               ]);
-              downloadCSV(rows, ["Funder","Programme","Recipient","County","Sector","Year","Amount","RCN"], `${funder.name.replace(/\s+/g, "-").toLowerCase()}-${selectedYear === "all" ? "all-years" : selectedYear}-grants.csv`);
+              const suffix = isBusiness ? "" : "-top10";
+              downloadCSV(rows, ["Funder","Programme","Recipient","County","Sector","Year","Amount","RCN"], `${funder.name.replace(/\s+/g, "-").toLowerCase()}-${selectedYear === "all" ? "all-years" : selectedYear}-grants${suffix}.csv`);
+              if (!isBusiness && filteredGrants.length > 10 && onUpgrade) onUpgrade();
             }} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium hover:bg-emerald-100">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              Download CSV
+              {(tier === "business" || tier === "enterprise" || tier === "professional") ? "Download CSV" : "Top 10 CSV"}
             </button>
           </div>
           <div className="overflow-x-auto">
@@ -879,8 +891,8 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
                     <td className="py-2 pr-3 text-gray-400 text-xs">{i + 1}</td>
                     <td className="py-2 pr-3 font-medium text-gray-900 max-w-[200px] truncate">{cleanName(g.organisations?.name || g.recipient_name_raw)}</td>
                     <td className="py-2 pr-3 text-gray-500 text-xs max-w-[150px] truncate">{g.programme || "—"}</td>
-                    <td className="py-2 pr-3 text-gray-500 text-xs">{g.organisations?.county || "—"}</td>
-                    <td className="py-2 pr-3 text-gray-500 text-xs">{g.organisations?.sector || "—"}</td>
+                    <td className="py-2 pr-3 text-gray-500 text-xs">{getOverriddenCounty(g.organisations?.name, g.organisations?.county) || "—"}</td>
+                    <td className="py-2 pr-3 text-gray-500 text-xs">{getOverriddenSector(g.organisations?.name, g.organisations?.sector) || "—"}</td>
                     <td className="py-2 pr-3 text-center">
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${g.year === 2026 ? "bg-emerald-100 text-emerald-700" : g.year === 2025 ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"}`}>
                         {g.year || "—"}
@@ -891,7 +903,7 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
                 ))}
               </tbody>
             </table>
-            {filteredGrants.length > 300 && <p className="text-xs text-gray-400 text-center mt-3">Showing 300 of {filteredGrants.length} grants. Download CSV for full dataset.</p>}
+            {filteredGrants.length > 300 && <p className="text-xs text-gray-400 text-center mt-3">Showing 300 of {filteredGrants.length} grants. {(tier === "business" || tier === "enterprise" || tier === "professional") ? "Download CSV for full dataset." : <button onClick={onUpgrade} className="text-emerald-600 underline hover:text-emerald-800">Upgrade to Business</button>}{(tier !== "business" && tier !== "enterprise" && tier !== "professional") && " for full CSV export."}</p>}
           </div>
         </div>
       )}
@@ -902,7 +914,7 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
 // ============================================================
 // MAIN EXPORT — Follow The Money Page
 // ============================================================
-export default function FollowTheMoneyPage({ setPage, initialFunder = null }) {
+export default function FollowTheMoneyPage({ setPage, initialFunder = null, tier = "free", onUpgrade }) {
   const [funders, setFunders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedFunder, setSelectedFunder] = useState(null);
