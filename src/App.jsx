@@ -551,7 +551,7 @@ function AuthProvider({ children }) {
             </div>
             <div className="space-y-3 mb-6">
               {[
-                { icon: Search, title: "Search & explore", desc: "Browse 36,803+ organisations by name, sector, or county" },
+                { icon: Search, title: "Search & explore", desc: `Browse ${orgCount.toLocaleString()}+ organisations by name, sector, or county` },
                 { icon: BarChart3, title: "View full financials", desc: "Access multi-year trends, income breakdowns, and risk scores" },
                 { icon: Bookmark, title: "Build your watchlist", desc: "Save organisations you're tracking and monitor changes" },
                 { icon: Landmark, title: "Trace funding flows", desc: "See which government bodies fund which nonprofits" },
@@ -704,7 +704,8 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
 
   const topFunders = useMemo(() => [...funderData].sort((a, b) => (b.total || 0) - (a.total || 0)).slice(0, 6), []);
   const totalFunding = funderData.reduce((s, f) => s + (f.total || 0), 0);
-  const totalRecipients = funderData.reduce((s, f) => s + (f.recipients || 0), 0);
+  // Use unique funded count (not sum of per-funder recipients, which double-counts)
+  const totalRecipients = stats?.unique_funded || siteStats.uniqueFunded || 4253;
 
   const [heroSearch, setHeroSearch] = useState("");
   const doSearch = (q) => { setInitialSearch(q || heroSearch); setPage("orgs"); };
@@ -2018,6 +2019,10 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
               {(() => {
                 const latest = org.financials?.[0];
                 const grantTotal = org.grants ? org.grants.reduce((s, g) => s + (g.amount || 0), 0) : 0;
+                // Fallback: if no Sankey-mapped grants but filed accounts show government income, use that
+                const govIncomeFromFiling = latest?.government_income > 0 ? latest.government_income : 0;
+                const stateFundingDisplay = grantTotal > 0 ? grantTotal : govIncomeFromFiling;
+                const stateFundingIsFromFiling = grantTotal === 0 && govIncomeFromFiling > 0;
                 const boardCount = org.boardMembers?.length || 0;
                 const filingCount = org.financials?.length || 0;
                 const entity = classifyEntity(org);
@@ -2057,8 +2062,9 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                         <div className="text-[11px] text-[#1B3A4B]/60 mt-1 font-medium uppercase tracking-wider">Latest income</div>
                       </div>
                       <div>
-                        <div className="font-wordmark text-2xl text-[#1B3A4B] leading-none">{grantTotal > 0 ? fmt(grantTotal) : "—"}</div>
-                        <div className="text-[11px] text-[#1B3A4B]/60 mt-1 font-medium uppercase tracking-wider">State funding tracked</div>
+                        <div className="font-wordmark text-2xl text-[#1B3A4B] leading-none">{stateFundingDisplay > 0 ? fmt(stateFundingDisplay) : "—"}</div>
+                        <div className="text-[11px] text-[#1B3A4B]/60 mt-1 font-medium uppercase tracking-wider">{stateFundingIsFromFiling ? "State funding received" : "State funding tracked"}</div>
+                        {stateFundingIsFromFiling && <div className="text-[9px] text-[#1B3A4B]/40 mt-0.5">(from filed accounts)</div>}
                       </div>
                     </div>
                   </div>
@@ -2653,25 +2659,30 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   {hasBalanceSheet && (() => {
                     const assets = cur.total_assets || 0;
                     const liabilities = cur.total_liabilities || 0;
-                    const netAssets = cur.net_assets || (assets - liabilities);
-                    const solvencyRatio = assets > 0 ? ((netAssets / assets) * 100).toFixed(0) : 0;
-                    const leverageRatio = netAssets > 0 ? (liabilities / netAssets).toFixed(2) : "N/A";
+                    const netAssets = cur.net_assets != null ? cur.net_assets : (assets - liabilities);
+                    // Detect missing assets: assets is 0/null but net_assets exists and is non-zero
+                    const assetsMissing = (!cur.total_assets || cur.total_assets === 0) && (cur.net_assets != null && cur.net_assets !== 0);
+                    const solvencyRatio = (!assetsMissing && assets > 0) ? ((netAssets / assets) * 100).toFixed(0) : null;
                     return (
                       <div className="bg-gray-50 rounded-xl p-6">
                         <h4 className="text-sm font-semibold text-gray-700 mb-4">Balance Sheet ({cur.year})</h4>
-                        {/* Stacked bar: assets vs liabilities */}
-                        <div className="mb-4">
+                        {/* Stacked bar: assets vs liabilities — only show when both sides are available */}
+                        {!assetsMissing && (assets > 0 || liabilities > 0) && <div className="mb-4">
                           <div className="flex justify-between text-xs text-gray-400 mb-1"><span>Assets</span><span>Liabilities</span></div>
                           <div className="w-full h-6 bg-gray-200 rounded-full overflow-hidden flex">
                             {assets > 0 && <div className="h-full bg-emerald-500 transition-all flex items-center justify-center" style={{ width: `${Math.max(5, assets / (assets + liabilities) * 100)}%` }}><span className="text-[9px] font-bold text-white">{fmt(assets)}</span></div>}
                             {liabilities > 0 && <div className="h-full bg-red-400 transition-all flex items-center justify-center" style={{ width: `${Math.max(5, liabilities / (assets + liabilities) * 100)}%` }}><span className="text-[9px] font-bold text-white">{fmt(liabilities)}</span></div>}
                           </div>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          <div className="p-3 bg-white rounded-lg text-center"><div className="text-[10px] text-gray-400">Total Assets</div><div className="text-lg font-bold text-emerald-600">{fmt(assets)}</div></div>
+                        </div>}
+                        <div className={`grid grid-cols-2 ${solvencyRatio != null ? "sm:grid-cols-4" : "sm:grid-cols-3"} gap-3`}>
+                          {assetsMissing ? (
+                            <div className="p-3 bg-white rounded-lg text-center"><div className="text-[10px] text-gray-400">Total Assets</div><div className="text-xs text-gray-400 mt-2 italic">Not yet extracted from this filing</div></div>
+                          ) : (
+                            <div className="p-3 bg-white rounded-lg text-center"><div className="text-[10px] text-gray-400">Total Assets</div><div className="text-lg font-bold text-emerald-600">{fmt(assets)}</div></div>
+                          )}
                           <div className="p-3 bg-white rounded-lg text-center"><div className="text-[10px] text-gray-400">Total Liabilities</div><div className="text-lg font-bold text-red-500">{fmt(liabilities)}</div></div>
                           <div className="p-3 bg-white rounded-lg text-center"><div className="text-[10px] text-gray-400">Net Assets</div><div className={`text-lg font-bold ${netAssets >= 0 ? "text-gray-900" : "text-red-600"}`}>{fmt(netAssets)}</div></div>
-                          <div className="p-3 bg-white rounded-lg text-center"><div className="text-[10px] text-gray-400">Solvency Ratio</div><div className={`text-lg font-bold ${solvencyRatio > 50 ? "text-emerald-600" : solvencyRatio > 20 ? "text-amber-600" : "text-red-500"}`}>{solvencyRatio}%</div><div className="text-[9px] text-gray-400">{solvencyRatio > 50 ? "Strong" : solvencyRatio > 20 ? "Adequate" : "Weak"}</div></div>
+                          {solvencyRatio != null && <div className="p-3 bg-white rounded-lg text-center"><div className="text-[10px] text-gray-400">Solvency Ratio</div><div className={`text-lg font-bold ${solvencyRatio > 50 ? "text-emerald-600" : solvencyRatio > 20 ? "text-amber-600" : "text-red-500"}`}>{solvencyRatio}%</div><div className="text-[9px] text-gray-400">{solvencyRatio > 50 ? "Strong" : solvencyRatio > 20 ? "Adequate" : "Weak"}</div></div>}
                         </div>
                       </div>
                     );
@@ -2683,7 +2694,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     const expend = cur.gross_expenditure || 0;
                     const assets = cur.total_assets || 0;
                     const liabilities = cur.total_liabilities || 0;
-                    const netAssets = cur.net_assets || (assets - liabilities);
+                    const netAssets = cur.net_assets != null ? cur.net_assets : (assets - liabilities);
                     const reserveMonths = expend > 0 ? (netAssets / (expend / 12)) : 0;
                     const surplusMargin = income > 0 ? ((income - expend) / income * 100) : 0;
                     const costCoverageRatio = expend > 0 ? (income / expend) : 0;
@@ -3810,7 +3821,7 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \\
       "total_grant_amount": 28000000
     }
   ],
-  "total": 36803,
+  "total": 40011,
   "page": 1,
   "pageSize": 50
 }`}</pre>
@@ -4258,7 +4269,7 @@ function PricingPage({ orgCount = 36803, setPage }) {
   const formattedCount = orgCount.toLocaleString();
 
   const plans = [
-    { name: "Free", price: 0, desc: "Genuinely useful transparency", features: [`Browse ${formattedCount} organisations`,"5-year financial trend charts","Year-by-year comparison tables","Board member & cross-directorships","State funding received","AI risk score (summary)","Full search & filters"], cta: "Get Started" },
+    { name: "Free", price: 0, desc: "Genuinely useful transparency", features: [`Browse ${formattedCount} organisations`,"Full historical financial trends","Year-by-year comparison tables","Board member & cross-directorships","State funding received","AI risk score (summary)","Full search & filters"], cta: "Get Started" },
     { name: "Pro", price: annual ? 299 : 29, period: annual ? "/year" : "/month", desc: "Know before you give", features: ["Everything in Free","Full AI risk assessment","Charity portfolio watchlist","Sector benchmarking","Income source breakdown","PDF profile downloads","ESG-ready compliance reports"], highlight: true, cta: "Start Free Trial", badge: annual ? "Save 15%" : null },
     { name: "Business", price: annual ? 1499 : 149, period: annual ? "/year" : "/month", desc: "Grant due diligence in one click", features: ["Everything in Pro","One-click due diligence reports","Grant readiness assessment","White-label branded reports","Bulk CSV/Excel export","API access (1,000 calls/mo)","Priority support"], cta: "Start Free Trial" },
     { name: "Enterprise", price: null, desc: "Custom solutions", features: ["Everything in Business","Unlimited API access","Custom dashboards","White-label reports","Dedicated account manager","Custom data integration","SLA guarantee"], cta: "Contact Sales" },
