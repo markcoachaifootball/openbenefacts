@@ -653,14 +653,15 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
           {[
             { label: "Persons housed",   value: NUM(metrics.totalPersons),     icon: Users,       colour: "text-white" },
-            { label: "Est. weekly spend", value: FMT(metrics.weekCost),          icon: TrendingUp,  colour: "text-[#4A9B8E]" },
+            { label: "Est. weekly spend", value: FMT(metrics.weekCost),          icon: TrendingUp,  colour: "text-[#4A9B8E]", estimated: true },
             { label: "In B&B / hotels",  value: `${metrics.peaPct}% (PEA)`,     icon: AlertTriangle, colour: "text-red-300" },
             { label: "Supported accomm", value: `${metrics.staPct}% (STA)`,     icon: Home,        colour: "text-orange-300" },
-          ].map(({ label, value, icon: Icon, colour }) => (
+          ].map(({ label, value, icon: Icon, colour, estimated }) => (
             <div key={label} className="bg-white/10 rounded-xl px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <Icon className={`w-3.5 h-3.5 ${colour}`} />
                 <span className="text-xs text-white/60">{label}</span>
+                {estimated && <span className="text-[9px] bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded font-medium" title="Derived from nightly rate estimates × household counts">Projected</span>}
               </div>
               <div className={`text-lg font-extrabold ${colour}`}>{value}</div>
             </div>
@@ -1325,11 +1326,11 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
                 { label: "PEA households",         value: NUM(selectedLA.pea_households) },
                 { label: "STA households",         value: NUM(selectedLA.sta_households) },
                 { label: "TEA households",         value: NUM(selectedLA.tea_households) },
-                { label: "Est. weekly spend",      value: FMT(selectedLA.estimated_weekly_cost_eur) },
-                { label: "Est. annual spend",      value: FMT((selectedLA.estimated_weekly_cost_eur || 0) * 52) },
-              ].map(({ label, value }) => (
+                { label: "Est. weekly spend",      value: FMT(selectedLA.estimated_weekly_cost_eur), projected: true },
+                { label: "Est. annual spend",      value: FMT((selectedLA.estimated_weekly_cost_eur || 0) * 52), projected: true },
+              ].map(({ label, value, projected }) => (
                 <div key={label} className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-500">{label}</p>
+                  <p className="text-xs text-gray-500">{label} {projected && <span className="text-[9px] bg-amber-50 text-amber-600 px-1 py-0.5 rounded font-medium ml-1" title="Derived from nightly rate estimates × household counts">Projected</span>}</p>
                   <p className="text-sm font-bold text-gray-900">{value}</p>
                 </div>
               ))}

@@ -512,11 +512,11 @@ function AuthProvider({ children }) {
   const [pass, setPass] = useState("");
   const [name, setName] = useState("");
 
-  // Trial: check if user is within 30-day Professional trial
+  // Trial: check if user is within 30-day Pro trial
   const trialDaysLeft = user?.trialStart ? Math.max(0, 30 - Math.floor((Date.now() - new Date(user.trialStart).getTime()) / 86400000)) : 0;
   const isTrialActive = trialDaysLeft > 0;
-  const tier = user?.tier || (isTrialActive ? "professional" : "free");
-  const isPro = tier === "pro" || tier === "professional" || tier === "enterprise";
+  const tier = user?.tier || (isTrialActive ? "pro" : "free");
+  const isPro = tier === "pro" || tier === "business" || tier === "enterprise";
   const logout = () => { setUser(null); localStorage.removeItem("ob_user"); };
   const requirePro = (feature) => { if (!isPro) { setUpgradePrompt(feature); setShowPricing(true); return false; } return true; };
 
@@ -823,7 +823,7 @@ function HomePage({ setPage, setInitialSearch, setInitialSector, watchlist }) {
             <span className="w-8 h-px bg-[#1B3A4B]"></span>
           </div>
           <h2 className="font-wordmark text-4xl sm:text-5xl text-[#1a1a2e] mb-4 leading-[1]">Everything you need to follow Irish nonprofit money.</h2>
-          <p className="text-lg text-[#1B3A4B]/70">Free tools for the public. Professional tools for journalists, funders, researchers, and nonprofits who need to go deeper.</p>
+          <p className="text-lg text-[#1B3A4B]/70">Free tools for the public. Pro tools for journalists, funders, researchers, and nonprofits who need to go deeper.</p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1150,7 +1150,7 @@ const INCOME_BANDS = [
 
 function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, setInitialSector, watchlist }) {
   const { tier, requirePro } = useAuth();
-  const isProfessional = tier === "professional" || tier === "enterprise";
+  const isProfessional = tier === "pro" || tier === "business" || tier === "enterprise";
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -1182,6 +1182,51 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
   // Accordion open state
   const [openSections, setOpenSections] = useState({ county: false, sector: true, type: false, income: false, regulatory: false });
   const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+  // ── Saved Searches (Pro feature) ──────────────────────────
+  const [savedSearches, setSavedSearches] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("obf_saved_searches") || "[]"); } catch { return []; }
+  });
+  const [showSavedDropdown, setShowSavedDropdown] = useState(false);
+  const savedDropdownRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => { if (savedDropdownRef.current && !savedDropdownRef.current.contains(e.target)) setShowSavedDropdown(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const persistSavedSearches = (list) => {
+    setSavedSearches(list);
+    try { localStorage.setItem("obf_saved_searches", JSON.stringify(list)); } catch {}
+  };
+
+  const saveCurrentSearch = () => {
+    if (!isProfessional) { requirePro("Saved Searches"); return; }
+    const label = prompt("Name this search:");
+    if (!label?.trim()) return;
+    const entry = {
+      id: Date.now(),
+      label: label.trim(),
+      filters: { search, selSectors, selSubsectors, selCounties, selGovForms, selIncomeBand, hasCharityNum, hasCroNum, hasChyNum, hasFunding, sortBy },
+    };
+    persistSavedSearches([entry, ...savedSearches].slice(0, 20));
+  };
+
+  const loadSavedSearch = (entry) => {
+    const f = entry.filters;
+    setSearch(f.search || ""); setSelSectors(f.selSectors || []); setSelSubsectors(f.selSubsectors || []);
+    setSelCounties(f.selCounties || []); setSelGovForms(f.selGovForms || []);
+    setSelIncomeBand(f.selIncomeBand || ""); setHasCharityNum(f.hasCharityNum ?? null);
+    setHasCroNum(f.hasCroNum ?? null); setHasChyNum(f.hasChyNum ?? null);
+    setHasFunding(f.hasFunding ?? null); setSortBy(f.sortBy || "income");
+    setPageNum(1); setShowSavedDropdown(false);
+  };
+
+  const deleteSavedSearch = (id) => {
+    persistSavedSearches(savedSearches.filter(s => s.id !== id));
+  };
 
   // Load reference data
   useEffect(() => {
@@ -1310,6 +1355,45 @@ function OrgsPage({ setPage, initialSearch, setInitialSearch, initialSector, set
           <p className="text-gray-500">Search {total.toLocaleString()} Irish nonprofits with real government data</p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Saved Searches */}
+          <div className="relative" ref={savedDropdownRef}>
+            {isProfessional ? (
+              <>
+                <button onClick={() => setShowSavedDropdown(!showSavedDropdown)} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-50" title="Saved searches">
+                  <Bookmark className="w-3.5 h-3.5" aria-hidden="true" /> Saved{savedSearches.length > 0 && ` (${savedSearches.length})`}
+                </button>
+                {showSavedDropdown && (
+                  <div className="absolute right-0 top-full mt-1 w-72 bg-white border border-gray-200 rounded-xl shadow-lg z-30 overflow-hidden">
+                    <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Saved Searches</span>
+                      {activeFilterCount > 0 && (
+                        <button onClick={saveCurrentSearch} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium">+ Save current</button>
+                      )}
+                    </div>
+                    {savedSearches.length === 0 ? (
+                      <div className="px-3 py-4 text-center text-sm text-gray-400">No saved searches yet.{activeFilterCount > 0 ? " Apply filters, then save." : " Apply some filters first."}</div>
+                    ) : (
+                      <div className="max-h-64 overflow-y-auto">
+                        {savedSearches.map(s => (
+                          <div key={s.id} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 border-b border-gray-50 last:border-0 group">
+                            <button onClick={() => loadSavedSearch(s)} className="flex-1 text-left text-sm text-gray-700 truncate">{s.label}</button>
+                            <button onClick={() => deleteSavedSearch(s.id)} className="text-gray-300 hover:text-red-500 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <button onClick={() => requirePro("Saved Searches")} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-500 text-sm rounded-lg hover:bg-gray-200" title="Saved searches — Pro feature">
+                <Lock className="w-3.5 h-3.5" aria-hidden="true" /> Saved
+              </button>
+            )}
+          </div>
+          {/* Export CSV */}
           {isProfessional ? (
             <button onClick={() => {
               const headers = ["Name","Sector","Subsector","County","Type","Charity Number","CRO Number","Gross Income","Gross Expenditure","Employees"];
@@ -1674,7 +1758,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
             <div className="flex items-center gap-2">
               {isPro && (
                 <button ref={pdfBtnRef} onClick={() => {
-                  if ((tier === "professional" || tier === "enterprise") && !brandName) { pendingReportRef.current = "pdf"; setShowBranding("pdf"); return; }
+                  if ((tier === "pro" || tier === "business" || tier === "enterprise") && !brandName) { pendingReportRef.current = "pdf"; setShowBranding("pdf"); return; }
                   const risk = computeRiskScore(org);
                   const latest = org.financials?.[0];
                   const pdfHtml = `<!DOCTYPE html><html><head><title>${org.name} — OpenBenefacts Profile</title><style>
@@ -1712,7 +1796,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   <FileText className="w-4 h-4" aria-hidden="true" /> PDF
                 </button>
               )}
-              {(tier === "professional" || tier === "enterprise") && (
+              {(tier === "pro" || tier === "business" || tier === "enterprise") && (
                 <button ref={ddBtnRef} onClick={() => {
                   if (!brandName) { pendingReportRef.current = "dd"; setShowBranding("dd"); return; }
                   const risk = computeRiskScore(org);
@@ -1961,6 +2045,21 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                           '<tr><td style="color:#999;width:180px">Open Data Portal</td><td><a href="https://data.gov.ie/dataset/register-of-charities-in-ireland" style="color:#059669">Bulk data download — data.gov.ie</a></td></tr></table></div>'
                         : "");
                     })()}
+
+                    <div class="section" style="margin-top:36px;padding:16px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb">
+                      <h2 style="margin-top:0;border-bottom-color:#e5e7eb">Audit Trail</h2>
+                      <table>
+                        <tr><td style="color:#999;width:180px">Report generated</td><td>${new Date().toLocaleDateString("en-IE", { day: "numeric", month: "long", year: "numeric" })} at ${new Date().toLocaleTimeString("en-IE", { hour: "2-digit", minute: "2-digit" })}</td></tr>
+                        <tr><td style="color:#999;width:180px">Organisation record</td><td>${cleanName(org.name)}${clean(org.charity_number) ? ` (RCN ${org.charity_number})` : ""}${clean(org.cro_number) ? ` (CRO ${org.cro_number})` : ""}</td></tr>
+                        <tr><td style="color:#999;width:180px">Financial data</td><td>${org.financials?.length ? `${org.financials.length} filing year(s), ${org.financials[0]?.year || "latest"} – ${org.financials[org.financials.length - 1]?.year || "earliest"}` : "No filings on record"}</td></tr>
+                        <tr><td style="color:#999;width:180px">Government grants</td><td>${org.grants?.length ? `${org.grants.length} record(s) totalling ${fmt(grantTotal)}` : "No grant records"}</td></tr>
+                        <tr><td style="color:#999;width:180px">Board data</td><td>${org.boardMembers?.length ? `${org.boardMembers.length} member(s) on record` : "Not available"}</td></tr>
+                        <tr><td style="color:#999;width:180px">Risk score</td><td>${risk ? `${risk.score}/100 (${risk.level}) — ${risk.factors.length} factor(s) evaluated, ${risk.confidence} confidence` : "Not calculated"}</td></tr>
+                      </table>
+                      <p style="font-size:10px;color:#999;margin-top:12px;margin-bottom:0"><strong>Data sources:</strong> Charities Regulator (Register of Charities), Companies Registration Office (CORE), Revenue Commissioners (CHY Register), Government of Ireland (Open Data Portal, grants data via data.gov.ie). Financial data sourced from annual returns filed with the Charities Regulator.</p>
+                      <p style="font-size:10px;color:#999;margin-top:6px;margin-bottom:0"><strong>Data freshness:</strong> Source datasets are refreshed periodically. Financial filings reflect the most recent annual return available at the time of generation. There may be a lag between filing and availability. Grant data is sourced from published government expenditure records and may not reflect the current fiscal year.</p>
+                      <p style="font-size:10px;color:#999;margin-top:6px;margin-bottom:0"><strong>Limitations:</strong> This report is auto-generated from publicly available regulatory data. Sector classifications and county assignments use heuristic matching and may not be precise. Risk scores are algorithmic estimates, not professional assessments. OpenBenefacts does not verify the accuracy of source filings.</p>
+                    </div>
 
                     <div class="footer">
                       ${brandName ? `<p style="font-size:13px;font-weight:600;color:#333;margin-bottom:4px">Prepared by ${brandName}</p>` : ""}
@@ -2869,7 +2968,7 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                     )}
                     {benchmark && cur.gross_income > 0 && (
                       <div className="bg-gray-50 rounded-xl p-6">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-1">Sector Benchmarking</h4>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-1">Sector Benchmarking <span className="text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded font-medium ml-1" title="Rankings derived from aggregate sector data">Projected</span></h4>
                         <p className="text-xs text-gray-400 mb-4">Compared to {benchmark.orgCount.toLocaleString()} organisations in {benchmark.sectorName}</p>
                         {(() => {
                           const income = cur.gross_income;
@@ -3557,7 +3656,7 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
         </button>
         <button onClick={() => {
           if (!grants.length) return;
-          const isBusiness = flowTier === "business" || flowTier === "enterprise" || flowTier === "professional";
+          const isBusiness = flowTier === "pro" || flowTier === "business" || flowTier === "enterprise";
           const grantSlice = isBusiness ? grants : grants.slice(0, 10);
           const rows = grantSlice.map(g => [
             funder.name,
@@ -3573,7 +3672,7 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
           downloadCSV(rows, ["Funder","Programme","Recipient","County","Sector","Year","Amount","RCN"], `${slug}-funding-data${suffix}.csv`);
           if (!isBusiness && grants.length > 10) flowShowPricing(true);
         }} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
-          <Download className="w-4 h-4" aria-hidden="true" /> {(flowTier === "business" || flowTier === "enterprise" || flowTier === "professional") ? "Download CSV" : "Top 10 CSV"}
+          <Download className="w-4 h-4" aria-hidden="true" /> {(flowTier === "pro" || flowTier === "business" || flowTier === "enterprise") ? "Download CSV" : "Top 10 CSV"}
         </button>
       </div>
 
@@ -3682,7 +3781,7 @@ function FlowPage({ funderSlug, setPage, embed = false }) {
 // ===========================================================
 function ApiPage() {
   const { tier, setShowAuth, setAuthMode } = useAuth();
-  const hasApi = tier === "professional" || tier === "enterprise";
+  const hasApi = tier === "pro" || tier === "business" || tier === "enterprise";
   const [tryItQuery, setTryItQuery] = useState("barnardos");
   const [tryItResult, setTryItResult] = useState(null);
   const [tryItLoading, setTryItLoading] = useState(false);
@@ -3786,9 +3885,9 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \\
           <p>The free developer tier requires no authentication — just make requests to the API endpoints directly.</p>
           <p>For higher rate limits, include your API key in the Authorization header:</p>
           <div className="bg-gray-900 rounded-xl p-4">
-            <pre className="text-xs text-emerald-400 font-mono">Authorization: Bearer ob_prof_your_api_key_here</pre>
+            <pre className="text-xs text-emerald-400 font-mono">Authorization: Bearer ob_pro_your_api_key_here</pre>
           </div>
-          <p className="text-xs text-gray-400">Key prefixes: <code>ob_free_</code> (free), <code>ob_pro_</code> (pro), <code>ob_prof_</code> (professional), <code>ob_ent_</code> (enterprise)</p>
+          <p className="text-xs text-gray-400">Key prefixes: <code>ob_free_</code> (Free), <code>ob_pro_</code> (Pro), <code>ob_biz_</code> (Business), <code>ob_ent_</code> (Enterprise)</p>
         </div>
       </div>
 
@@ -4276,7 +4375,7 @@ function PricingPage({ orgCount = 36803, setPage }) {
   const formattedCount = orgCount.toLocaleString();
 
   const plans = [
-    { name: "Free", price: 0, desc: "Genuinely useful transparency", features: [`Browse ${formattedCount} organisations`,"Full historical financial trends","Year-by-year comparison tables","Board member & cross-directorships","State funding received","AI risk score (summary)","Full search & filters"], cta: "Get Started" },
+    { name: "Free", price: 0, desc: "Real transparency, no paywall", features: [`Browse ${formattedCount} organisations`,"Full historical financial trends","Year-by-year comparison tables","Board member & cross-directorships","State funding received","AI risk score (summary)","Full search & filters"], cta: "Get Started" },
     { name: "Pro", price: annual ? 299 : 29, period: annual ? "/year" : "/month", desc: "Know before you give", features: ["Everything in Free","Full AI risk assessment","Charity portfolio watchlist","Sector benchmarking","Income source breakdown","PDF profile downloads","ESG-ready compliance reports"], highlight: true, cta: "Start Free Trial", badge: annual ? "Save 15%" : null },
     { name: "Business", price: annual ? 1499 : 149, period: annual ? "/year" : "/month", desc: "Grant due diligence in one click", features: ["Everything in Pro","One-click due diligence reports","Grant readiness assessment","White-label branded reports","Bulk CSV/Excel export","API access (1,000 calls/mo)","Priority support"], cta: "Start Free Trial" },
     { name: "Enterprise", price: null, desc: "Custom solutions", features: ["Everything in Business","Unlimited API access","Custom dashboards","White-label reports","Dedicated account manager","Custom data integration","SLA guarantee"], cta: "Contact Sales" },
@@ -4870,6 +4969,11 @@ function PrivacyPage() {
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Your rights</h2>
       <p>Under the GDPR, you have the right to access, correct, or delete any personal data we hold about you. To exercise these rights, email <a href="mailto:privacy@openbenefacts.ie" className="text-emerald-600 hover:underline">privacy@openbenefacts.ie</a>.</p>
 
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Data Processing Agreements</h2>
+      <p className="mb-2">If your organisation uses OpenBenefacts API or Business plan to process data as part of your operations, you may require a Data Processing Agreement (DPA) to comply with GDPR Article 28.</p>
+      <p className="mb-2">We provide a standard DPA template for Business and Enterprise customers. The DPA covers: the nature and purpose of processing, types of personal data processed (public regulator data — names, roles, charity numbers), data retention periods, security measures, and sub-processor disclosure.</p>
+      <p>To request a DPA or discuss custom data processing terms, email <a href="mailto:dpa@openbenefacts.ie" className="text-emerald-600 hover:underline">dpa@openbenefacts.ie</a>.</p>
+
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Contact</h2>
       <p>Questions about this policy? Email <a href="mailto:team@openbenefacts.ie" className="text-emerald-600 hover:underline">team@openbenefacts.ie</a>.</p>
     </StaticPageShell>
@@ -5054,6 +5158,12 @@ function ClaimListingPage() {
 
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">What we can't change</h2>
       <p>We cannot alter financial data sourced from regulator filings (Charities Regulator, CRO). If those records contain errors, contact the source regulator directly — corrections will flow through on the next monthly sync.</p>
+
+      <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">Identity verification</h2>
+      <p className="mb-2">To protect organisations from unauthorised edits, all claims are verified before changes are applied:</p>
+      <p className="mb-2"><strong>Email domain match:</strong> We check that your email domain matches the organisation's registered website (e.g. <code>@focusireland.ie</code> for Focus Ireland). This is the fastest route — most claims are processed within 2 working days.</p>
+      <p className="mb-2"><strong>Role verification:</strong> If your email domain doesn't match (e.g. you use a personal email), we cross-reference your name against the Charities Regulator's list of trustees/directors for the organisation.</p>
+      <p className="mb-4"><strong>Manual review:</strong> For edge cases (new directors not yet in the register, organisations without websites), we may ask for a photo of official documentation such as a board resolution or signed letter on organisational letterhead.</p>
 
       <div className="not-prose mt-10 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-8 text-center">
         <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to claim?</h3>

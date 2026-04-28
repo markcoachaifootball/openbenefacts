@@ -429,7 +429,7 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
       {/* Download + Share bar */}
       <div className="flex flex-wrap gap-2 mb-5">
         <button onClick={() => {
-          const isBusiness = tier === "business" || tier === "enterprise" || tier === "professional";
+          const isBusiness = tier === "pro" || tier === "business" || tier === "enterprise";
           const grantSlice = isBusiness ? filteredGrants : filteredGrants.slice(0, 10);
           const rows = grantSlice.map(g => [
             funder.name, g.programme || "", cleanName(g.organisations?.name || g.recipient_name_raw), getOverriddenCounty(g.organisations?.name, g.organisations?.county) || "", getOverriddenSector(g.organisations?.name, g.organisations?.sector) || "", g.year || "", g.amount || 0, g.organisations?.charity_number || "",
@@ -439,7 +439,7 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
           if (!isBusiness && filteredGrants.length > 10 && onUpgrade) onUpgrade();
         }} className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          {(tier === "business" || tier === "enterprise" || tier === "professional")
+          {(tier === "pro" || tier === "business" || tier === "enterprise")
             ? (selectedYear === "all" ? "Download All Grants CSV" : `Download ${selectedYear} Grants CSV`)
             : "Download Top 10 Recipients CSV"}
         </button>
@@ -861,7 +861,7 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
               )}
             </div>
             <button onClick={() => {
-              const isBusiness = tier === "business" || tier === "enterprise" || tier === "professional";
+              const isBusiness = tier === "pro" || tier === "business" || tier === "enterprise";
               const grantSlice = isBusiness ? filteredGrants : filteredGrants.slice(0, 10);
               const rows = grantSlice.map(g => [
                 funder.name, g.programme || "", cleanName(g.organisations?.name || g.recipient_name_raw), getOverriddenCounty(g.organisations?.name, g.organisations?.county) || "", getOverriddenSector(g.organisations?.name, g.organisations?.sector) || "", g.year || "", g.amount || 0, g.organisations?.charity_number || "",
@@ -871,7 +871,7 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
               if (!isBusiness && filteredGrants.length > 10 && onUpgrade) onUpgrade();
             }} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium hover:bg-emerald-100">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              {(tier === "business" || tier === "enterprise" || tier === "professional") ? "Download CSV" : "Top 10 CSV"}
+              {(tier === "pro" || tier === "business" || tier === "enterprise") ? "Download CSV" : "Top 10 CSV"}
             </button>
           </div>
           <div className="overflow-x-auto">
@@ -903,7 +903,7 @@ function FunderDetail({ funder, grants, setPage, onBack }) {
                 ))}
               </tbody>
             </table>
-            {filteredGrants.length > 300 && <p className="text-xs text-gray-400 text-center mt-3">Showing 300 of {filteredGrants.length} grants. {(tier === "business" || tier === "enterprise" || tier === "professional") ? "Download CSV for full dataset." : <button onClick={onUpgrade} className="text-emerald-600 underline hover:text-emerald-800">Upgrade to Business</button>}{(tier !== "business" && tier !== "enterprise" && tier !== "professional") && " for full CSV export."}</p>}
+            {filteredGrants.length > 300 && <p className="text-xs text-gray-400 text-center mt-3">Showing 300 of {filteredGrants.length} grants. {(tier === "pro" || tier === "business" || tier === "enterprise") ? "Download CSV for full dataset." : <button onClick={onUpgrade} className="text-emerald-600 underline hover:text-emerald-800">Upgrade to Business</button>}{(tier !== "business" && tier !== "enterprise" && tier !== "professional") && " for full CSV export."}</p>}
           </div>
         </div>
       )}
