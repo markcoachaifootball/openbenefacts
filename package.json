@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "data:fetch": "python3 scripts/data-pipeline.py",
     "data:enrich": "python3 scripts/ai-enrichment.py",
-    "db:setup": "echo 'Run scripts/supabase-setup.sql in your Supabase SQL editor'"
+    "db:setup": "echo 'Run scripts/supabase-setup.sql in your Supabase SQL editor'",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.0",
@@ -27,6 +29,7 @@
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-react": "^4.3.0",
     "tailwindcss": "^4.0.0",
-    "vite": "^6.0.0"
+    "vite": "^6.0.0",
+    "vitest": "^3.2.4"
   }
 }

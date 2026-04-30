@@ -5,6 +5,7 @@ import { supabase, fetchStats, fetchFunders, fetchOrganisations, fetchOrganisati
 import { DATA } from "./data.js";
 import { getOverriddenSector } from "./sectorOverrides.js";
 import { getOverriddenCounty } from "./countyOverrides.js";
+import { computeRiskScore } from "./riskScore.js";
 
 // Route-based code-splitting — these pages are only loaded when the user
 // navigates to them. Significant bundle-size win on first paint, especially
@@ -28,6 +29,43 @@ class ErrorBoundary extends Component {
         React.createElement("h2", { style: { color: "#dc2626" } }, "Something went wrong"),
         React.createElement("p", { style: { color: "#666", margin: "12px 0" } }, String(this.state.error?.message || this.state.error)),
         React.createElement("button", { onClick: () => { this.setState({ hasError: false }); window.location.href = "/"; }, style: { background: "#059669", color: "white", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer" } }, "Go Home")
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Page-level error boundary — catches crashes inside individual pages while
+// keeping the navbar/footer intact. Shows a friendlier fallback with retry.
+class PageErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, info) { console.error("Page Error:", error, info); }
+  render() {
+    if (this.state.hasError) {
+      const isChunkError = /loading chunk|dynamically imported module|failed to fetch/i.test(this.state.error?.message || "");
+      return React.createElement("div", { className: "max-w-lg mx-auto text-center py-24 px-4" },
+        React.createElement("div", { className: "w-12 h-12 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center" },
+          React.createElement(AlertTriangle, { className: "w-6 h-6 text-red-500" })
+        ),
+        React.createElement("h2", { className: "text-lg font-semibold text-gray-900 mb-2" },
+          isChunkError ? "Connection issue" : "This page hit an error"
+        ),
+        React.createElement("p", { className: "text-sm text-gray-500 mb-6" },
+          isChunkError
+            ? "A page chunk failed to load. This usually means a new version was deployed — a quick reload should fix it."
+            : "Something went wrong rendering this page. The rest of the site should still work fine."
+        ),
+        React.createElement("div", { className: "flex items-center justify-center gap-3" },
+          React.createElement("button", {
+            onClick: () => this.setState({ hasError: false }),
+            className: "px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700"
+          }, "Try again"),
+          React.createElement("button", {
+            onClick: () => window.location.reload(),
+            className: "px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200"
+          }, "Reload page")
+        )
       );
     }
     return this.props.children;
@@ -354,125 +392,8 @@ const funderSlugs = funderData.map((f, i) => ({ slug: toSlug(f.name), index: i, 
 const findFunderBySlug = (slug) => funderSlugs.find(f => f.slug === slug || f.slug.startsWith(slug));
 const getFunderSlug = (index) => funderSlugs[index]?.slug || String(index);
 
-// ===========================================================
-// AI RISK SCORE — multi-year algorithmic financial health assessment
-// ===========================================================
-function computeRiskScore(org) {
-  if (!org?.financials || org.financials.length === 0) return null;
-  const latest = org.financials[0];
-  const years = org.financials.length;
-  let score = 65; // Base score — neutral starting point
-  const factors = [];
-
-  // Helper: compute year-over-year changes for a metric across all years
-  const yoyChanges = (metric) => {
-    const vals = org.financials.map(f => f[metric]).filter(v => v != null && v > 0);
-    if (vals.length < 2) return [];
-    // financials[0] is latest, so changes[0] = latest vs previous
-    return vals.slice(0, -1).map((v, i) => (v - vals[i + 1]) / vals[i + 1]);
-  };
-
-  // Helper: standard deviation
-  const stdDev = (arr) => {
-    if (arr.length < 2) return 0;
-    const mean = arr.reduce((s, v) => s + v, 0) / arr.length;
-    return Math.sqrt(arr.reduce((s, v) => s + (v - mean) ** 2, 0) / arr.length);
-  };
-
-  // ── 1. DATA DEPTH — more years = more confidence ──
-  if (years >= 5) { score += 10; factors.push({ label: `${years} years of filings — strong data depth`, impact: "positive" }); }
-  else if (years >= 3) { score += 5; factors.push({ label: `${years} years of filings — adequate data`, impact: "positive" }); }
-  else if (years === 2) { factors.push({ label: "2 years of data — limited trend analysis", impact: "neutral" }); }
-  else { score -= 10; factors.push({ label: "Only 1 year of data — risk score is indicative only", impact: "negative" }); }
-
-  // ── 2. EXPENDITURE RATIO (latest year) ──
-  if (latest.gross_income > 0 && latest.gross_expenditure > 0) {
-    const ratio = latest.gross_expenditure / latest.gross_income;
-    if (ratio > 1.2) { score -= 15; factors.push({ label: `Spending exceeds income by ${Math.round((ratio - 1) * 100)}%`, impact: "negative" }); }
-    else if (ratio > 1.0) { score -= 8; factors.push({ label: "Slight deficit — spending marginally exceeds income", impact: "negative" }); }
-    else if (ratio >= 0.75) { score += 8; factors.push({ label: "Healthy spending ratio", impact: "positive" }); }
-    else if (ratio < 0.5) { score -= 3; factors.push({ label: "Very low spending ratio — possible reserves hoarding", impact: "neutral" }); }
-    else { score += 5; factors.push({ label: "Balanced budget", impact: "positive" }); }
-  }
-
-  // ── 3. MULTI-YEAR INCOME TREND ──
-  const incomeChanges = yoyChanges("gross_income");
-  if (incomeChanges.length >= 2) {
-    const avgChange = incomeChanges.reduce((s, v) => s + v, 0) / incomeChanges.length;
-    const consecutiveDeclines = incomeChanges.filter(c => c < -0.02).length;
-    const volatility = stdDev(incomeChanges);
-
-    // Average trend direction
-    if (avgChange > 0.08) { score += 10; factors.push({ label: `Income growing avg ${Math.round(avgChange * 100)}% per year over ${incomeChanges.length + 1} years`, impact: "positive" }); }
-    else if (avgChange > 0.02) { score += 5; factors.push({ label: `Steady income growth (avg +${Math.round(avgChange * 100)}%/yr)`, impact: "positive" }); }
-    else if (avgChange < -0.1) { score -= 15; factors.push({ label: `Significant income decline (avg ${Math.round(avgChange * 100)}%/yr over ${incomeChanges.length + 1} years)`, impact: "negative" }); }
-    else if (avgChange < -0.03) { score -= 8; factors.push({ label: `Income declining (avg ${Math.round(avgChange * 100)}%/yr)`, impact: "negative" }); }
-
-    // Consecutive declines are a red flag
-    if (consecutiveDeclines >= 3) { score -= 12; factors.push({ label: `${consecutiveDeclines} consecutive years of income decline`, impact: "negative" }); }
-    else if (consecutiveDeclines === 2) { score -= 5; factors.push({ label: "2 consecutive years of income decline", impact: "neutral" }); }
-
-    // Income volatility — high year-to-year swings suggest instability
-    if (volatility > 0.3) { score -= 8; factors.push({ label: "High income volatility — unpredictable revenue", impact: "negative" }); }
-    else if (volatility > 0.15) { score -= 3; factors.push({ label: "Moderate income volatility", impact: "neutral" }); }
-    else if (volatility < 0.08 && incomeChanges.length >= 3) { score += 3; factors.push({ label: "Stable, predictable income", impact: "positive" }); }
-  } else if (incomeChanges.length === 1) {
-    // Only 2 years — simple comparison
-    const change = incomeChanges[0];
-    if (change > 0.1) { score += 5; factors.push({ label: "Income growing year-over-year", impact: "positive" }); }
-    else if (change < -0.15) { score -= 10; factors.push({ label: `Income dropped ${Math.round(Math.abs(change) * 100)}% year-over-year`, impact: "negative" }); }
-    else if (change < -0.05) { score -= 3; factors.push({ label: "Slight income decline", impact: "neutral" }); }
-  }
-
-  // ── 4. EXPENDITURE TREND — is spending outpacing income? ──
-  const expendChanges = yoyChanges("gross_expenditure");
-  if (expendChanges.length >= 2 && incomeChanges.length >= 2) {
-    const avgIncGrowth = incomeChanges.reduce((s, v) => s + v, 0) / incomeChanges.length;
-    const avgExpGrowth = expendChanges.reduce((s, v) => s + v, 0) / expendChanges.length;
-    if (avgExpGrowth > avgIncGrowth + 0.05) {
-      score -= 8;
-      factors.push({ label: "Expenditure growing faster than income over time", impact: "negative" });
-    } else if (avgIncGrowth > avgExpGrowth + 0.05) {
-      score += 5;
-      factors.push({ label: "Income outpacing expenditure growth", impact: "positive" });
-    }
-  }
-
-  // ── 5. RESERVE TREND — are assets growing or shrinking? ──
-  const assetChanges = yoyChanges("total_assets");
-  if (assetChanges.length >= 2) {
-    const avgAssetChange = assetChanges.reduce((s, v) => s + v, 0) / assetChanges.length;
-    if (avgAssetChange < -0.1) { score -= 8; factors.push({ label: "Reserves declining over multiple years", impact: "negative" }); }
-    else if (avgAssetChange > 0.05) { score += 5; factors.push({ label: "Growing reserves over time", impact: "positive" }); }
-  }
-  // Latest reserve coverage
-  if (latest.total_assets > 0 && latest.gross_expenditure > 0) {
-    const coverage = latest.total_assets / latest.gross_expenditure;
-    if (coverage > 1.0) { score += 5; factors.push({ label: "Strong reserves (>1 year of expenditure)", impact: "positive" }); }
-    else if (coverage > 0.25) { score += 2; factors.push({ label: "Adequate reserves", impact: "positive" }); }
-    else { score -= 5; factors.push({ label: "Low reserve coverage (<3 months)", impact: "neutral" }); }
-  }
-
-  // ── 6. STATE FUNDING DEPENDENCY ──
-  if (org.grants && org.grants.length > 0 && latest.gross_income > 0) {
-    const grantTotal = org.grants.reduce((s, g) => s + (g.amount || 0), 0);
-    const dependency = grantTotal / latest.gross_income;
-    if (dependency > 0.9) { score -= 3; factors.push({ label: "Very high state funding dependency (>90%)", impact: "neutral" }); }
-    else if (dependency > 0.7) { factors.push({ label: "High state funding dependency", impact: "neutral" }); }
-    else if (dependency > 0) { score += 3; factors.push({ label: "Diversified income sources", impact: "positive" }); }
-  }
-
-  // ── 7. GOVERNANCE ──
-  if (org.boardMembers && org.boardMembers.length >= 5) { score += 5; factors.push({ label: `${org.boardMembers.length} board members on record`, impact: "positive" }); }
-  else if (org.boardMembers && org.boardMembers.length >= 3) { score += 3; factors.push({ label: `${org.boardMembers.length} board members`, impact: "positive" }); }
-  else if (org.boardMembers && org.boardMembers.length > 0) { factors.push({ label: "Small board size", impact: "neutral" }); }
-
-  score = Math.max(0, Math.min(100, score));
-  const level = score >= 75 ? "low" : score >= 50 ? "moderate" : "elevated";
-  const color = score >= 75 ? "emerald" : score >= 50 ? "amber" : "red";
-  const confidence = years >= 5 ? "high" : years >= 3 ? "moderate" : "low";
-  return { score, level, color, factors, confidence, yearsAnalysed: years };
-}
+// AI Risk Score — imported from riskScore.js for testability
+// (see src/riskScore.js for the full algorithm)
 
 // ===========================================================
 // WATCHLIST (localStorage-backed, migrates to Supabase later)
@@ -1905,6 +1826,11 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
 
                     ${latest ? `<h2>3. Five-Year Financial Summary</h2>
                     <div class="section">
+                      ${(() => {
+                        const ddFilingAge = latest.year ? new Date().getFullYear() - latest.year : null;
+                        if (ddFilingAge && ddFilingAge > 2) return '<p style="font-size:11px;color:#d97706;margin-bottom:8px;padding:6px 10px;background:#fffbeb;border-radius:6px">⚠ Latest filing is from ' + latest.year + ' (' + (ddFilingAge - 1) + '+ years behind). More recent returns may not yet be filed or processed.</p>';
+                        return '';
+                      })()}
                       <div class="grid">
                         ${latest.gross_income!=null ? `<div class="card"><div class="label">Gross Income (${latest.year || "Latest"})</div><div class="val">${fmt(latest.gross_income)}</div></div>` : ""}
                         ${latest.gross_expenditure!=null ? `<div class="card"><div class="label">Gross Expenditure</div><div class="val">${fmt(latest.gross_expenditure)}</div></div>` : ""}
@@ -2640,6 +2566,14 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                 const sorted = [...org.financials].reverse();
                 const currentCalendarYear = new Date().getFullYear();
                 const filingLag = cur.year && cur.year < currentCalendarYear - 1;
+                const filingAge = cur.year ? currentCalendarYear - cur.year : null;
+                const freshnessBadge = (() => {
+                  if (!filingAge) return null;
+                  if (filingAge <= 1) return { label: "Current", color: "emerald", tip: "Filing is from last year — normal lag" };
+                  if (filingAge === 2) return { label: "1 year behind", color: "amber", tip: "Filing is 2 years old — may be awaiting newer return" };
+                  if (filingAge === 3) return { label: "2 years behind", color: "orange", tip: "Filing is 3 years old — check if newer returns have been submitted" };
+                  return { label: `${filingAge - 1}yr+ stale`, color: "red", tip: `Last filing is from ${cur.year} — ${filingAge} years old. This org may no longer be filing.` };
+                })();
                 const yoyBadge = (curVal, prevVal) => {
                   if (!prev || curVal == null || prevVal == null || prevVal === 0) return null;
                   const pct = ((curVal - prevVal) / Math.abs(prevVal)) * 100;
@@ -2656,8 +2590,18 @@ function OrgProfilePage({ orgId, setPage, watchlist, embed = false }) {
                   {/* Header bar */}
                   <div className="bg-[#4A9B8E]/25 border border-[#1B3A4B]/15 rounded-xl p-4 flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-[#1B3A4B] font-bold">Latest Annual Return ({cur.year || "Most Recent"})</p>
-                      {filingLag && <p className="text-[10px] text-amber-600 mt-0.5">⚠ This organisation's filing may be overdue — newer data may not yet be available</p>}
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-[#1B3A4B] font-bold">Latest Annual Return ({cur.year || "Most Recent"})</p>
+                        {freshnessBadge && (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                            freshnessBadge.color === "emerald" ? "bg-emerald-50 text-emerald-600" :
+                            freshnessBadge.color === "amber" ? "bg-amber-50 text-amber-600" :
+                            freshnessBadge.color === "orange" ? "bg-orange-50 text-orange-600" :
+                            "bg-red-50 text-red-600"
+                          }`} title={freshnessBadge.tip}>{freshnessBadge.label}</span>
+                        )}
+                      </div>
+                      {filingLag && <p className="text-[10px] text-amber-600 mt-0.5">⚠ This organisation's latest filing is from {cur.year} — newer data may not yet be available</p>}
                     </div>
                     {org.financials.length > 1 && <span className="text-xs text-[#1B3A4B]/70 font-semibold">{org.financials.length} years on file</span>}
                   </div>
@@ -4719,14 +4663,14 @@ function InnerApp() {
   );
 
   // Embed mode: no navbar/footer chrome
-  if (isEmbed) return <div className="min-h-screen bg-white"><Suspense fallback={suspenseFallback}>{renderPage()}</Suspense></div>;
+  if (isEmbed) return <div className="min-h-screen bg-white"><PageErrorBoundary><Suspense fallback={suspenseFallback}>{renderPage()}</Suspense></PageErrorBoundary></div>;
 
   return (
     <div className="min-h-screen bg-[#FFFFFF]">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-emerald-600 focus:text-white focus:rounded focus:text-sm focus:font-medium">Skip to content</a>
       <Navbar page={page} setPage={handleSetPage} />
       <main id="main-content">
-        <Suspense fallback={suspenseFallback}>{renderPage()}</Suspense>
+        <PageErrorBoundary><Suspense fallback={suspenseFallback}>{renderPage()}</Suspense></PageErrorBoundary>
       </main>
       <DonationPopup />
       <footer className="bg-[#1B3A4B] text-white mt-16">
@@ -5061,8 +5005,8 @@ function DataQualityPage() {
       <p className="mb-3">Our data processing follows a five-stage pipeline:</p>
       <p className="mb-2"><strong>Ingestion:</strong> Raw data downloaded from government APIs and open data portals. Each download is timestamped and SHA-256 hashed for auditability.</p>
       <p className="mb-2"><strong>Normalisation:</strong> Organisation names are cleaned (case, punctuation, legal suffixes like CLG/LTD), and common abbreviations expanded. Cross-reference identifiers (charity numbers, CHY, CRO) are used to link records across sources.</p>
-      <p className="mb-2"><strong>Classification:</strong> Entities are classified by type (charity, company, school, state body) using a rules-based classifier, then by ICNPO sector. Manual overrides cover the top ~200 funded organisations where automatic classification fails.</p>
-      <p className="mb-2"><strong>Enrichment:</strong> Financial data from CRO filings and charity annual returns are linked. County attribution uses registered address data plus manual overrides for headquarters of national organisations.</p>
+      <p className="mb-2"><strong>Classification:</strong> Entities are classified by type (charity, company, school, state body) using a rules-based classifier, then by ICNPO sector. ~300 manual overrides cover the highest-funded organisations, supplemented by a keyword-based fallback classifier that catches patterns like "Hospital" → Health and "Housing Association" → Social Services.</p>
+      <p className="mb-2"><strong>Enrichment:</strong> Financial data from CRO filings and charity annual returns are linked. County attribution uses registered address data plus ~360 manual overrides for headquarters of national organisations (hospitals, disability providers, ETBs, universities, state agencies, housing bodies, and sports/arts bodies).</p>
       <p className="mb-4"><strong>Validation:</strong> Automated checks flag impossible values (negative income, assets below liabilities without explanation, duplicate records). Flagged records are reviewed before publication.</p>
 
       {/* 4. Coverage Gaps */}
@@ -5104,6 +5048,12 @@ function DataSourcesPage() {
     { name: "Sport Ireland", desc: "Sports club and governing body funding", url: "https://www.sportireland.ie", updated: "Annually", count: "675 recipients" },
     { name: "data.gov.ie", desc: "Ireland's open data portal (CKAN API)", url: "https://data.gov.ie", updated: "Varies", count: "Multiple datasets" },
     { name: "Tusla", desc: "Child and Family Agency funding", url: "https://www.tusla.ie", updated: "Annually", count: "675 recipients" },
+    { name: "Lobbying Register", desc: "Registered lobbyists and lobbying activities by nonprofits", url: "https://www.lobbying.ie", updated: "Quarterly", count: "2,500+ returns" },
+    { name: "Housing Agency", desc: "Approved Housing Body financial returns and performance data", url: "https://www.housingagency.ie", updated: "Annually", count: "350+ AHBs" },
+    { name: "SOLAS / ETBs", desc: "Education & Training Board spending and programme delivery", url: "https://www.solas.ie", updated: "Annually", count: "16 ETBs" },
+    { name: "HSE Service Arrangements", desc: "Section 38/39 service-level agreements and funding allocations", url: "https://www.hse.ie", updated: "Annually", count: "2,400+ arrangements" },
+    { name: "DRHE", desc: "Dublin Region Homeless Executive emergency accommodation data", url: "https://www.homelessdublin.ie", updated: "Monthly", count: "All Dublin LAs" },
+    { name: "Local Government Audit Service", desc: "Audited annual financial statements for all 31 local authorities", url: "https://www.gov.ie/en/organisation/local-government-audit-service/", updated: "Annually", count: "31 councils" },
   ];
 
   return (
