@@ -473,21 +473,29 @@ function DivisionDrillDown({ division, allDivs, onClose, council, onOrgClick }) 
   const [matchedOrgs, setMatchedOrgs] = useState([]);
   const [orgsLoading, setOrgsLoading] = useState(false);
   const [orgsError, setOrgsError] = useState(null);
-  const [showOrgs, setShowOrgs] = useState(false);
+  const [showOrgs, setShowOrgs] = useState(true);
   const [orgSort, setOrgSort] = useState("total_grant_amount");
   const [orgSortDir, setOrgSortDir] = useState("desc");
+  const panelRef = useRef(null);
 
-  // Fetch matching orgs when "Show organisations" is toggled on
+  // Scroll into view when panel opens
   useEffect(() => {
-    if (!showOrgs || matchedOrgs.length > 0) return;
+    if (panelRef.current) {
+      panelRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [division.division_code]);
+
+  // Fetch matching orgs on mount (auto-load, no toggle needed)
+  useEffect(() => {
     const sectors = DIVISION_SECTOR_MAP[division.division_code] || [];
     const county = councilToCounty(council);
-    if (!sectors.length || !county) { setOrgsError("No sector mapping for this division"); return; }
+    if (!sectors.length || !county) return;
 
     setOrgsLoading(true);
+    setMatchedOrgs([]);
+    setOrgsError(null);
     (async () => {
       try {
-        // Query org_summary for orgs matching county + any of the mapped sectors
         let query = supabase
           .from("org_summary")
           .select("id,name,sector,county,gross_income,gross_expenditure,total_grant_amount,employees")
@@ -504,7 +512,7 @@ function DivisionDrillDown({ division, allDivs, onClose, council, onOrgClick }) 
         setOrgsLoading(false);
       }
     })();
-  }, [showOrgs, division.division_code, council, matchedOrgs.length]);
+  }, [division.division_code, council]);
 
   const sortedOrgs = useMemo(() => {
     return [...matchedOrgs].sort((a, b) => {
@@ -538,7 +546,7 @@ function DivisionDrillDown({ division, allDivs, onClose, council, onOrgClick }) 
     : null;
 
   return (
-    <div className="bg-white rounded-xl border-2 border-emerald-200 shadow-lg p-6 mb-6 relative">
+    <div ref={panelRef} className="bg-white rounded-xl border-2 border-emerald-200 shadow-lg p-6 mb-6 relative">
       <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
       <div className="flex items-center gap-3 mb-4">
         <div className="w-4 h-4 rounded-full" style={{ backgroundColor: DIV_COLORS[division.division_code] || EMERALD }} />
