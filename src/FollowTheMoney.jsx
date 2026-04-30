@@ -233,7 +233,7 @@ function FunderOverview({ funders, onSelectFunder }) {
 // ============================================================
 // FUNDER DETAIL PAGE — Deep drill-down into a single funder
 // ============================================================
-function FunderDetail({ funder, grants, setPage, onBack }) {
+function FunderDetail({ funder, grants, setPage, onBack, tier = "free", onUpgrade }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [progFilter, setProgrammeFilter] = useState(null);
   const [expandedRecipient, setExpandedRecipient] = useState(null);
@@ -975,6 +975,8 @@ export default function FollowTheMoneyPage({ setPage, initialFunder = null, tier
             grants={funderGrants}
             setPage={setPage}
             onBack={() => { setSelectedFunder(null); setFunderGrants([]); }}
+            tier={tier}
+            onUpgrade={onUpgrade}
           />
         )
       ) : (
