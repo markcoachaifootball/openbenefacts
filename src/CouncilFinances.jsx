@@ -11,6 +11,39 @@ import {
 } from "lucide-react";
 import { supabase } from "./supabase.js";
 
+/* ── Division → Org Sector Mapping ── */
+const DIVISION_SECTOR_MAP = {
+  A: ["Social Services"],                        // Housing & Building → housing bodies, homeless services
+  B: [],                                          // Roads — few matching nonprofits
+  C: [],                                          // Water Services
+  D: ["Philanthropy", "Social Services"],          // Development Management → community development
+  E: ["Environment"],                             // Environmental Services
+  F: ["Culture, Recreation"],                     // Recreation & Amenity
+  G: ["Education, Research", "Health"],           // Agriculture, Education, Health & Welfare
+  H: [],                                          // Miscellaneous — too broad to map
+};
+
+/* ── Council slug → county mapping ── */
+const COUNCIL_COUNTY_MAP = {
+  // Multiple Dublin councils all map to Dublin county
+  dublin_city: "Dublin", dun_laoghaire_rathdown: "Dublin", fingal: "Dublin", south_dublin: "Dublin",
+  // City councils
+  cork_city: "Cork", galway_city: "Galway", limerick: "Limerick", waterford: "Waterford",
+  // City-and-county councils already match their county name
+};
+
+function councilToCounty(council) {
+  // Try slug-based lookup first
+  if (council?.slug && COUNCIL_COUNTY_MAP[council.slug]) return COUNCIL_COUNTY_MAP[council.slug];
+  // Extract from name: "Cork County Council" → "Cork", "Galway City and County Council" → "Galway"
+  const name = council?.name || "";
+  return name
+    .replace(/ County Council$/i, "")
+    .replace(/ City Council$/i, "")
+    .replace(/ City and County Council$/i, "")
+    .trim() || null;
+}
+
 /* ── Colours ── */
 const EMERALD = "#059669";
 const TEAL = "#0d9488";
@@ -436,7 +469,50 @@ function ExpandableYearRow({ row, prevRow, divs, allCouncilIe, isExpanded, onTog
    DIVISION DRILL-DOWN
    Full history for a single division within a council
    ──────────────────────────────────────────────────────────── */
-function DivisionDrillDown({ division, allDivs, onClose }) {
+function DivisionDrillDown({ division, allDivs, onClose, council, onOrgClick }) {
+  const [matchedOrgs, setMatchedOrgs] = useState([]);
+  const [orgsLoading, setOrgsLoading] = useState(false);
+  const [orgsError, setOrgsError] = useState(null);
+  const [showOrgs, setShowOrgs] = useState(false);
+  const [orgSort, setOrgSort] = useState("total_grant_amount");
+  const [orgSortDir, setOrgSortDir] = useState("desc");
+
+  // Fetch matching orgs when "Show organisations" is toggled on
+  useEffect(() => {
+    if (!showOrgs || matchedOrgs.length > 0) return;
+    const sectors = DIVISION_SECTOR_MAP[division.division_code] || [];
+    const county = councilToCounty(council);
+    if (!sectors.length || !county) { setOrgsError("No sector mapping for this division"); return; }
+
+    setOrgsLoading(true);
+    (async () => {
+      try {
+        // Query org_summary for orgs matching county + any of the mapped sectors
+        let query = supabase
+          .from("org_summary")
+          .select("id,name,sector,county,gross_income,gross_expenditure,total_grant_amount,employees")
+          .eq("county", county)
+          .in("sector", sectors)
+          .order("total_grant_amount", { ascending: false, nullsFirst: false })
+          .limit(100);
+        const { data, error } = await query;
+        if (error) throw error;
+        setMatchedOrgs(data || []);
+      } catch (e) {
+        setOrgsError(e.message);
+      } finally {
+        setOrgsLoading(false);
+      }
+    })();
+  }, [showOrgs, division.division_code, council, matchedOrgs.length]);
+
+  const sortedOrgs = useMemo(() => {
+    return [...matchedOrgs].sort((a, b) => {
+      const va = a[orgSort] ?? -Infinity;
+      const vb = b[orgSort] ?? -Infinity;
+      return orgSortDir === "desc" ? vb - va : va - vb;
+    });
+  }, [matchedOrgs, orgSort, orgSortDir]);
   const divHistory = allDivs
     .filter((d) => d.division_code === division.division_code)
     .sort((a, b) => a.year - b.year);
@@ -542,6 +618,92 @@ function DivisionDrillDown({ division, allDivs, onClose }) {
           </tbody>
         </table>
       </div>
+
+      {/* ── Organisations in this area ── */}
+      {(DIVISION_SECTOR_MAP[division.division_code] || []).length > 0 && (
+        <div className="mt-6 pt-4 border-t border-gray-100">
+          <button
+            onClick={() => setShowOrgs(!showOrgs)}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800 transition-colors"
+          >
+            {showOrgs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <Building2 className="w-4 h-4" />
+            Organisations Receiving Funding in {councilToCounty(council) || "this area"}
+          </button>
+          <p className="text-xs text-gray-400 mt-1 ml-10">
+            Nonprofits in {councilToCounty(council) || "this council area"} classified under {(DIVISION_SECTOR_MAP[division.division_code] || []).join(", ")} — may include state and non-state funding
+          </p>
+
+          {showOrgs && (
+            <div className="mt-4">
+              {orgsLoading && (
+                <div className="flex items-center gap-2 text-sm text-gray-400 py-4">
+                  <div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                  Loading organisations...
+                </div>
+              )}
+              {orgsError && (
+                <p className="text-sm text-amber-600 py-2 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4" /> {orgsError}
+                </p>
+              )}
+              {!orgsLoading && !orgsError && sortedOrgs.length === 0 && (
+                <p className="text-sm text-gray-400 py-3">No matching organisations found in {councilToCounty(council)}.</p>
+              )}
+              {!orgsLoading && sortedOrgs.length > 0 && (
+                <>
+                  <div className="text-xs text-gray-500 mb-2">{sortedOrgs.length} organisation{sortedOrgs.length !== 1 ? "s" : ""} found</div>
+                  <div className="overflow-x-auto rounded-lg border border-gray-100">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-100">
+                          <th className="text-left py-2 px-3 text-gray-500 font-medium">Organisation</th>
+                          <th className="text-left py-2 px-3 text-gray-500 font-medium">Sector</th>
+                          {[["total_grant_amount", "Gov. Funding"], ["gross_income", "Income"], ["gross_expenditure", "Expenditure"], ["employees", "Staff"]].map(([key, label]) => (
+                            <th
+                              key={key}
+                              className="text-right py-2 px-3 text-gray-500 font-medium cursor-pointer hover:text-gray-700"
+                              onClick={() => { if (orgSort === key) setOrgSortDir(d => d === "desc" ? "asc" : "desc"); else { setOrgSort(key); setOrgSortDir("desc"); } }}
+                            >
+                              <span className="inline-flex items-center gap-1">{label}
+                                {orgSort === key ? (orgSortDir === "desc" ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                              </span>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedOrgs.map((org) => (
+                          <tr
+                            key={org.id}
+                            className="border-b border-gray-50 hover:bg-emerald-50/30 cursor-pointer transition-colors"
+                            onClick={() => onOrgClick && onOrgClick(org)}
+                          >
+                            <td className="py-2 px-3 font-medium text-gray-900">
+                              <span className="inline-flex items-center gap-1.5">
+                                {org.name}
+                                {onOrgClick && <ChevronRight className="w-3 h-3 text-gray-300 flex-shrink-0" />}
+                              </span>
+                            </td>
+                            <td className="py-2 px-3 text-gray-500 text-xs">{org.sector}</td>
+                            <td className="text-right py-2 px-3 tabular-nums font-medium">{fmt(org.total_grant_amount)}</td>
+                            <td className="text-right py-2 px-3 tabular-nums">{fmt(org.gross_income)}</td>
+                            <td className="text-right py-2 px-3 tabular-nums">{fmt(org.gross_expenditure)}</td>
+                            <td className="text-right py-2 px-3 tabular-nums text-gray-500">{org.employees ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {sortedOrgs.length >= 100 && (
+                    <p className="text-xs text-gray-400 mt-2">Showing top 100 results. View full list on the Organisations page.</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -983,7 +1145,7 @@ function CouncilOverview({ councils, ieData, setSelectedCouncil }) {
 /* ═══════════════════════════════════════════════════════════════
    COUNCIL DETAIL PAGE
    ═══════════════════════════════════════════════════════════════ */
-function CouncilDetail({ council, councils, ieData, bsData, divData, onBack, onNavigate }) {
+function CouncilDetail({ council, councils, ieData, bsData, divData, onBack, onNavigate, setPage }) {
   const [tab, setTab] = useState("overview");
   const [expandedYear, setExpandedYear] = useState(null);
   const [expandedBSYear, setExpandedBSYear] = useState(null);
@@ -1157,7 +1319,13 @@ function CouncilDetail({ council, councils, ieData, bsData, divData, onBack, onN
       {tab === "divisions" && (
         <div className="space-y-6">
           {selectedDivision && (
-            <DivisionDrillDown division={selectedDivision} allDivs={divs} onClose={() => setSelectedDivision(null)} />
+            <DivisionDrillDown
+              division={selectedDivision}
+              allDivs={divs}
+              onClose={() => setSelectedDivision(null)}
+              council={council}
+              onOrgClick={(org) => { if (setPage) setPage(`org:${org.id}`); }}
+            />
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1417,6 +1585,7 @@ export default function CouncilFinancesPage({ setPage }) {
           divData={divData}
           onBack={() => setSelectedCouncil(null)}
           onNavigate={(c) => { setSelectedCouncil(c); window.scrollTo(0, 0); }}
+          setPage={setPage}
         />
       ) : (
         <CouncilOverview councils={councils} ieData={ieData} setSelectedCouncil={setSelectedCouncil} />
