@@ -1307,7 +1307,7 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
       {selectedLA && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
           onClick={() => setSelectedLA(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -1368,6 +1368,91 @@ export default function EmergencyAccommodationPage({ setPage, embed = false }) {
                 </div>
               </div>
             )}
+            {/* ── Providers in this LA ── */}
+            {(() => {
+              const laName = selectedLA.local_authority;
+              const laRegion = selectedLA.region;
+              // Match providers by local_authority field, or by region if no direct matches
+              let laProviders = providers.filter(p =>
+                p.local_authority && p.local_authority.toLowerCase() === laName.toLowerCase()
+              );
+              // Fallback: match by region if no direct LA match and provider has region field
+              if (laProviders.length === 0) {
+                laProviders = providers.filter(p =>
+                  p.region && p.region.toLowerCase() === laRegion?.toLowerCase()
+                );
+              }
+              const hasProviders = laProviders.length > 0;
+              return (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Providers in {laName}
+                  </p>
+                  {!providers.length ? (
+                    <p className="text-xs text-gray-400">Provider data not yet loaded. Check the Providers tab.</p>
+                  ) : !hasProviders ? (
+                    <p className="text-xs text-gray-400">
+                      No providers found for this local authority.
+                      <button
+                        onClick={() => { setSelectedLA(null); setActiveTab("providers"); }}
+                        className="text-emerald-600 hover:underline ml-1"
+                      >Search all providers →</button>
+                    </p>
+                  ) : (
+                    <>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {laProviders
+                          .sort((a, b) => (b.total_known_revenue_eur || 0) - (a.total_known_revenue_eur || 0))
+                          .map(p => {
+                            const rev = p.total_known_revenue_eur || 0;
+                            const isFramework = rev >= 100000000;
+                            return (
+                              <div
+                                key={p.id}
+                                className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-emerald-50 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedLA(null);
+                                  setSelectedProvider(p.id);
+                                  setActiveTab("providers");
+                                }}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 truncate">{p.name}</p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                                      p.provider_type === "COMPANY" ? "bg-blue-100 text-blue-700" :
+                                      p.provider_type === "CHARITY" ? "bg-emerald-100 text-emerald-700" :
+                                      "bg-gray-100 text-gray-600"
+                                    }`}>{p.provider_type || "Provider"}</span>
+                                    {p.cro_number && <span className="text-[10px] text-gray-400">CRO {p.cro_number}</span>}
+                                    {p.trading_name && p.trading_name !== p.name && (
+                                      <span className="text-[10px] text-gray-400 truncate">t/a {p.trading_name}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right flex-shrink-0 ml-3">
+                                  <p className={`text-sm font-bold tabular-nums ${isFramework ? "text-amber-600" : "text-gray-900"}`}>
+                                    {FMT(rev)}
+                                  </p>
+                                  {isFramework && (
+                                    <p className="text-[9px] text-amber-500 font-medium">Framework ceiling</p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                      <button
+                        onClick={() => { setSelectedLA(null); setActiveTab("providers"); setProviderFilter(laName.replace(/ County Council| City Council| City & County Council/i, "")); }}
+                        className="text-xs text-emerald-600 hover:underline mt-2 inline-block"
+                      >View all providers →</button>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+
             <p className="text-xs text-gray-400 mt-4">
               Report: {formattedDate} · Source: DHLGH / data.gov.ie
             </p>
