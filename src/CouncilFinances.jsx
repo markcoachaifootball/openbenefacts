@@ -13,14 +13,14 @@ import { supabase } from "./supabase.js";
 
 /* ── Division → Org Sector Mapping ── */
 const DIVISION_SECTOR_MAP = {
-  A: ["Social Services"],                        // Housing & Building → housing bodies, homeless services
-  B: [],                                          // Roads — few matching nonprofits
-  C: [],                                          // Water Services
-  D: ["Philanthropy", "Social Services"],          // Development Management → community development
-  E: ["Environment"],                             // Environmental Services
-  F: ["Culture, Recreation"],                     // Recreation & Amenity
-  G: ["Education, Research", "Health"],           // Agriculture, Education, Health & Welfare
-  H: [],                                          // Miscellaneous — too broad to map
+  A: ["Social Services"],                                          // Housing & Building
+  B: ["Social Services", "Culture, Recreation"],                   // Roads — community/transport safety
+  C: ["Environment"],                                              // Water Services
+  D: ["Philanthropy", "Social Services"],                          // Development Management
+  E: ["Environment"],                                              // Environmental Services
+  F: ["Culture, Recreation"],                                      // Recreation & Amenity
+  G: ["Education, Research", "Health"],                            // Agriculture, Education, Health & Welfare
+  H: null,                                                         // Miscellaneous → show ALL orgs in county
 };
 
 /* ── Council slug → county mapping ── */
@@ -485,11 +485,12 @@ function DivisionDrillDown({ division, allDivs, onClose, council, onOrgClick }) 
     }
   }, [division.division_code]);
 
-  // Fetch matching orgs on mount (auto-load, no toggle needed)
+  // Fetch matching orgs on mount (auto-load)
+  // null sectors = show all orgs in county; array = filter by those sectors
   useEffect(() => {
-    const sectors = DIVISION_SECTOR_MAP[division.division_code] || [];
     const county = councilToCounty(council);
-    if (!sectors.length || !county) return;
+    if (!county) return;
+    const sectors = DIVISION_SECTOR_MAP[division.division_code]; // null = all, [] would mean none
 
     setOrgsLoading(true);
     setMatchedOrgs([]);
@@ -500,9 +501,12 @@ function DivisionDrillDown({ division, allDivs, onClose, council, onOrgClick }) 
           .from("org_summary")
           .select("id,name,sector,county,gross_income,gross_expenditure,total_grant_amount,employees")
           .eq("county", county)
-          .in("sector", sectors)
           .order("total_grant_amount", { ascending: false, nullsFirst: false })
           .limit(100);
+        // If sectors is an array, filter; if null, show all orgs in the county
+        if (Array.isArray(sectors) && sectors.length > 0) {
+          query = query.in("sector", sectors);
+        }
         const { data, error } = await query;
         if (error) throw error;
         setMatchedOrgs(data || []);
@@ -628,7 +632,7 @@ function DivisionDrillDown({ division, allDivs, onClose, council, onOrgClick }) 
       </div>
 
       {/* ── Organisations in this area ── */}
-      {(DIVISION_SECTOR_MAP[division.division_code] || []).length > 0 && (
+      {councilToCounty(council) && (
         <div className="mt-6 pt-4 border-t border-gray-100">
           <button
             onClick={() => setShowOrgs(!showOrgs)}
@@ -636,10 +640,13 @@ function DivisionDrillDown({ division, allDivs, onClose, council, onOrgClick }) 
           >
             {showOrgs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             <Building2 className="w-4 h-4" />
-            Organisations Receiving Funding in {councilToCounty(council) || "this area"}
+            Organisations Receiving Funding in {councilToCounty(council)}
           </button>
           <p className="text-xs text-gray-400 mt-1 ml-10">
-            Nonprofits in {councilToCounty(council) || "this council area"} classified under {(DIVISION_SECTOR_MAP[division.division_code] || []).join(", ")} — may include state and non-state funding
+            {DIVISION_SECTOR_MAP[division.division_code] === null
+              ? `All nonprofits in ${councilToCounty(council)} — this division covers diverse spending areas`
+              : `Nonprofits in ${councilToCounty(council)} classified under ${(DIVISION_SECTOR_MAP[division.division_code] || []).join(", ")}`
+            }
           </p>
 
           {showOrgs && (
